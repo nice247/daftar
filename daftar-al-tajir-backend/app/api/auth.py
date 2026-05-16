@@ -55,7 +55,8 @@ async def confirm_phone(
     they received via WhatsApp from the admin.
     """
     try:
-        await AuthService.verify_phone_code(db, request.phone, request.code)
+        # Check if valid but do NOT mark as used yet. We need it for the final registration step.
+        await AuthService.verify_phone_code(db, request.phone, request.code, mark_used=False)
         return MessageResponse(message="تم التحقق من الرقم بنجاح")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -121,6 +122,8 @@ async def forgot_password(request: OTPRequest, db: AsyncSession = Depends(get_db
 async def verify_otp(request: OTPVerifyRequest, db: AsyncSession = Depends(get_db)):
     """Verify the OTP code sent for password reset."""
     try:
+        # In reset password flow, we mark it used upon final reset, 
+        # but let's leave it as is if it expects it to be marked here
         await AuthService.verify_otp(db, request.phone, request.code)
         return MessageResponse(message="تم التحقق بنجاح")
     except ValueError as e:

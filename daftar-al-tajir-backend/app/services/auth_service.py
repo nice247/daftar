@@ -1,74 +1,84 @@
-"""Authentication service - JWT, password hashing, OTP generation.
-
-Registration Flow:
-1. User enters phone (0XXXXXXXXX, 10 digits) → System generates OTP → Admin gets code via Telegram
-2. Admin sends OTP to user via WhatsApp (link uses 249XXXXXXXXX format)
-3. User enters OTP → Phone verified
-4. User completes registration (store name, password, plan)
-
-Phone format:
-- User enters & system stores: 0XXXXXXXXX (local Sudan format, 10 digits)
-- WhatsApp links in Telegram: 249XXXXXXXXX (international format, without leading 0)
-"""
+"""Authentication Service."""
 import random
 import string
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+
 from sqlalchemy import select
-from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import OAuth2PasswordRequestForm
+
 from app.models.models import User, OTPCode
-from app.schemas.schemas import TokenResponse, SUDAN_COUNTRY_CODE, validate_sudan_phone
+from app.core.security import hash_password, verify_password, create_access_token
+from app.schemas.schemas import TokenResponse
 from app.services.telegram_service import telegram_service
 
 
 class AuthService:
-    """Authentication and authorization service."""
+    """Service handling all authentication and registration logic."""
 
     @staticmethod
     def _normalize_phone(phone: str) -> str:
-        """Normalize phone to local format: 0XXXXXXXXX"""
-        return validate_sudan_phone(phone)
+        """Ensure phone number starts with 0 and remove spaces."""
+        phone = phone.replace(" ", "")
+        if phone.startswith("249"):
+            phone = "0" + phone[3:]
+        elif phone.startswith("+249"):
+            phone = "0" + phone[4:]
+        return phone
+
+    @staticmethod
+    def _generate_code() -> str:
+        """Generate a random 4-digit code."""
+        return "".join(random.choices(string.digits, k=4))
+
+    # ============ Registration Flow ============
 
     @staticmethod
     async def request_phone_verification(db: AsyncSession, phone: str) -> str:
         """
-        Step 1: User requests phone verification.
-        Generates a 4-digit code and sends it to admin via Telegram.
-        Admin will forward it to the user via WhatsApp.
+        Step 1: Check if phone exists, generate code, save it, and send to admin.
         """
-        # Normalize to local format
         phone = AuthService._normalize_phone(phone)
 
-        # Check if phone already registered
+        # Check if phone is already registered and active
         result = await db.execute(select(User).where(User.phone == phone))
-        existing = result.scalar_one_or_none()
-        if existing:
-            raise ValueError("رقم الهاتف مسجل مسبقاً")
+        existing_user = result.scalar_one_or_none()
+        
+        if existing_user and existing_user.status == "ACTIVE":
+            raise ValueError("رقم الهاتف مسجل ومفعل مسبقاً. الرجاء تسجيل الدخول.")
 
-        # Generate 4-digit verification code
-        code = ''.join(random.choices(string.digits, k=4))
+        # Generate a new 4-digit code
+        code = AuthService._generate_code()
 
-        # Save OTP with purpose "registration"
+        # Invalidate any old unused codes for this phone
+        await db.execute(
+            OTPCode.__table__.update()
+            .where(OTPCode.phone == phone)
+            .where(OTPCode.is_used == False)
+            .values(is_used=True)
+        )
+
+        # Save new code (expires in 30 minutes)
         otp = OTPCode(
             phone=phone,
             code=code,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=30),
-            purpose="registration"
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=30)
         )
         db.add(otp)
         await db.flush()
 
-        # Send code to admin via Telegram (admin forwards to user via WhatsApp)
+        # Send to admin via Telegram
         await telegram_service.notify_registration_code(phone, code)
 
         return code
 
     @staticmethod
-    async def verify_phone_code(db: AsyncSession, phone: str, code: str) -> bool:
+    async def verify_phone_code(db: AsyncSession, phone: str, code: str, mark_used: bool = True) -> bool:
         """
         Step 2: Verify the code that was sent to user via WhatsApp.
         This is used both for registration and password reset.
+        If mark_used is False, it just checks validity without invalidating the code.
         """
         # Normalize phone
         phone = AuthService._normalize_phone(phone)
@@ -88,9 +98,10 @@ class AuthService:
         if not otp:
             raise ValueError("رمز التحقق غير صالح أو منتهي الصلاحية")
 
-        # Mark OTP as used
-        otp.is_used = True
-        await db.flush()
+        if mark_used:
+            # Mark OTP as used
+            otp.is_used = True
+            await db.flush()
 
         return True
 
@@ -111,8 +122,8 @@ class AuthService:
         # Normalize phone
         phone = AuthService._normalize_phone(phone)
 
-        # Verify the code first
-        await AuthService.verify_phone_code(db, phone, verification_code)
+        # Verify the code first, and mark it as used NOW (it was only checked in Step 2)
+        await AuthService.verify_phone_code(db, phone, verification_code, mark_used=True)
 
         # Check if phone already exists (double check)
         result = await db.execute(select(User).where(User.phone == phone))
@@ -126,154 +137,118 @@ class AuthService:
             store_name=store_name,
             email=email,
             password_hash=hash_password(password),
-            status="ACTIVE",  # Activate immediately for free first month
-            role="merchant",
-            subscription_end_date=(datetime.now(timezone.utc) + timedelta(days=30)).date(),
+            subscription_plan=plan,
+            status="ACTIVE",
+            subscription_end_date=datetime.now(timezone.utc).date() + timedelta(days=30)
         )
-
+        
         db.add(user)
         await db.flush()
 
-        # Notify admin about new registration
+        # Notify admin of successful registration
         await telegram_service.notify_new_registration(
-            phone=phone,
-            store_name=store_name,
-            plan=plan,
+            phone=user.phone,
+            store_name=user.store_name,
+            plan=user.subscription_plan,
             user_id=str(user.id)
         )
 
         return user
 
+    # ============ Login Flow ============
+
     @staticmethod
     async def login(db: AsyncSession, phone: str, password: str) -> TokenResponse:
         """Authenticate user and return JWT token."""
-        # Normalize phone to local format for lookup
-        try:
-            phone = AuthService._normalize_phone(phone)
-        except ValueError:
-            pass  # Allow non-standard formats for existing accounts
-
-        result = await db.execute(select(User).where(User.phone == phone))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            raise ValueError("بيانات الدخول غير صحيحة")
-
-        if not verify_password(password, user.password_hash):
-            raise ValueError("بيانات الدخول غير صحيحة")
-
-        if user.status == "FROZEN":
-            raise ValueError("الحساب مجمد. تواصل مع الدعم")
-
-        if user.status == "PENDING_VERIFICATION":
-            raise ValueError("الحساب قيد المراجعة")
-
-        # Generate JWT token
-        token = create_access_token(data={
-            "sub": str(user.id),
-            "phone": user.phone,
-            "role": user.role
-        })
-
-        return TokenResponse(
-            access_token=token,
-            user_id=user.id,
-            phone=user.phone,
-            store_name=user.store_name,
-            role=user.role,
-            status=user.status
-        )
-
-    @staticmethod
-    async def get_current_user(db: AsyncSession, token: str) -> User:
-        """Get the current user from a JWT token."""
-        payload = decode_access_token(token)
-        if not payload:
-            raise ValueError("رمز المصادقة غير صالح أو منتهي الصلاحية")
-
-        user_id = payload.get("sub")
-        if not user_id:
-            raise ValueError("رمز المصادقة غير صالح")
-
-        result = await db.execute(select(User).where(User.id == user_id))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            raise ValueError("المستخدم غير موجود")
-
-        return user
-
-    @staticmethod
-    async def generate_otp(db: AsyncSession, phone: str, purpose: str = "password_reset") -> str:
-        """
-        Generate a 4-digit OTP code for password reset.
-        Code is sent to admin via Telegram, who forwards it to user via WhatsApp.
-        """
-        # Normalize phone
         phone = AuthService._normalize_phone(phone)
 
-        # Check if user exists
+        # Find user
         result = await db.execute(select(User).where(User.phone == phone))
         user = result.scalar_one_or_none()
+
+        if not user or not verify_password(password, user.password_hash):
+            raise ValueError("رقم الهاتف أو كلمة المرور غير صحيحة")
+
+        # Check status
+        if user.status == "PENDING":
+            raise ValueError("حسابك قيد المراجعة")
+        elif user.status == "FROZEN":
+            raise ValueError("حسابك مجمد بسبب انتهاء الاشتراك")
+        elif user.status == "BANNED":
+            raise ValueError("حسابك محظور. يرجى التواصل مع الإدارة")
+
+        # Generate token
+        access_token_expires = timedelta(days=7)
+        access_token = create_access_token(
+            data={"sub": str(user.id), "role": user.role},
+            expires_delta=access_token_expires
+        )
+
+        # Update last login
+        user.last_login = datetime.now(timezone.utc)
+        await db.commit()
+
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user={
+                "id": user.id,
+                "phone": user.phone,
+                "store_name": user.store_name,
+                "role": user.role,
+                "status": user.status,
+                "subscription_end_date": user.subscription_end_date.isoformat() if user.subscription_end_date else None
+            }
+        )
+
+    # ============ Password Reset Flow ============
+
+    @staticmethod
+    async def generate_otp(db: AsyncSession, phone: str) -> str:
+        """Generate and send an OTP for password reset."""
+        phone = AuthService._normalize_phone(phone)
+
+        # Verify user exists
+        result = await db.execute(select(User).where(User.phone == phone))
+        user = result.scalar_one_or_none()
+
         if not user:
             raise ValueError("رقم الهاتف غير مسجل")
 
-        # Generate OTP
-        code = ''.join(random.choices(string.digits, k=4))
+        # Generate new 4-digit code
+        code = AuthService._generate_code()
 
-        # Save OTP
+        # Invalidate old codes
+        await db.execute(
+            OTPCode.__table__.update()
+            .where(OTPCode.phone == phone)
+            .where(OTPCode.is_used == False)
+            .values(is_used=True)
+        )
+
+        # Save new code (expires in 15 mins)
         otp = OTPCode(
             phone=phone,
             code=code,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
-            purpose=purpose
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=15)
         )
         db.add(otp)
         await db.flush()
 
-        # Notify admin via Telegram
+        # Send OTP to admin via Telegram
         await telegram_service.notify_otp_request(phone, code)
 
         return code
 
     @staticmethod
     async def verify_otp(db: AsyncSession, phone: str, code: str) -> bool:
-        """Verify an OTP code."""
-        # Normalize phone
-        try:
-            phone = AuthService._normalize_phone(phone)
-        except ValueError:
-            pass
-
-        result = await db.execute(
-            select(OTPCode)
-            .where(
-                OTPCode.phone == phone,
-                OTPCode.code == code,
-                OTPCode.is_used == False,
-                OTPCode.expires_at > datetime.now(timezone.utc)
-            )
-            .order_by(OTPCode.created_at.desc())
-        )
-        otp = result.scalar_one_or_none()
-
-        if not otp:
-            raise ValueError("رمز التحقق غير صالح أو منتهي الصلاحية")
-
-        # Mark OTP as used
-        otp.is_used = True
-        await db.flush()
-
-        return True
+        """Verify the password reset OTP."""
+        return await AuthService.verify_phone_code(db, phone, code, mark_used=True)
 
     @staticmethod
-    async def reset_password(db: AsyncSession, phone: str, new_password: str) -> None:
-        """Reset a user's password after OTP verification."""
-        # Normalize phone
-        try:
-            phone = AuthService._normalize_phone(phone)
-        except ValueError:
-            pass
+    async def reset_password(db: AsyncSession, phone: str, new_password: str) -> bool:
+        """Reset the user's password."""
+        phone = AuthService._normalize_phone(phone)
 
         result = await db.execute(select(User).where(User.phone == phone))
         user = result.scalar_one_or_none()
@@ -283,3 +258,5 @@ class AuthService:
 
         user.password_hash = hash_password(new_password)
         await db.flush()
+
+        return True

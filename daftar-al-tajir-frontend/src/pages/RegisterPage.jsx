@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { BookOpen, Phone, Store, Lock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { authAPI } from '../services/api';
-import { normalizePhone, PLAN_NAMES, PLAN_PRICES } from '../utils/helpers';
-import { FiPhone, FiShoppingBag, FiLock, FiCheck, FiEye, FiEyeOff } from 'react-icons/fi';
-import toast from 'react-hot-toast';
+import { normalizePhone } from '../utils/formatters';
 
 const STEPS = {
   PHONE: 0,
   VERIFY: 1,
-  REGISTER: 2,
+  REGISTER: 2
 };
 
-export default function RegisterPage() {
+function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(STEPS.PHONE);
   const [phone, setPhone] = useState('');
@@ -43,17 +43,17 @@ export default function RegisterPage() {
     }
   };
 
-  // Step 2: Confirm phone verification
-  const handleConfirmPhone = async (e) => {
+  // Step 2: Confirm code
+  const handleConfirmCode = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       await authAPI.confirmPhone(phone, code);
-      toast.success('تم التحقق من الرقم بنجاح');
+      toast.success('تم التحقق بنجاح');
       setStep(STEPS.REGISTER);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'رمز التحقق غير صحيح');
+      toast.error(error.response?.data?.detail || 'الرمز غير صحيح');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
       const userData = response.data;
       localStorage.setItem('access_token', userData.access_token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(userData.user));
 
       toast.success('تم إنشاء الحساب بنجاح! الشهر الأول مجاني');
       navigate('/eod');
@@ -91,246 +91,233 @@ export default function RegisterPage() {
     }
   };
 
+  const plans = [
+    { id: 'monthly', name: 'شهري', price: '10,000' },
+    { id: 'quarterly', name: '3 أشهر', price: '25,000' },
+    { id: 'semi_annual', name: '6 أشهر', price: '45,000' }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
-      {/* Logo */}
-      <div className="mb-6 text-center">
-        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <span className="text-primary-700 text-xl font-bold">دفتر</span>
+      <div className="mb-8 text-center">
+        <div className="bg-white p-4 rounded-full inline-block mb-4 shadow-lg">
+          <Store className="w-12 h-12 text-primary-600" />
         </div>
-        <h1 className="text-xl font-bold text-white">إنشاء حساب جديد</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">تسجيل متجر جديد</h1>
+        <p className="text-primary-100">ابدأ في إدارة مبيعاتك وحساباتك</p>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm card-shadow-lg animate-fade-in">
-        {/* Step indicators */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          {[STEPS.PHONE, STEPS.VERIFY, STEPS.REGISTER].map((s) => (
-            <div
-              key={s}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                s < step
-                  ? 'bg-primary-600 text-white'
-                  : s === step
-                  ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-600'
-                  : 'bg-gray-100 text-gray-400'
-              }`}
-            >
-              {s < step ? <FiCheck size={14} /> : s + 1}
-            </div>
-          ))}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        {/* Progress Bar */}
+        <div className="bg-gray-50 px-8 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            {[
+              { label: 'الهاتف', step: STEPS.PHONE },
+              { label: 'التحقق', step: STEPS.VERIFY },
+              { label: 'البيانات', step: STEPS.REGISTER }
+            ].map((s, index) => (
+              <div key={s.step} className="flex items-center">
+                <div className={`flex flex-col items-center ${step >= s.step ? 'text-primary-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 font-bold text-sm
+                    ${step > s.step ? 'bg-primary-600 text-white' : 
+                      step === s.step ? 'bg-primary-100 border-2 border-primary-600' : 'bg-gray-200'}
+                  `}>
+                    {step > s.step ? <CheckCircle2 className="w-5 h-5" /> : index + 1}
+                  </div>
+                  <span className="text-xs font-medium">{s.label}</span>
+                </div>
+                {index < 2 && (
+                  <div className={`w-12 h-1 mx-2 rounded ${step > s.step ? 'bg-primary-600' : 'bg-gray-200'}`} />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Step 1: Phone */}
-        {step === STEPS.PHONE && (
-          <form onSubmit={handleVerifyPhone} className="space-y-4 animate-fade-in">
-            <div className="text-center mb-4">
-              <h3 className="font-bold text-gray-800">الخطوة 1: تأكيد رقم الواتساب</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                سيتم إرسال رمز تحقق إلى واتسابك عبر المدير
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                رقم الواتساب (السودان)
-              </label>
-              <div className="relative">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <FiPhone size={18} />
-                </span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d]/g, '');
-                    if (val.length <= 10) setPhone(val);
-                  }}
-                  placeholder="0XXXXXXXXX"
-                  className="w-full pr-10 pl-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-left"
-                  dir="ltr"
-                  required
-                />
+        <div className="p-8">
+          {step === STEPS.PHONE && (
+            <form onSubmit={handleVerifyPhone} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رقم الهاتف (واتساب)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="0xxxxxxxxx"
+                    dir="ltr"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500 text-right">
+                  سنقوم بإرسال رمز التحقق إليك عبر الواتساب
+                </p>
               </div>
-              <p className="text-xs text-gray-400 mt-1">10 أرقام تبدأ بصفر (مثال: 0902642768)</p>
-            </div>
+              <button
+                type="submit"
+                disabled={loading || !phone}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              >
+                {loading ? 'جاري الإرسال...' : 'إرسال الرمز'}
+              </button>
+            </form>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'جاري الإرسال...' : 'إرسال رمز التحقق'}
-            </button>
-          </form>
-        )}
+          {step === STEPS.VERIFY && (
+            <form onSubmit={handleConfirmCode} className="space-y-6">
+              <div className="text-center mb-6">
+                <p className="text-gray-600">
+                  تم إرسال رمز مكون من 4 أرقام إلى رقم الواتساب:
+                </p>
+                <p className="font-bold text-gray-900 mt-1" dir="ltr">{phone}</p>
+              </div>
 
-        {/* Step 2: Verify Code */}
-        {step === STEPS.VERIFY && (
-          <form onSubmit={handleConfirmPhone} className="space-y-4 animate-fade-in">
-            <div className="text-center mb-4">
-              <h3 className="font-bold text-gray-800">الخطوة 2: أدخل رمز التحقق</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                تم إرسال رمز 4 أرقام إلى واتسابك
-              </p>
-              <p className="text-sm font-medium text-primary-600 mt-2" dir="ltr">{phone}</p>
-            </div>
-
-            <div>
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="أدخل الرمز هنا"
-                className="w-full px-3 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-center text-2xl font-bold tracking-[1em]"
-                dir="ltr"
-                maxLength={4}
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || code.length < 4}
-              className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'جاري التحقق...' : 'تأكيد الرمز'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep(STEPS.PHONE)}
-              className="w-full text-sm text-gray-500 hover:text-gray-700"
-            >
-              ← رجوع
-            </button>
-          </form>
-        )}
-
-        {/* Step 3: Complete Registration */}
-        {step === STEPS.REGISTER && (
-          <form onSubmit={handleRegister} className="space-y-3 animate-fade-in">
-            <div className="text-center mb-3">
-              <h3 className="font-bold text-gray-800">الخطوة 3: بيانات الحساب</h3>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">اسم المتجر</label>
-              <div className="relative">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <FiShoppingBag size={16} />
-                </span>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رمز التحقق
+                </label>
                 <input
                   type="text"
+                  required
+                  maxLength="4"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className="block w-full text-center tracking-widest text-2xl py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="----"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(STEPS.PHONE)}
+                  className="w-1/3 py-3 px-4 border border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                >
+                  رجوع
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || code.length !== 4}
+                  className="w-2/3 flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50"
+                >
+                  {loading ? 'جاري التحقق...' : 'تأكيد الرمز'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {step === STEPS.REGISTER && (
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  اسم المتجر
+                </label>
+                <input
+                  type="text"
+                  required
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
-                  placeholder="اسم متجرك"
-                  className="w-full pr-10 pl-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                  required
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="مثال: بقالة البركة"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">كلمة المرور</label>
-              <div className="relative">
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <FiLock size={16} />
-                </span>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  كلمة المرور
+                </label>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="password"
+                  required
+                  minLength="6"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="6 خانات على الأقل (حروف وأرقام)"
-                  className="w-full pr-10 pl-10 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                  required
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="••••••••"
+                  dir="ltr"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                </button>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">تأكيد كلمة المرور</label>
-              <div className="relative">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  تأكيد كلمة المرور
+                </label>
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type="password"
+                  required
+                  minLength="6"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="أعد إدخال كلمة المرور"
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                  required
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="••••••••"
+                  dir="ltr"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  اختر باقة الاشتراك (الشهر الأول مجاني)
+                </label>
+                <div className="space-y-3">
+                  {plans.map((p) => (
+                    <label
+                      key={p.id}
+                      className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-colors ${
+                        plan === p.id 
+                          ? 'border-primary-600 bg-primary-50' 
+                          : 'border-gray-200 hover:border-primary-300'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="radio"
+                          name="plan"
+                          value={p.id}
+                          checked={plan === p.id}
+                          onChange={(e) => setPlan(e.target.value)}
+                          className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500 ml-3"
+                        />
+                        <span className="font-bold text-gray-900">{p.name}</span>
+                      </div>
+                      <span className="text-primary-700 font-medium">
+                        {p.price} ج.س
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2">
                 <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50"
                 >
-                  {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                  {loading ? 'جاري الإنشاء...' : 'إنشاء حساب المتجر'}
                 </button>
               </div>
-            </div>
+            </form>
+          )}
+        </div>
 
-            {/* Plan Selection */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">الباقة</label>
-              <div className="space-y-2">
-                {Object.entries(PLAN_NAMES).map(([key, name]) => (
-                  <label
-                    key={key}
-                    className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-colors ${
-                      plan === key ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="plan"
-                        value={key}
-                        checked={plan === key}
-                        onChange={(e) => setPlan(e.target.value)}
-                        className="text-primary-600"
-                      />
-                      <span className="text-sm font-medium">{name}</span>
-                    </div>
-                    <span className="text-sm text-gray-600">{PLAN_PRICES[key]} ج.س</span>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-primary-600 mt-2">الشهر الأول مجاني!</p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'جاري إنشاء الحساب...' : 'إنشاء الحساب'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStep(STEPS.VERIFY)}
-              className="w-full text-sm text-gray-500 hover:text-gray-700"
-            >
-              ← رجوع
-            </button>
-          </form>
-        )}
-
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => navigate('/login')}
-            className="text-sm text-primary-600 hover:text-primary-700"
-          >
-            لديك حساب؟ سجل الدخول
-          </button>
+        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-600">
+            لديك حساب بالفعل؟{' '}
+            <Link to="/login" className="font-bold text-primary-600 hover:text-primary-500">
+              تسجيل الدخول
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   );
 }
+
+export default RegisterPage;

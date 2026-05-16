@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { BookOpen, Phone, Lock, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { authAPI } from '../services/api';
-import { normalizePhone } from '../utils/helpers';
-import { FiPhone, FiEye, FiEyeOff } from 'react-icons/fi';
-import toast from 'react-hot-toast';
+import { normalizePhone } from '../utils/formatters';
 
-export default function LoginPage() {
+function LoginPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -22,11 +22,11 @@ export default function LoginPage() {
       const userData = response.data;
 
       localStorage.setItem('access_token', userData.access_token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(userData.user));
 
       toast.success('تم تسجيل الدخول بنجاح');
 
-      if (userData.role === 'admin') {
+      if (userData.user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/eod');
@@ -43,90 +43,99 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
       {/* Logo */}
       <div className="mb-8 text-center">
-        <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <span className="text-primary-700 text-2xl font-bold">دفتر</span>
+        <div className="bg-white p-4 rounded-full inline-block mb-4 shadow-lg">
+          <BookOpen className="w-12 h-12 text-primary-600" />
         </div>
-        <h1 className="text-2xl font-bold text-white">دفتر التاجر</h1>
-        <p className="text-primary-200 text-sm mt-1">إدارة مبيعاتك ومصروفاتك وديونك</p>
+        <h1 className="text-3xl font-bold text-white mb-2">دفتر التاجر</h1>
+        <p className="text-primary-100">إدارة مبيعاتك وحساباتك بسهولة</p>
       </div>
 
-      {/* Login Form */}
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm card-shadow-lg">
-        <h2 className="text-lg font-bold text-gray-800 mb-5">تسجيل الدخول</h2>
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">تسجيل الدخول</h2>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              رقم الهاتف
-            </label>
-            <div className="relative">
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <FiPhone size={18} />
-              </span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  // Only allow digits
-                  const val = e.target.value.replace(/[^\d]/g, '');
-                  if (val.length <= 10) setPhone(val);
-                }}
-                placeholder="0XXXXXXXXX"
-                className="w-full pr-10 pl-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-left"
-                dir="ltr"
-                required
-              />
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                رقم الهاتف
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="0xxxxxxxxx"
+                  dir="ltr"
+                />
+              </div>
             </div>
-            <p className="text-xs text-gray-400 mt-1">10 أرقام تبدأ بصفر</p>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              كلمة المرور
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور"
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                كلمة المرور
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="••••••••"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Link 
+                to="/forgot-password" 
+                className="text-sm font-medium text-primary-600 hover:text-primary-500"
               >
-                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-              </button>
+                نسيت كلمة المرور؟
+              </Link>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'جاري الدخول...' : 'تسجيل الدخول'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'جاري التحميل...' : 'دخول'}
+            </button>
+          </form>
+        </div>
 
-        <div className="mt-4 flex flex-col gap-2">
-          <button
-            onClick={() => navigate('/forgot-password')}
-            className="text-sm text-primary-600 hover:text-primary-700"
-          >
-            نسيت كلمة المرور؟
-          </button>
-          <button
-            onClick={() => navigate('/register')}
-            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            إنشاء حساب جديد ←
-          </button>
+        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 text-center">
+          <p className="text-sm text-gray-600">
+            ليس لديك حساب؟{' '}
+            <Link to="/register" className="font-bold text-primary-600 hover:text-primary-500">
+              سجل متجرك الآن
+            </Link>
+          </p>
         </div>
       </div>
     </div>
   );
 }
+
+export default LoginPage;
