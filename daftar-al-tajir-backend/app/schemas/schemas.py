@@ -209,7 +209,7 @@ class OtherIncomeItem(BaseModel):
 
 
 class EODRequest(BaseModel):
-    date: date = Field(..., description="تاريخ اليوم")
+    eod_date: date = Field(..., description="تاريخ اليوم")
     sales: EODSales
     expenses: List[ExpenseItem] = []
     debt_payments: List[DebtPaymentItem] = []
