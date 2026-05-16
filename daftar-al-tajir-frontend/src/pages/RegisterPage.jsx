@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { BookOpen, Phone, Store, Lock, CheckCircle2, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { authAPI } from '../services/api';
-import { normalizePhone } from '../utils/formatters';
+import { normalizePhone } from '../utils/helpers';
 
 const STEPS = {
   PHONE: 0,

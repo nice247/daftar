@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { BookOpen, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { authAPI } from '../services/api';
-import { normalizePhone } from '../utils/formatters';
+import { normalizePhone } from '../utils/helpers';
 
 function LoginPage() {
   const navigate = useNavigate();
