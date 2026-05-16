@@ -13,4 +13,13 @@ export default defineConfig({
       },
     },
   },
+  // Production-specific proxy configuration
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'https://daftar-str8.onrender.com',
+        changeOrigin: true,
+      }
+    }
+  }
 })

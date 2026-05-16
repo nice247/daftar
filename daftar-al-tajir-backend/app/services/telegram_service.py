@@ -36,6 +36,13 @@ class TelegramService:
 
         try:
             self.bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, threaded=False)
+            
+            # Explicitly remove any webhooks just in case
+            try:
+                self.bot.remove_webhook()
+            except Exception as e:
+                logger.debug(f"Could not remove webhook (likely none existed): {e}")
+
             self._initialized = True
             logger.info("Telegram bot initialized (send-only mode, no polling)")
         except Exception as e:
