@@ -14,6 +14,7 @@ export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1); // 1=request, 2=verify, 3=reset
   const [loading, setLoading] = useState(false);
 
+
   const handleRequest = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -118,7 +119,7 @@ export default function ForgotPasswordPage() {
         {step === 3 && (
           <form onSubmit={handleReset} className="space-y-4">
             <p className="text-sm text-gray-500">أدخل كلمة المرور الجديدة</p>
-            <div className="relative">
+              <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
@@ -134,8 +135,7 @@ export default function ForgotPasswordPage() {
               >
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
-            </div>
-            <button
+            </div>          <button
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-accent-600 text-white rounded-xl font-bold hover:bg-accent-700 disabled:opacity-50 transition-colors"
