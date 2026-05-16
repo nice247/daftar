@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { normalizePhone } from '../utils/helpers';
 import { FiPhone, FiEye, FiEyeOff } from 'react-icons/fi';
-import toast from 'hot-toast';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const navigate = useNavigate();
