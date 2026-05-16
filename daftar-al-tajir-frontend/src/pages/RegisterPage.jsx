@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { normalizePhone, PLAN_NAMES, PLAN_PRICES } from '../utils/helpers';
-import { FiPhone, FiShoppingBag, FiLock, FiCheck } from 'react-icons/fi';
+import { FiPhone, FiShoppingBag, FiLock, FiCheck, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const STEPS = {
@@ -20,6 +20,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [plan, setPlan] = useState('monthly');
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +82,7 @@ export default function RegisterPage() {
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('user', JSON.stringify(userData));
 
-      toast.success('تم إنشاء الحساب بنجاح! الشهر الأول مجاني 🎉');
+      toast.success('تم إنشاء الحساب بنجاح! الشهر الأول مجاني');
       navigate('/eod');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'حدث خطأ في التسجيل');
@@ -235,26 +237,42 @@ export default function RegisterPage() {
                   <FiLock size={16} />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="6 خانات على الأقل (حروف وأرقام)"
-                  className="w-full pr-10 pl-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+                  className="w-full pr-10 pl-10 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                </button>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">تأكيد كلمة المرور</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="أعد إدخال كلمة المرور"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="أعد إدخال كلمة المرور"
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                </button>
+              </div>
             </div>
 
             {/* Plan Selection */}
@@ -283,7 +301,7 @@ export default function RegisterPage() {
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-primary-600 mt-2">🎉 الشهر الأول مجاني!</p>
+              <p className="text-xs text-primary-600 mt-2">الشهر الأول مجاني!</p>
             </div>
 
             <button

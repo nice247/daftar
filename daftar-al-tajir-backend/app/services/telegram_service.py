@@ -1,12 +1,16 @@
-"""Telegram Bot Service for admin notifications and commands.
+"""Telegram Bot Service for admin notifications.
 
-The bot serves TWO purposes:
-1. Send verification codes to admin for new users (admin forwards via WhatsApp)
-2. Admin management notifications and commands
+The bot is SEND-ONLY — no polling, no receiving messages.
+This avoids the 409 Conflict error ("terminated by other getUpdates request")
+that occurs when multiple instances run polling simultaneously (e.g., during Render redeploy).
+
+Flow:
+1. User requests verification → System generates 4-digit code
+2. Code is sent to admin via Telegram (using bot.send_message)
+3. Admin forwards code to user via WhatsApp (inline button link)
 """
 import asyncio
 import logging
-from datetime import date
 from typing import Optional
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -17,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramService:
-    """Service for Telegram bot interactions."""
+    """Service for Telegram bot interactions — send-only, no polling."""
 
     def __init__(self):
         self.bot = None
@@ -25,105 +29,38 @@ class TelegramService:
         self._initialized = False
 
     def initialize(self):
-        """Initialize the Telegram bot."""
+        """Initialize the Telegram bot (send-only, no handlers, no polling)."""
         if not TELEGRAM_BOT_TOKEN:
             logger.warning("Telegram bot token not configured. Bot features disabled.")
             return
 
         try:
             self.bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN, threaded=False)
-            self._setup_handlers()
             self._initialized = True
-            logger.info("Telegram bot initialized successfully")
+            logger.info("Telegram bot initialized (send-only mode, no polling)")
         except Exception as e:
             logger.error(f"Failed to initialize Telegram bot: {e}")
 
-    def _setup_handlers(self):
-        """Set up bot command and message handlers."""
-
-        @self.bot.message_handler(commands=['start'])
-        def handle_start(message):
-            if str(message.chat.id) == self.admin_chat_id:
-                self.bot.reply_to(
-                    message,
-                    "👋 مرحباً بك في لوحة تحكم دفتر التاجر!\n\n"
-                    "الأوامر المتاحة:\n"
-                    "/users - عرض قائمة المستخدمين\n"
-                    "/pending - عرض الاشتراكات المعلقة\n"
-                    "/stats - إحصائيات النظام\n"
-                    "/help - المساعدة\n\n"
-                    "📩 ستصلتك رموز التحقق هنا تلقائياً\n"
-                    "📱 أرسل الرمز للتاجر عبر الواتساب"
-                )
-            else:
-                self.bot.reply_to(message, "عذراً، هذا البوت مخصص للمديرين فقط.")
-
-        @self.bot.message_handler(commands=['help'])
-        def handle_help(message):
-            if str(message.chat.id) != self.admin_chat_id:
-                return
-            self.bot.reply_to(
-                message,
-                "📋 أوامر دفتر التاجر:\n\n"
-                "/users - عرض قائمة المستخدمين\n"
-                "/pending - عرض الاشتراكات المعلقة\n"
-                "/stats - إحصائيات عامة\n"
-                "/approve <user_id> - الموافقة على اشتراك\n"
-                "/reject <user_id> [سبب] - رفض اشتراك\n"
-                "/extend <user_id> <أيام> - تمديد اشتراك\n"
-                "/freeze <user_id> - تجميد حساب\n"
-                "/activate <user_id> - تنشيط حساب\n\n"
-                "📩 عند تسجيل تاجر جديد أو طلب استعادة كلمة مرور:\n"
-                "1. يصلك رمز التحقق هنا\n"
-                "2. أرسل الرمز للتاجر عبر الواتساب\n"
-                "3. التاجر يدخل الرمز في التطبيق"
+    def _send_sync(self, chat_id: str, text: str, reply_markup=None, parse_mode=None):
+        """Synchronous send — called via asyncio.to_thread()."""
+        if not self._initialized or not self.bot:
+            logger.warning("Bot not initialized, skipping message")
+            return
+        try:
+            self.bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                reply_markup=reply_markup,
+                parse_mode=parse_mode
             )
+        except Exception as e:
+            logger.error(f"Failed to send Telegram message: {e}")
 
-        @self.bot.message_handler(commands=['users'])
-        def handle_users(message):
-            if str(message.chat.id) != self.admin_chat_id:
-                return
-            self.bot.reply_to(
-                message,
-                "📊 للحصول على قائمة المستخدمين، يرجى استخدام لوحة التحكم على الويب.\n"
-                "أو يمكنك البحث برقم الهاتف باستخدام: /search <رقم_الهاتف>"
-            )
-
-        @self.bot.message_handler(commands=['pending'])
-        def handle_pending(message):
-            if str(message.chat.id) != self.admin_chat_id:
-                return
-            self.bot.reply_to(
-                message,
-                "⏳ يرجى استخدام لوحة التحكم لعرض الاشتراكات المعلقة.\n"
-                "أو انتظر الإشعارات التلقائية عند تسجيل تجار جدد."
-            )
-
-        @self.bot.callback_query_handler(func=lambda call: True)
-        def handle_callback(call):
-            """Handle inline keyboard callbacks."""
-            data = call.data
-            try:
-                if data.startswith("approve_"):
-                    user_id = data.replace("approve_", "")
-                    self.bot.answer_callback_query(call.id, "تم تسجيل طلب الموافقة")
-                    logger.info(f"Admin approved user: {user_id}")
-
-                elif data.startswith("reject_"):
-                    user_id = data.replace("reject_", "")
-                    self.bot.answer_callback_query(call.id, "تم تسجيل طلب الرفض")
-                    logger.info(f"Admin rejected user: {user_id}")
-
-            except Exception as e:
-                logger.error(f"Callback handler error: {e}")
-
-    def run_bot(self):
-        """Run the bot polling in a separate thread."""
-        if self._initialized and self.bot:
-            try:
-                self.bot.infinity_polling(timeout=10, long_polling_timeout=5)
-            except Exception as e:
-                logger.error(f"Bot polling error: {e}")
+    async def _send(self, chat_id: str, text: str, reply_markup=None, parse_mode=None):
+        """Async wrapper — runs synchronous send in a thread to avoid blocking the event loop."""
+        await asyncio.to_thread(
+            self._send_sync, chat_id, text, reply_markup, parse_mode
+        )
 
     # ============ Registration Code Notification ============
 
@@ -158,7 +95,7 @@ class TelegramService:
                 )
             )
 
-            self.bot.send_message(
+            await self._send(
                 chat_id=self.admin_chat_id,
                 text=text,
                 reply_markup=markup,
@@ -176,6 +113,7 @@ class TelegramService:
         Admin will forward this code to the user via WhatsApp.
         """
         if not self._initialized:
+            logger.warning("Bot not initialized, skipping OTP notification")
             return
 
         try:
@@ -198,7 +136,7 @@ class TelegramService:
                 )
             )
 
-            self.bot.send_message(
+            await self._send(
                 chat_id=self.admin_chat_id,
                 text=text,
                 reply_markup=markup,
@@ -239,7 +177,7 @@ class TelegramService:
                 f"🎉 الشهر الأول مجاني"
             )
 
-            self.bot.send_message(
+            await self._send(
                 chat_id=self.admin_chat_id,
                 text=text
             )
@@ -268,7 +206,7 @@ class TelegramService:
                 InlineKeyboardButton("📱 تواصل عبر واتساب", url=whatsapp_link)
             )
 
-            self.bot.send_message(
+            await self._send(
                 chat_id=self.admin_chat_id,
                 text=text,
                 reply_markup=markup
@@ -291,7 +229,7 @@ class TelegramService:
                 f"يرجى المراجعة اليدوية"
             )
 
-            self.bot.send_message(
+            await self._send(
                 chat_id=self.admin_chat_id,
                 text=text
             )

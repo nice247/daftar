@@ -3,7 +3,6 @@ Merchant Sales, Expenses & Debt Management System
 Built with FastAPI + PostgreSQL + Telegram Bot + OCR
 """
 import asyncio
-import threading
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
@@ -49,11 +48,9 @@ async def lifespan(app: FastAPI):
     await seed_admin()
     logger.info("Admin account seeded")
 
-    # Initialize Telegram bot
+    # Initialize Telegram bot (send-only, no polling)
     telegram_service.initialize()
-    bot_thread = threading.Thread(target=telegram_service.run_bot, daemon=True)
-    bot_thread.start()
-    logger.info("Telegram bot started")
+    logger.info("Telegram bot initialized (send-only mode)")
 
     # Start subscription checker (background task)
     asyncio.create_task(check_subscriptions())
@@ -67,9 +64,14 @@ async def lifespan(app: FastAPI):
 
 
 async def seed_admin():
-    """Seed the initial admin account."""
+    """Seed the initial admin account.
+    
+    If admin exists but password has changed in env, update the password.
+    This ensures the admin can always login with the current ADMIN_PASSWORD.
+    """
     from sqlalchemy import select
     from app.core.database import async_session
+    from app.core.security import verify_password
 
     async with async_session() as session:
         result = await session.execute(
@@ -90,7 +92,21 @@ async def seed_admin():
             await session.commit()
             logger.info(f"Admin account created: {ADMIN_PHONE}")
         else:
-            logger.info("Admin account already exists")
+            # Update password if it has changed in environment
+            if not verify_password(ADMIN_PASSWORD, admin.password_hash):
+                admin.password_hash = hash_password(ADMIN_PASSWORD)
+                admin.phone = ADMIN_PHONE  # Also update phone in case it changed
+                admin.status = "ACTIVE"     # Ensure admin is active
+                await session.commit()
+                logger.info(f"Admin password updated for: {ADMIN_PHONE}")
+            else:
+                # Ensure admin is active even if password unchanged
+                if admin.status != "ACTIVE":
+                    admin.status = "ACTIVE"
+                    await session.commit()
+                    logger.info(f"Admin account reactivated: {ADMIN_PHONE}")
+                else:
+                    logger.info(f"Admin account exists: {ADMIN_PHONE}")
 
 
 async def check_subscriptions():

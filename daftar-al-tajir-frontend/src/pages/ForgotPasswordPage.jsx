@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { normalizePhone } from '../utils/helpers';
-import { FiPhone, FiArrowLeft } from 'react-icons/fi';
+import { FiPhone, FiArrowLeft, FiEye, FiEyeOff } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function ForgotPasswordPage() {
@@ -10,6 +10,7 @@ export default function ForgotPasswordPage() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1); // 1=request, 2=verify, 3=reset
   const [loading, setLoading] = useState(false);
 
@@ -117,14 +118,23 @@ export default function ForgotPasswordPage() {
         {step === 3 && (
           <form onSubmit={handleReset} className="space-y-4">
             <p className="text-sm text-gray-500">أدخل كلمة المرور الجديدة</p>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="كلمة المرور الجديدة"
-              className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="كلمة المرور الجديدة"
+                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              </button>
+            </div>
             <button
               type="submit"
               disabled={loading}
