@@ -11,6 +11,7 @@ Flow:
 """
 import asyncio
 import logging
+from urllib.parse import quote
 from typing import Optional
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -83,7 +84,9 @@ class TelegramService:
         try:
             # Format WhatsApp link (convert 0XXXXXXXXX -> 249XXXXXXXXX)
             wa_phone = phone_to_whatsapp(phone)
-            whatsapp_link = f"https://wa.me/{wa_phone}?text=رمز%20التحقق%20من%20دفتر%20التاجر%3A%20{code}"
+            
+            wa_message = f"مرحباً، رمز التفعيل الخاص بك لمنصة دفتر التاجر هو:\n\n{code} 🔐 \n\nلا تشارك هذا الرمز مع أي شخص."
+            whatsapp_link = f"https://wa.me/{wa_phone}?text={quote(wa_message)}"
 
             text = (
                 f"🆕 تسجيل تاجر جديد\n\n"
@@ -125,7 +128,9 @@ class TelegramService:
 
         try:
             wa_phone = phone_to_whatsapp(phone)
-            whatsapp_link = f"https://wa.me/{wa_phone}?text=رمز%20استعادة%20كلمة%20المرور%20-%20دفتر%20التاجر%3A%20{otp_code}"
+            
+            wa_message = f"مرحباً، رمز استعادة كلمة المرور الخاص بك لمنصة دفتر التاجر هو:\n\n{otp_code} 🔐 \n\nلا تشارك هذا الرمز مع أي شخص."
+            whatsapp_link = f"https://wa.me/{wa_phone}?text={quote(wa_message)}"
 
             text = (
                 f"🔑 طلب استعادة كلمة مرور\n\n"
