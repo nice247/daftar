@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.models.models import User, OTPCode
-from app.core.security import hash_password, verify_password, create_access_token
+from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.schemas.schemas import TokenResponse
 from app.services.telegram_service import telegram_service
 
@@ -200,6 +200,23 @@ class AuthService:
                 "subscription_end_date": user.subscription_end_date.isoformat() if user.subscription_end_date else None
             }
         )
+
+    # ============ Authorization ============
+
+    @staticmethod
+    async def get_current_user(db: AsyncSession, token: str) -> User:
+        """Validate token and get the user from the database."""
+        token_data = decode_access_token(token)
+        if not token_data or not token_data.user_id:
+            raise ValueError("توكن المصادقة غير صالح أو منتهي الصلاحية")
+
+        result = await db.execute(select(User).where(User.id == token_data.user_id))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise ValueError("المستخدم غير موجود")
+
+        return user
 
     # ============ Password Reset Flow ============
 

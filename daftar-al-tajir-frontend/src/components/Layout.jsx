@@ -3,10 +3,15 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiHome, FiDollarSign, FiUsers, FiBarChart2, FiSettings, FiShield } from 'react-icons/fi';
 
-const navItems = [
+const merchantNavItems = [
   { path: '/eod', label: 'إغلاق اليوم', icon: FiHome },
   { path: '/customers', label: 'العملاء', icon: FiUsers },
   { path: '/reports', label: 'التقارير', icon: FiBarChart2 },
+  { path: '/settings', label: 'الإعدادات', icon: FiSettings },
+];
+
+const adminNavItems = [
+  { path: '/admin', label: 'لوحة التحكم', icon: FiShield },
   { path: '/settings', label: 'الإعدادات', icon: FiSettings },
 ];
 
@@ -16,6 +21,9 @@ export default function Layout({ children }) {
   const location = useLocation();
 
   const isActive = (path) => location.pathname.startsWith(path);
+  
+  // Choose navigation based on role
+  const navItems = isAdmin ? adminNavItems : merchantNavItems;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -31,15 +39,6 @@ export default function Layout({ children }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              onClick={() => navigate('/admin')}
-              className="p-2 text-gray-500 hover:text-primary-600 rounded-lg hover:bg-gray-100"
-              title="لوحة التحكم"
-            >
-              <FiShield size={20} />
-            </button>
-          )}
           <button
             onClick={() => { logout(); navigate('/login'); }}
             className="text-xs text-red-500 hover:text-red-700 px-2 py-1"

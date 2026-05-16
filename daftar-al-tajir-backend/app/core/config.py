@@ -2,7 +2,10 @@ import os
 import ssl
 from typing import List
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from dotenv import load_dotenv
 
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 def _convert_db_url_for_async(url: str) -> str:
     """Convert a standard PostgreSQL URL for use with asyncpg.
