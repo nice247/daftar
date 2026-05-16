@@ -30,8 +30,10 @@ def _convert_db_url_for_async(url: str) -> str:
     # Convert sslmode to ssl for asyncpg
     if "sslmode" in query_params:
         ssl_value = query_params.pop("sslmode")[0]
-        query_params["ssl"] = [ssl_value]
-    
+        # Remove channel_binding (asyncpg doesn't support it)
+        if "channel_binding" in query_params:
+            del query_params["channel_binding"]
+
     # If it's a Neon/external database and no SSL, add ssl=require
     hostname = parsed.hostname or ""
     is_external = not hostname.startswith("localhost") and not hostname.startswith("127.")
@@ -74,8 +76,9 @@ def _convert_db_url_for_sync(url: str) -> str:
     # Convert ssl to sslmode for psycopg2
     if "ssl" in query_params:
         ssl_value = query_params.pop("ssl")[0]
-        query_params["sslmode"] = [ssl_value]
-    
+        # Remove channel_binding (not needed for psycopg2 either)
+        if "channel_binding" in query_params:
+            del query_params["channel_binding"]
     # If it's a Neon/external database and no sslmode, add it
     hostname = parsed.hostname or ""
     is_external = not hostname.startswith("localhost") and not hostname.startswith("127.")
