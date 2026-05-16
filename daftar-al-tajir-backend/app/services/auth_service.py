@@ -137,7 +137,6 @@ class AuthService:
             store_name=store_name,
             email=email,
             password_hash=hash_password(password),
-            subscription_plan=plan,
             status="ACTIVE",
             subscription_end_date=datetime.now(timezone.utc).date() + timedelta(days=30)
         )
