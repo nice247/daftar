@@ -36,7 +36,7 @@ class BusinessService:
                 invoice_type="EOD_CASH",
                 total_amount=eod.sales.cash_sales,
                 paid_amount=eod.sales.cash_sales,
-                created_at=eod.date
+                created_at=eod.eod_date
             )
             db.add(cash_invoice)
 
@@ -47,7 +47,7 @@ class BusinessService:
                 invoice_type="EOD_BANKAK",
                 total_amount=eod.sales.bankak_sales,
                 paid_amount=eod.sales.bankak_sales,
-                created_at=eod.date
+                created_at=eod.eod_date
             )
             db.add(bankak_invoice)
 
@@ -61,13 +61,13 @@ class BusinessService:
                 description=exp.description,
                 receipt_image=exp.receipt_image,
                 starts_new_cycle=starts_new,
-                created_at=eod.date
+                created_at=eod.eod_date
             )
             db.add(expense)
 
             # If restock, start a new cycle
             if starts_new:
-                await BusinessService._start_new_cycle(db, user_id, eod.date)
+                await BusinessService._start_new_cycle(db, user_id, eod.eod_date)
 
         # 4. Save debt payments
         for dp in eod.debt_payments:
@@ -76,7 +76,7 @@ class BusinessService:
                 customer_id=dp.customer_id,
                 invoice_id=dp.invoice_id,
                 amount=dp.amount,
-                payment_date=eod.date
+                payment_date=eod.eod_date
             )
             db.add(payment)
 
@@ -106,7 +106,7 @@ class BusinessService:
                 category=oi.category,
                 amount=oi.amount,
                 description=oi.description,
-                income_date=eod.date
+                income_date=eod.eod_date
             )
             db.add(income)
 

@@ -4,6 +4,7 @@ import { BookOpen, Phone, Store, Lock, CheckCircle2, ChevronRight } from 'lucide
 import { toast } from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import { normalizePhone } from '../utils/helpers';
+import { useAuth } from '../context/AuthContext';
 
 const STEPS = {
   PHONE: 0,
@@ -13,6 +14,7 @@ const STEPS = {
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [step, setStep] = useState(STEPS.PHONE);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -79,9 +81,11 @@ function RegisterPage() {
       localStorage.setItem('access_token', userData.access_token);
       localStorage.setItem('user', JSON.stringify(userData.user));
 
+      // Update auth context state to trigger re-render of protected routes cleanly
+      setUser(userData.user);
+
       toast.success('تم إنشاء الحساب بنجاح! الشهر الأول مجاني');
-      // Force reload to update AuthContext state from localStorage
-      window.location.href = '/eod';
+      navigate('/eod');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'حدث خطأ في التسجيل');
     } finally {

@@ -25,10 +25,10 @@ async def list_users(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get list of all users. Admin cannot see commercial data.
+    Get list of all users.
     Can search by phone number.
     """
-    query = select(User).where(User.role == "merchant")
+    query = select(User)
 
     if search:
         query = query.where(User.phone.ilike(f"%{search}%"))
@@ -45,6 +45,7 @@ async def list_users(
             "phone": u.phone,
             "store_name": u.store_name,
             "status": u.status,
+            "role": u.role,
             "subscription_end_date": str(u.subscription_end_date) if u.subscription_end_date else None,
             "created_at": str(u.created_at)
         }
@@ -123,7 +124,7 @@ async def add_user_manually(
         store_name=request.store_name,
         password_hash=hash_password(request.password),
         status="ACTIVE",
-        role="merchant",
+        role=request.role,
         subscription_end_date=datetime.now(timezone.utc).date() + timedelta(days=request.subscription_days)
     )
     db.add(user)
@@ -131,7 +132,8 @@ async def add_user_manually(
     # Create approved subscription
     subscription = Subscription(
         user_id=user.id,
-        plan=request.plan,
+        plan=None,
+        amount=None,
         status="APPROVED",
         ocr_status="MANUAL_REVIEW",
         reviewed_by=admin.id
@@ -153,24 +155,24 @@ async def get_system_stats(
 ):
     """Get system-wide statistics."""
     # Total users
-    total = await db.execute(select(func.count(User.id)).where(User.role == "merchant"))
+    total = await db.execute(select(func.count(User.id)))
     total_users = total.scalar()
 
     # Active users
     active = await db.execute(
-        select(func.count(User.id)).where(User.role == "merchant", User.status == "ACTIVE")
+        select(func.count(User.id)).where(User.status == "ACTIVE")
     )
     active_users = active.scalar()
 
     # Frozen users
     frozen = await db.execute(
-        select(func.count(User.id)).where(User.role == "merchant", User.status == "FROZEN")
+        select(func.count(User.id)).where(User.status == "FROZEN")
     )
     frozen_users = frozen.scalar()
 
     # Pending verification
     pending = await db.execute(
-        select(func.count(User.id)).where(User.role == "merchant", User.status == "PENDING_VERIFICATION")
+        select(func.count(User.id)).where(User.status == "PENDING_VERIFICATION")
     )
     pending_users = pending.scalar()
 

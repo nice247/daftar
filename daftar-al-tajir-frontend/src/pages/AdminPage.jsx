@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminAPI, subscriptionAPI } from '../services/api';
 import { formatCurrency, formatDate } from '../utils/helpers';
-import { FiUsers, FiUserCheck, FiUserX, FiClock, FiAlertTriangle, FiRefreshCw, FiShield, FiFileText } from 'react-icons/fi';
+import { FiUsers, FiUserCheck, FiUserX, FiClock, FiAlertTriangle, FiRefreshCw, FiShield, FiFileText, FiUserPlus, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function AdminPage() {
@@ -12,6 +12,15 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState({});
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
   const [activeTab, setActiveTab] = useState('users'); // 'users' | 'subscriptions'
+
+  // Add User Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('merchant');
+  const [newSubDays, setNewSubDays] = useState('30');
+  const [addingUser, setAddingUser] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -97,6 +106,32 @@ export default function AdminPage() {
     window.open(url, '_blank');
   };
 
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setAddingUser(true);
+    try {
+      await adminAPI.addUser({
+        phone: newPhone,
+        store_name: newStoreName,
+        password: newPassword,
+        role: newRole,
+        subscription_days: parseInt(newSubDays) || 30
+      });
+      toast.success('تم إضافة المستخدم بنجاح');
+      setShowAddModal(false);
+      setNewPhone('');
+      setNewStoreName('');
+      setNewPassword('');
+      setNewRole('merchant');
+      setNewSubDays('30');
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل في إضافة المستخدم');
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -107,9 +142,18 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-4 animate-fade-in pb-8">
-      <div className="flex items-center gap-2">
-        <FiShield className="text-primary-600" size={24} />
-        <h2 className="text-lg font-bold text-gray-800">لوحة تحكم الأدمن</h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FiShield className="text-primary-600" size={24} />
+          <h2 className="text-lg font-bold text-gray-800">لوحة تحكم الأدمن</h2>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-1 bg-primary-600 text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-primary-700"
+        >
+          <FiUserPlus size={16} />
+          إضافة مستخدم
+        </button>
       </div>
 
       {/* Tabs */}
@@ -196,12 +240,15 @@ export default function AdminPage() {
           {/* Users List */}
           <div className="space-y-2">
             {users.map((u) => {
-              const isExpiring = u.subscription_end_date && new Date(u.subscription_end_date) < new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+              const isExpiring = u.role === 'merchant' && u.subscription_end_date && new Date(u.subscription_end_date) < new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
               return (
                 <div key={u.id} className={`bg-white rounded-xl p-4 card-shadow ${isExpiring ? 'border-2 border-amber-300' : ''}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h4 className="font-bold text-gray-800">{u.store_name}</h4>
+                      <h4 className="font-bold text-gray-800">
+                        {u.store_name}
+                        {u.role === 'admin' && <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">أدمن</span>}
+                      </h4>
                       <p className="text-xs text-gray-500" dir="ltr">{u.phone}</p>
                     </div>
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -212,18 +259,20 @@ export default function AdminPage() {
                       {u.status === 'ACTIVE' ? 'نشط' : u.status === 'FROZEN' ? 'مجمد' : 'معلق'}
                     </span>
                   </div>
-                  {u.subscription_end_date && (
+                  {u.role === 'merchant' && u.subscription_end_date && (
                     <p className={`text-xs mb-3 ${isExpiring ? 'text-amber-600 font-bold' : 'text-gray-500'}`}>
                       انتهاء الاشتراك: {formatDate(u.subscription_end_date)}
                     </p>
                   )}
                   <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleExtend(u.id)}
-                      className="flex-1 min-w-[70px] py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100"
-                    >
-                      تمديد
-                    </button>
+                    {u.role === 'merchant' && (
+                      <button
+                        onClick={() => handleExtend(u.id)}
+                        className="flex-1 min-w-[70px] py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100"
+                      >
+                        تمديد
+                      </button>
+                    )}
                     {u.status === 'ACTIVE' ? (
                       <button
                         onClick={() => handleToggleUser(u.id, 'freeze')}
@@ -308,6 +357,93 @@ export default function AdminPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">إضافة مستخدم جديد</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400">
+                <FiX size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleAddUser} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">نوع المستخدم</label>
+                <div className="flex gap-2">
+                  <label className={`flex-1 p-2 border rounded-xl cursor-pointer text-center text-sm ${newRole === 'merchant' ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'}`}>
+                    <input type="radio" name="role" value="merchant" checked={newRole === 'merchant'} onChange={(e) => setNewRole(e.target.value)} className="hidden" />
+                    تاجر
+                  </label>
+                  <label className={`flex-1 p-2 border rounded-xl cursor-pointer text-center text-sm ${newRole === 'admin' ? 'border-purple-500 bg-purple-50 text-purple-700 font-bold' : 'border-gray-200 text-gray-700'}`}>
+                    <input type="radio" name="role" value="admin" checked={newRole === 'admin'} onChange={(e) => setNewRole(e.target.value)} className="hidden" />
+                    أدمن
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">رقم الهاتف</label>
+                <input
+                  type="tel"
+                  required
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="0xxxxxxxxx"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">الاسم / المتجر</label>
+                <input
+                  type="text"
+                  required
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  placeholder={newRole === 'admin' ? "اسم الأدمن" : "اسم المتجر"}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">كلمة المرور</label>
+                <input
+                  type="text"
+                  required
+                  minLength="6"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="كلمة المرور المؤقتة"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  dir="ltr"
+                />
+              </div>
+              
+              {newRole === 'merchant' && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">صلاحية الاشتراك (بالأيام)</label>
+                  <input
+                    type="number"
+                    value={newSubDays}
+                    onChange={(e) => setNewSubDays(e.target.value)}
+                    placeholder="30"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={addingUser}
+                className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 mt-2"
+              >
+                {addingUser ? 'جاري الإضافة...' : 'حفظ وإضافة'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

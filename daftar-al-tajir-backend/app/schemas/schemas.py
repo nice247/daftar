@@ -357,6 +357,7 @@ class AdminUserListResponse(BaseModel):
     phone: str
     store_name: str
     status: str
+    role: str
     subscription_end_date: Optional[date]
     created_at: datetime
 
@@ -377,7 +378,7 @@ class AdminAddUser(BaseModel):
     phone: str
     store_name: str
     password: str = Field(..., min_length=6)
-    plan: str = "monthly"
+    role: str = Field("merchant", description="admin or merchant")
     subscription_days: int = 30
 
 
