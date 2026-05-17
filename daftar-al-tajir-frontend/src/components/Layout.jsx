@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiDollarSign, FiUsers, FiBarChart2, FiSettings, FiShield } from 'react-icons/fi';
+import { FiHome, FiUsers, FiBarChart2, FiSettings, FiShield, FiCreditCard } from 'react-icons/fi';
 
 const merchantNavItems = [
   { path: '/eod', label: 'إغلاق اليوم', icon: FiHome },
   { path: '/customers', label: 'العملاء', icon: FiUsers },
   { path: '/reports', label: 'التقارير', icon: FiBarChart2 },
+  { path: '/subscription', label: 'الاشتراك', icon: FiCreditCard },
   { path: '/settings', label: 'الإعدادات', icon: FiSettings },
 ];
 

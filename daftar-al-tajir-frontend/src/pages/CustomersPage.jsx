@@ -3,8 +3,10 @@ import { customerAPI } from '../services/api';
 import { formatCurrency } from '../utils/helpers';
 import { FiUserPlus, FiDollarSign, FiX, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 export default function CustomersPage() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -89,6 +91,24 @@ export default function CustomersPage() {
     }
   };
 
+  const handleWhatsAppReminder = (customer) => {
+    if (!customer.phone) {
+      toast.error('لا يوجد رقم هاتف مسجل لهذا العميل');
+      return;
+    }
+    
+    const shopName = user?.shop_name || 'البقالة';
+    const message = `السلام عليكم ${customer.name}، حبيت أذكرك بالمديونية لمحل ${shopName}، بمبلغ: ${customer.total_debt} جنيه.`;
+    
+    let phone = customer.phone.replace(/[\s+]/g, '');
+    if (phone.startsWith('0')) {
+       phone = '249' + phone.substring(1);
+    }
+    
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
@@ -116,7 +136,7 @@ export default function CustomersPage() {
         <div className="space-y-2">
           {customers.map((customer) => (
             <div key={customer.id} className="bg-white rounded-xl p-4 card-shadow">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div>
                   <h4 className="font-bold text-gray-800">{customer.name}</h4>
                   {customer.phone && <p className="text-xs text-gray-500" dir="ltr">{customer.phone}</p>}
@@ -128,19 +148,33 @@ export default function CustomersPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setSelectedCustomer(customer); setShowDebtModal(true); }}
-                  className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100"
-                >
-                  + دين
-                </button>
-                <button
-                  onClick={() => { setSelectedCustomer(customer); setShowPayModal(true); }}
-                  className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium hover:bg-green-100"
-                >
-                  سداد
-                </button>
+              
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setSelectedCustomer(customer); setShowDebtModal(true); }}
+                    className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-colors"
+                  >
+                    + دين
+                  </button>
+                  <button
+                    onClick={() => { setSelectedCustomer(customer); setShowPayModal(true); }}
+                    className="flex-1 py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium hover:bg-green-100 transition-colors"
+                  >
+                    سداد
+                  </button>
+                </div>
+                {customer.total_debt > 0 && (
+                  <button
+                    onClick={() => handleWhatsAppReminder(customer)}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#25D366] text-white rounded-lg text-xs font-medium hover:bg-[#128C7E] transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
+                    </svg>
+                    إرسال تذكير
+                  </button>
+                )}
               </div>
             </div>
           ))}

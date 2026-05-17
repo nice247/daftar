@@ -10,6 +10,7 @@ import CustomersPage from './pages/CustomersPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
+import SubscriptionPage from './pages/SubscriptionPage';
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
@@ -66,6 +67,11 @@ function AppRoutes() {
       <Route path="/settings" element={
         <ProtectedRoute>
           <Layout><SettingsPage /></Layout>
+        </ProtectedRoute>
+      } />
+      <Route path="/subscription" element={
+        <ProtectedRoute>
+          <Layout><SubscriptionPage /></Layout>
         </ProtectedRoute>
       } />
       <Route path="/admin" element={

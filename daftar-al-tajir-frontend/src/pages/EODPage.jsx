@@ -88,7 +88,7 @@ export default function EODPage() {
     setLoading(true);
     try {
       const data = {
-        date: new Date().toISOString().split('T')[0],
+        eod_date: new Date().toISOString().split('T')[0], // changed from 'date' to 'eod_date'
         sales: {
           cash_sales: parseFloat(cashSales) || 0,
           bankak_sales: parseFloat(bankakSales) || 0,
@@ -215,7 +215,7 @@ export default function EODPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <FiCreditCard className="text-red-500" size={20} />
-            <h3 className="font-bold text-gray-800">المصروفات</h3>
+            <h3 className="font-bold text-gray-800">المصروفات (والمشتريات)</h3>
           </div>
           <button onClick={addExpense} className="text-xs text-primary-600 font-medium">+ إضافة</button>
         </div>
@@ -224,7 +224,7 @@ export default function EODPage() {
             <select
               value={exp.category}
               onChange={(e) => updateExpense(i, 'category', e.target.value)}
-              className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none"
+              className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none w-24"
             >
               {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
@@ -235,7 +235,7 @@ export default function EODPage() {
               value={exp.amount}
               onChange={(e) => updateExpense(i, 'amount', e.target.value)}
               placeholder="المبلغ"
-              className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none text-left"
+              className="w-24 px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none text-left"
               dir="ltr"
             />
             <input
@@ -249,7 +249,7 @@ export default function EODPage() {
           </div>
         ))}
         {expenses.length > 0 && (
-          <div className="bg-red-50 rounded-lg p-2 text-center">
+          <div className="bg-red-50 rounded-lg p-2 text-center mt-2">
             <span className="text-xs text-gray-600">إجمالي المصروفات: </span>
             <span className="font-bold text-red-600">{formatCurrency(totalExpenses)}</span>
           </div>
@@ -342,7 +342,7 @@ export default function EODPage() {
             <span className="font-bold text-green-600">{formatCurrency(totalOtherIncome)}</span>
           </div>
           <div className="border-t border-gray-200 pt-2 flex justify-between">
-            <span className="font-bold text-gray-800">صافي التدفق النقدي</span>
+            <span className="font-bold text-gray-800">إجمالي الإيرادات (الدرج اليوم)</span>
             <span className={`font-bold text-lg ${netCashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(netCashflow)}
             </span>

@@ -48,27 +48,28 @@ export default function ReportsPage() {
       <div className="bg-white rounded-xl p-4 card-shadow">
         <div className="flex items-center gap-2 mb-4">
           <FiTrendingUp className="text-primary-600" size={20} />
-          <h3 className="font-bold text-gray-800">الدورة الحالية</h3>
+          <h3 className="font-bold text-gray-800">أرباح الدورة الحالية (فترة الشراء)</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-green-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-600">المبيعات</p>
+            <p className="text-xs text-gray-600">إجمالي المبيعات والايرادات</p>
             <p className="font-bold text-green-700 text-lg">{formatCurrency(current.total_sales)}</p>
           </div>
           <div className="bg-red-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-600">المصروفات</p>
+            <p className="text-xs text-gray-600">المصروفات والمشتريات</p>
             <p className="font-bold text-red-700 text-lg">{formatCurrency(current.total_expenses)}</p>
           </div>
-          <div className="bg-blue-50 rounded-xl p-3 text-center col-span-2">
-            <p className="text-xs text-gray-600">صافي التدفق النقدي</p>
-            <p className={`font-bold text-lg ${current.net_cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+          <div className="bg-blue-50 rounded-xl p-3 text-center col-span-2 border-2 border-blue-200">
+            <p className="text-xs text-blue-600 font-bold mb-1">الأرباح الصافية لهذه الفترة</p>
+            <p className="text-xs text-gray-500 mb-1">(الايرادات - المشتريات والمصروفات)</p>
+            <p className={`font-bold text-2xl ${current.net_cashflow >= 0 ? 'text-green-700' : 'text-red-700'}`}>
               {formatCurrency(current.net_cashflow)} ج.س
             </p>
           </div>
         </div>
         {current.start_date && (
-          <p className="text-xs text-gray-400 mt-2 text-center">
-            من {current.start_date} {current.end_date ? `إلى ${current.end_date}` : '- جارية'}
+          <p className="text-xs text-gray-400 mt-3 text-center bg-gray-50 p-2 rounded">
+            تغطي الفترة من: {current.start_date} {current.end_date ? `إلى ${current.end_date}` : 'إلى اليوم'}
           </p>
         )}
       </div>
@@ -77,7 +78,7 @@ export default function ReportsPage() {
       <div className="bg-white rounded-xl p-4 card-shadow">
         <div className="flex items-center gap-2 mb-3">
           <FiDollarSign className="text-amber-600" size={20} />
-          <h3 className="font-bold text-gray-800">الديون القائمة</h3>
+          <h3 className="font-bold text-gray-800">الديون القائمة (عند العملاء)</h3>
         </div>
         <p className="text-3xl font-bold text-amber-700 text-center">
           {formatCurrency(report.total_debts_outstanding)} <span className="text-sm">ج.س</span>
@@ -89,26 +90,22 @@ export default function ReportsPage() {
         <div className="bg-white rounded-xl p-4 card-shadow">
           <div className="flex items-center gap-2 mb-4">
             <FiTrendingDown className="text-blue-600" size={20} />
-            <h3 className="font-bold text-gray-800">مقارنة الدورات</h3>
+            <h3 className="font-bold text-gray-800">مقارنة فترات الشراء</h3>
           </div>
 
           {report.comparison.previous_cycle && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-600">مبيعات الدورة السابقة</span>
-                <span className="font-bold">{formatCurrency(report.comparison.previous_cycle.total_sales)}</span>
-              </div>
-              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-600">مصروفات الدورة السابقة</span>
-                <span className="font-bold">{formatCurrency(report.comparison.previous_cycle.total_expenses)}</span>
+                <span className="text-gray-600">أرباح الفترة السابقة</span>
+                <span className="font-bold">{formatCurrency(report.comparison.previous_cycle.net_cashflow)}</span>
               </div>
             </div>
           )}
 
           <div className="mt-3 bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 mb-2">المتوسط</p>
+            <p className="text-xs text-gray-500 mb-2">المتوسط العام</p>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">متوسط المبيعات</span>
+              <span className="text-gray-600">متوسط الايرادات</span>
               <span className="font-bold text-primary-700">{formatCurrency(report.comparison.average_sales)}</span>
             </div>
             <div className="flex justify-between text-sm">
