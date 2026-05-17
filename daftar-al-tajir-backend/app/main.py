@@ -4,12 +4,14 @@ Built with FastAPI + PostgreSQL + Telegram Bot + OCR
 """
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 
 from app.core.config import (
     APP_NAME, APP_ENV, DEBUG, CORS_ORIGINS, UPLOAD_DIR,
@@ -64,11 +66,7 @@ async def lifespan(app: FastAPI):
 
 
 async def seed_admin():
-    """Seed the initial admin account.
-    
-    If admin exists but password has changed in env, update the password.
-    This ensures the admin can always login with the current ADMIN_PASSWORD.
-    """
+    """Seed the initial admin account."""
     from sqlalchemy import select
     from app.core.database import async_session
     from app.core.security import verify_password
@@ -86,21 +84,19 @@ async def seed_admin():
                 password_hash=hash_password(ADMIN_PASSWORD),
                 status="ACTIVE",
                 role="admin",
-                subscription_end_date=datetime.now(timezone.utc).date() + timedelta(days=36500)  # 100 years
+                subscription_end_date=datetime.now(timezone.utc).date() + timedelta(days=36500)
             )
             session.add(admin)
             await session.commit()
             logger.info(f"Admin account created: {ADMIN_PHONE}")
         else:
-            # Update password if it has changed in environment
             if not verify_password(ADMIN_PASSWORD, admin.password_hash):
                 admin.password_hash = hash_password(ADMIN_PASSWORD)
-                admin.phone = ADMIN_PHONE  # Also update phone in case it changed
-                admin.status = "ACTIVE"     # Ensure admin is active
+                admin.phone = ADMIN_PHONE
+                admin.status = "ACTIVE"
                 await session.commit()
                 logger.info(f"Admin password updated for: {ADMIN_PHONE}")
             else:
-                # Ensure admin is active even if password unchanged
                 if admin.status != "ACTIVE":
                     admin.status = "ACTIVE"
                     await session.commit()
@@ -146,25 +142,11 @@ async def check_subscriptions():
 
 app = FastAPI(
     title="دفتر التاجر - Daftar Al-Tajir API",
-    description="""
-    ## نظام دفتر التاجر - إدارة المبيعات والمصروفات والديون
-
-    Merchant Sales, Expenses & Debt Management System for Sudan retailers.
-
-    ### Features:
-    - 🔐 User registration with OCR payment verification
-    - 💰 End-of-Day (EOD) screen for daily transactions
-    - 👥 Customer & debt management
-    - 📊 Financial reports & cycle comparisons
-    - 📦 Optional product & inventory tracking
-    - 🤖 Telegram bot for admin notifications
-    - 🔍 OCR for bank transfer receipt reading
-    - 🔑 JWT authentication (7-day tokens)
-    """,
+    description="Merchant Sales, Expenses & Debt Management System",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
 )
 
 # ============ CORS Middleware ============
@@ -199,18 +181,40 @@ app.include_router(ocr_router, prefix="/api/v1")
 
 # ============ Health Check ============
 
-@app.api_route("/", methods=["GET", "HEAD"], tags=["الصحة"])
-async def root():
-    """Root endpoint - health check."""
-    return {
-        "name": "دفتر التاجر",
-        "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs"
-    }
-
-
 @app.api_route("/health", methods=["GET", "HEAD"], tags=["الصحة"])
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# ============ Serve React Frontend ============
+# This must be at the very bottom to act as a catch-all route.
+
+# Path to the frontend build directory relative to this file
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../daftar-al-tajir-frontend/dist"))
+
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_frontend(full_path: str):
+    """
+    Catch-all route to serve React frontend files and handle client-side routing.
+    """
+    # If the path starts with /api/, it means it's an unhandled API route, return 404 JSON
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API route not found")
+
+    # Try to serve a specific file from the dist directory (e.g., assets/xxx.js)
+    if full_path:
+        file_path = os.path.join(FRONTEND_DIR, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+
+    # If it's not a file (e.g., /, /login, /admin), serve index.html for React Router
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+
+    # If frontend hasn't been built yet, show a simple message instead of failing
+    return {
+        "message": "Backend is running. Frontend build not found.",
+        "hint": f"Ensure 'npm run build' generates {index_path}"
+    }
