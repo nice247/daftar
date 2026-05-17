@@ -211,7 +211,7 @@ async def serve_frontend(full_path: str):
     # If it's not a file (e.g., /, /login, /admin), serve index.html for React Router
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.isfile(index_path):
-        return FileResponse(index_path)
+        return FileResponse(index_path, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
 
     # If frontend hasn't been built yet, show a simple message instead of failing
     return {
