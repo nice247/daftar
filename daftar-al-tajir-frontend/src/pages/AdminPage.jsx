@@ -277,7 +277,6 @@ export default function AdminPage() {
                 </div>
                 
                 <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm">
-                  <p><strong>الباقة:</strong> {sub.plan === 'monthly' ? 'شهري' : sub.plan === 'quarterly' ? '3 أشهر' : '6 أشهر'}</p>
                   <p><strong>المبلغ المرفق بالطلب:</strong> {sub.amount ? `${formatCurrency(sub.amount)} ج.س` : 'غير محدد'}</p>
                 </div>
 

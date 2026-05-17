@@ -21,8 +21,6 @@ function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [plan, setPlan] = useState('monthly');
   const [loading, setLoading] = useState(false);
 
   // Step 1: Request phone verification
@@ -74,7 +72,6 @@ function RegisterPage() {
         store_name: storeName,
         email: email || null,
         password,
-        plan,
         verification_code: code,
       });
 
@@ -91,12 +88,6 @@ function RegisterPage() {
       setLoading(false);
     }
   };
-
-  const plans = [
-    { id: 'monthly', name: 'شهري', price: '10,000' },
-    { id: 'quarterly', name: '3 أشهر', price: '25,000' },
-    { id: 'semi_annual', name: '6 أشهر', price: '45,000' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
@@ -262,37 +253,10 @@ function RegisterPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  اختر باقة الاشتراك (الشهر الأول مجاني)
-                </label>
-                <div className="space-y-3">
-                  {plans.map((p) => (
-                    <label
-                      key={p.id}
-                      className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-colors ${
-                        plan === p.id 
-                          ? 'border-primary-600 bg-primary-50' 
-                          : 'border-gray-200 hover:border-primary-300'
-                      }`}
-                    >
-                      <div className="flex items-center">
-                        <input
-                          type="radio"
-                          name="plan"
-                          value={p.id}
-                          checked={plan === p.id}
-                          onChange={(e) => setPlan(e.target.value)}
-                          className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500 ml-3"
-                        />
-                        <span className="font-bold text-gray-900">{p.name}</span>
-                      </div>
-                      <span className="text-primary-700 font-medium">
-                        {p.price} ج.س
-                      </span>
-                    </label>
-                  ))}
-                </div>
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 text-center mt-4">
+                <p className="text-primary-800 font-bold mb-1">🎁 عرض الترحيب</p>
+                <p className="text-sm text-primary-600">الشهر الأول مجاني تماماً لتجربة النظام!</p>
+                <p className="text-xs text-primary-500 mt-2">رسوم الاشتراك بعد الفترة المجانية هي 10,000 ج.س للشهر.</p>
               </div>
 
               <div className="pt-2">

@@ -6,11 +6,6 @@ import { UploadCloud, CheckCircle, AlertTriangle, Loader, Copy } from 'lucide-re
 import { formatDate } from '../utils/helpers'; // Using built-in helper
 
 const ADMIN_ACCOUNT_NUMBER = '123456789'; // Replace with actual admin account number
-const PLANS = {
-  monthly: { name: 'شهري', price: 10000 },
-  quarterly: { name: '3 أشهر', price: 25000 },
-  semi_annual: { name: '6 أشهر', price: 45000 },
-};
 
 export default function SubscriptionPage() {
   const { user, loading: authLoading } = useAuth();
@@ -21,7 +16,6 @@ export default function SubscriptionPage() {
   const [uploading, setUploading] = useState(false);
   const [ocrData, setOcrData] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('monthly');
 
   useEffect(() => {
     if (!authLoading) {
@@ -73,7 +67,6 @@ export default function SubscriptionPage() {
     setUploading(true);
     const formData = new FormData();
     formData.append('receipt_image', selectedFile);
-    formData.append('plan', selectedPlan);
     if (ocrData) {
       formData.append('ocr_data', JSON.stringify(ocrData));
     }
@@ -160,32 +153,15 @@ export default function SubscriptionPage() {
           <h2 className="text-lg font-bold text-gray-800">تجديد الاشتراك</h2>
           
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-primary-800">قم بتحويل مبلغ الاشتراك إلى حساب بنكك التالي:</p>
+            <p className="text-sm text-primary-800 mb-2">الرسوم: 10,000 ج.س للشهر الواحد</p>
+            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 30,000 لـ 3 أشهر)</p>
+            <p className="text-sm text-primary-800">قم بالتحويل إلى حساب بنكك التالي:</p>
             <div className="flex items-center justify-center gap-2 my-2">
               <p className="text-2xl font-mono font-bold text-primary-900">{ADMIN_ACCOUNT_NUMBER}</p>
               <button onClick={() => copyToClipboard(ADMIN_ACCOUNT_NUMBER)} className="text-primary-600 hover:text-primary-800">
                 <Copy size={20} />
               </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">اختر الباقة</label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(PLANS).map(([key, { name, price }]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedPlan(key)}
-                  className={`p-2 border rounded-lg text-center ${selectedPlan === key ? 'bg-primary-100 border-primary-500' : 'bg-gray-50'}`}
-                >
-                  <p className="font-bold text-sm">{name}</p>
-                  <p className="text-xs">{price.toLocaleString()} ج.س</p>
-                </button>
-              ))}
-            </div>
-            <p className="text-center text-lg font-bold mt-4 text-primary-700">
-              المبلغ المطلوب: {PLANS[selectedPlan].price.toLocaleString()} ج.س
-            </p>
           </div>
 
           <div>
@@ -221,7 +197,7 @@ export default function SubscriptionPage() {
           {ocrData && (
             <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
               <h4 className="font-bold">البيانات المستخرجة (للتأكيد):</h4>
-              <p><strong>المبلغ:</strong> {ocrData.amount || 'لم يتم التعرف عليه'}</p>
+              <p><strong>المبلغ:</strong> {ocrData.amount ? `${ocrData.amount.toLocaleString()} ج.س` : 'لم يتم التعرف عليه'}</p>
               <p><strong>رقم العملية:</strong> {ocrData.transaction_id || 'لم يتم التعرف عليه'}</p>
               <p><strong>التاريخ:</strong> {ocrData.date || 'لم يتم التعرف عليه'}</p>
             </div>

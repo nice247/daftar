@@ -3,7 +3,7 @@
 Registration Flow:
 1. POST /auth/verify-phone  → User enters phone (249xxx), gets code via Telegram→WhatsApp
 2. POST /auth/confirm-phone → User enters code to verify phone
-3. POST /auth/register      → User completes registration (store name, password, plan)
+3. POST /auth/register      → User completes registration (store name, password)
 
 Password Reset Flow:
 1. POST /auth/forgot-password → User enters phone, gets OTP via Telegram→WhatsApp
@@ -66,7 +66,7 @@ async def confirm_phone(
 async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """
     Step 3 of registration: After phone is verified, user completes
-    their profile with store name, password, and subscription plan.
+    their profile with store name, password.
     The verification code must match the one sent earlier.
     First month is free.
     """
@@ -76,7 +76,6 @@ async def register(request: RegisterRequest, db: AsyncSession = Depends(get_db))
             phone=request.phone,
             store_name=request.store_name,
             password=request.password,
-            plan=request.plan,
             verification_code=request.verification_code,
             email=request.email
         )

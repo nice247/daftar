@@ -65,7 +65,6 @@ class RegisterRequest(BaseModel):
     store_name: str = Field(..., min_length=1, max_length=255, description="اسم المتجر")
     email: Optional[str] = Field(None, description="البريد الإلكتروني")
     password: str = Field(..., min_length=6, description="كلمة المرور")
-    plan: str = Field(..., description="الباقة: monthly, quarterly, semi_annual")
     verification_code: str = Field(..., description="رمز التحقق من الواتساب")
 
     @field_validator("phone")
@@ -80,13 +79,6 @@ class RegisterRequest(BaseModel):
             raise ValueError("كلمة المرور يجب أن تكون 6 خانات على الأقل")
         if not re.search(r'[A-Za-z]', v) or not re.search(r'\d', v):
             raise ValueError("كلمة المرور يجب أن تحتوي على حروف وأرقام")
-        return v
-
-    @field_validator("plan")
-    @classmethod
-    def validate_plan(cls, v):
-        if v not in ("monthly", "quarterly", "semi_annual"):
-            raise ValueError("الباقة يجب أن تكون: monthly, quarterly, semi_annual")
         return v
 
 
@@ -157,7 +149,6 @@ class UserUpdateRequest(BaseModel):
 class SubscriptionResponse(BaseModel):
     id: UUID
     user_id: UUID
-    plan: Optional[str]
     amount: Optional[Decimal]
     ocr_status: str
     status: str

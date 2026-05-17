@@ -14,24 +14,18 @@ from app.schemas.schemas import SubscriptionResponse, SubscriptionReviewRequest,
 router = APIRouter(prefix="/subscriptions", tags=["الاشتراكات"])
 
 
-@router.post("/upload-receipt", summary="رفع إشعار تحويل بنكي مع OCR")
+@router.post("/upload-receipt", summary="رفع إشعار تحويل بنكي لتجديد الاشتراك")
 async def upload_receipt(
-    phone: str = Form(..., description="رقم الهاتف"),
-    store_name: str = Form(..., description="اسم المتجر"),
-    password: str = Form(..., description="كلمة المرور"),
-    plan: str = Form(..., description="الباقة"),
-    email: str = Form(None, description="البريد الإلكتروني"),
-    receipt: UploadFile = File(..., description="صورة إشعار التحويل"),
+    receipt_image: UploadFile = File(..., description="صورة إشعار التحويل"),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Upload a bank transfer receipt for subscription verification.
+    Upload a bank transfer receipt for subscription renewal.
     OCR will extract: account number, amount, transaction ID.
     """
-    from app.services.auth_service import AuthService
-
     # Read image data
-    image_data = await receipt.read()
+    image_data = await receipt_image.read()
 
     # Run OCR on the receipt
     ocr_result = await ocr_service.extract_from_image(image_data)
@@ -39,23 +33,10 @@ async def upload_receipt(
     # Verify payment details
     verification = ocr_service.verify_payment(ocr_result)
 
-    # Create user first
-    try:
-        user = await AuthService.register_user(
-            db=db,
-            phone=phone,
-            store_name=store_name,
-            password=password,
-            plan=plan,
-            email=email
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
     # Create subscription record
     subscription = Subscription(
-        user_id=user.id,
-        plan=plan,
+        user_id=current_user.id,
+        plan=None,
         amount=ocr_result.amount,
         receipt_image=base64.b64encode(image_data).decode('utf-8')[:50000],  # Truncate for storage
         ocr_data={
@@ -73,26 +54,16 @@ async def upload_receipt(
         subscription.ocr_status = "FAILED"
         # Notify admin about OCR failure
         await telegram_service.notify_ocr_failure(
-            phone=phone,
-            store_name=store_name,
+            phone=current_user.phone,
+            store_name=current_user.store_name,
             error=ocr_result.error or "فشل في قراءة الصورة"
         )
 
     db.add(subscription)
     await db.flush()
 
-    # Notify admin via Telegram about new registration
-    await telegram_service.notify_new_registration(
-        phone=phone,
-        store_name=store_name,
-        plan=plan,
-        user_id=str(user.id),
-        ocr_status=subscription.ocr_status
-    )
-
     return {
-        "message": "تم استلام طلبك وهو قيد المراجعة" if ocr_result.success else "لم يتم التعرف على الصورة بوضوح، سيتم المراجعة يدوياً",
-        "user_id": str(user.id),
+        "message": "تم استلام الإشعار وهو قيد المراجعة" if ocr_result.success else "لم يتم التعرف على الصورة بوضوح، سيتم المراجعة يدوياً",
         "subscription_id": str(subscription.id),
         "ocr_status": subscription.ocr_status,
         "verification": verification
@@ -141,25 +112,25 @@ async def review_subscription(
         from datetime import datetime, timedelta, timezone
         if user:
             user.status = "ACTIVE"
-            # Set subscription end date based on plan
-            plan_days = {
-                "monthly": 30,
-                "quarterly": 90,
-                "semi_annual": 180
-            }
-            days = plan_days.get(subscription.plan or "monthly", 30)
+            
+            # Calculate months based on 10,000 per month
+            amount = float(subscription.amount) if subscription.amount else 10000.0
+            months = max(1, int(amount // 10000))
+            days = months * 30
+            
             if user.subscription_end_date and user.subscription_end_date > datetime.now(timezone.utc).date():
                 user.subscription_end_date += timedelta(days=days)
             else:
                 user.subscription_end_date = datetime.now(timezone.utc).date() + timedelta(days=days)
-        return MessageResponse(message="تم الموافقة على الاشتراك")
+                
+        return MessageResponse(message="تم الموافقة على الاشتراك وتمديده")
 
     else:  # reject
         subscription.status = "REJECTED"
         subscription.rejection_reason = request.rejection_reason
         subscription.reviewed_by = admin.id
-        if user:
-            user.status = "PENDING_VERIFICATION"
+        if user and user.subscription_end_date and user.subscription_end_date < datetime.now(timezone.utc).date():
+            user.status = "FROZEN"
         return MessageResponse(
             message="تم رفض الاشتراك",
             detail=request.rejection_reason

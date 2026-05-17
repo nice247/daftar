@@ -164,7 +164,6 @@ class TelegramService:
         self,
         phone: str,
         store_name: str,
-        plan: str,
         user_id: str,
         ocr_status: str = "PENDING"
     ):
@@ -174,17 +173,10 @@ class TelegramService:
             return
 
         try:
-            plan_names = {
-                "monthly": "شهري",
-                "quarterly": "ربع سنوي",
-                "semi_annual": "نصف سنوي"
-            }
-
             text = (
                 f"✅ تم تسجيل تاجر جديد بنجاح\n\n"
                 f"🏪 المتجر: {store_name}\n"
                 f"📱 الهاتف: {phone}\n"
-                f"📦 الباقة: {plan_names.get(plan, plan)}\n"
                 f"🆔 معرف المستخدم: {user_id}\n\n"
                 f"🎉 الشهر الأول مجاني"
             )

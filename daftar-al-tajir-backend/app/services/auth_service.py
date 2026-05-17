@@ -111,7 +111,6 @@ class AuthService:
         phone: str,
         store_name: str,
         password: str,
-        plan: str,
         verification_code: str,
         email: Optional[str] = None
     ) -> User:
@@ -148,7 +147,6 @@ class AuthService:
         await telegram_service.notify_new_registration(
             phone=user.phone,
             store_name=user.store_name,
-            plan=user.subscription_plan,
             user_id=str(user.id)
         )
 
