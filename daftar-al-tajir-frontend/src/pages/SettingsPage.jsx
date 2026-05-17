@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
-import { formatCurrency, formatDate, getDaysRemaining, PLAN_NAMES } from '../utils/helpers';
+import { formatCurrency, formatDate, getDaysRemaining } from '../utils/helpers';
 import { FiUser, FiCalendar, FiRefreshCw, FiPackage } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -50,26 +50,28 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in pb-8">
       <h2 className="text-lg font-bold text-gray-800">الإعدادات</h2>
 
-      {/* Subscription Status */}
-      <div className={`rounded-xl p-4 ${daysRemaining > 3 ? 'bg-primary-50 border border-primary-200' : 'bg-red-50 border border-red-200'}`}>
-        <div className="flex items-center gap-2 mb-2">
-          <FiCalendar className={daysRemaining > 3 ? 'text-primary-600' : 'text-red-600'} size={20} />
-          <h3 className="font-bold">حالة الاشتراك</h3>
+      {/* Subscription Status - Only for Merchants */}
+      {user?.role !== 'admin' && (
+        <div className={`rounded-xl p-4 ${daysRemaining > 3 ? 'bg-primary-50 border border-primary-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className="flex items-center gap-2 mb-2">
+            <FiCalendar className={daysRemaining > 3 ? 'text-primary-600' : 'text-red-600'} size={20} />
+            <h3 className="font-bold">حالة الاشتراك</h3>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm">
+              <span className="text-gray-600">تاريخ الانتهاء: </span>
+              <span className="font-bold">{formatDate(user?.subscription_end_date)}</span>
+            </p>
+            <p className="text-sm">
+              <span className="text-gray-600">الأيام المتبقية: </span>
+              <span className={`font-bold ${daysRemaining > 3 ? 'text-primary-700' : 'text-red-700'}`}>{daysRemaining} يوم</span>
+            </p>
+          </div>
         </div>
-        <div className="space-y-1">
-          <p className="text-sm">
-            <span className="text-gray-600">تاريخ الانتهاء: </span>
-            <span className="font-bold">{formatDate(user?.subscription_end_date)}</span>
-          </p>
-          <p className="text-sm">
-            <span className="text-gray-600">الأيام المتبقية: </span>
-            <span className={`font-bold ${daysRemaining > 3 ? 'text-primary-700' : 'text-red-700'}`}>{daysRemaining} يوم</span>
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Profile Settings */}
       <div className="bg-white rounded-xl p-4 card-shadow">
@@ -89,7 +91,7 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">اسم المتجر</label>
+            <label className="block text-xs text-gray-600 mb-1">{user?.role === 'admin' ? 'اسم الأدمن' : 'اسم المتجر'}</label>
             <input
               type="text"
               value={storeName}
@@ -111,55 +113,57 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Restock Cycle */}
-      <div className="bg-white rounded-xl p-4 card-shadow">
-        <div className="flex items-center gap-2 mb-4">
-          <FiPackage className="text-amber-600" size={20} />
-          <h3 className="font-bold text-gray-800">دورة الشراء (المدة بين إعادة التخزين)</h3>
-        </div>
-        <div className="space-y-3">
-          <p className="text-xs text-gray-500">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { value: 7, label: 'أسبوع' },
-              { value: 14, label: 'أسبوعين' },
-              { value: 30, label: 'شهر' },
-              { value: 'custom', label: 'تحديد فترة' },
-            ].map((option) => (
-              <label
-                key={option.value}
-                className={`p-3 border rounded-xl cursor-pointer text-center text-sm ${
-                  restockCycle == option.value ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="restockCycle"
-                  value={option.value}
-                  checked={restockCycle == option.value}
-                  onChange={(e) => setRestockCycle(e.target.value)}
-                  className="hidden"
-                />
-                {option.label}
-              </label>
-            ))}
+      {/* Restock Cycle - Only for Merchants */}
+      {user?.role !== 'admin' && (
+        <div className="bg-white rounded-xl p-4 card-shadow">
+          <div className="flex items-center gap-2 mb-4">
+            <FiPackage className="text-amber-600" size={20} />
+            <h3 className="font-bold text-gray-800">دورة الشراء (المدة بين إعادة التخزين)</h3>
           </div>
-          {restockCycle === 'custom' && (
-             <div className="mt-3">
-               <label className="block text-xs text-gray-600 mb-1">أدخل عدد الأيام</label>
-               <input
-                 type="number"
-                 min="1"
-                 value={customCycle}
-                 onChange={(e) => setCustomCycle(e.target.value)}
-                 className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm text-left"
-                 dir="ltr"
-                 placeholder="مثال: 10"
-               />
-             </div>
-          )}
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: 7, label: 'أسبوع' },
+                { value: 14, label: 'أسبوعين' },
+                { value: 30, label: 'شهر' },
+                { value: 'custom', label: 'تحديد فترة' },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`p-3 border rounded-xl cursor-pointer text-center text-sm ${
+                    restockCycle == option.value ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="restockCycle"
+                    value={option.value}
+                    checked={restockCycle == option.value}
+                    onChange={(e) => setRestockCycle(e.target.value)}
+                    className="hidden"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+            {restockCycle === 'custom' && (
+               <div className="mt-3">
+                 <label className="block text-xs text-gray-600 mb-1">أدخل عدد الأيام</label>
+                 <input
+                   type="number"
+                   min="1"
+                   value={customCycle}
+                   onChange={(e) => setCustomCycle(e.target.value)}
+                   className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm text-left"
+                   dir="ltr"
+                   placeholder="مثال: 10"
+                 />
+               </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <button
         onClick={handleSave}

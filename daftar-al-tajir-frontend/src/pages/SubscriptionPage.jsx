@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast';
 import { UploadCloud, CheckCircle, AlertTriangle, Loader, Copy } from 'lucide-react';
 import { formatDate } from '../utils/helpers'; // Using built-in helper
 
-const ADMIN_ACCOUNT_NUMBER = '123456789'; // Replace with actual admin account number
+const ADMIN_ACCOUNT_NUMBER = '7712964'; // Correct account number
+const ADMIN_ACCOUNT_NAME = 'بهاء الدين عثمان اسحق محمد'; // Account name
 
 export default function SubscriptionPage() {
   const { user, loading: authLoading } = useAuth();
@@ -112,7 +113,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="space-y-6 p-4 animate-fade-in">
+    <div className="space-y-6 p-4 animate-fade-in pb-8">
       <div className="bg-white rounded-xl p-5 card-shadow">
         <h2 className="text-lg font-bold text-gray-800 mb-2">حالة الاشتراك</h2>
         {isSubscriptionActive ? (
@@ -153,8 +154,8 @@ export default function SubscriptionPage() {
           <h2 className="text-lg font-bold text-gray-800">تجديد الاشتراك</h2>
           
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-primary-800 mb-2">الرسوم: 10,000 ج.س للشهر الواحد</p>
-            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 30,000 لـ 3 أشهر)</p>
+            <p className="text-sm text-primary-800 mb-2">الرسوم الأساسية: 10,000 ج.س للشهر الواحد</p>
+            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)</p>
             <p className="text-sm text-primary-800">قم بالتحويل إلى حساب بنكك التالي:</p>
             <div className="flex items-center justify-center gap-2 my-2">
               <p className="text-2xl font-mono font-bold text-primary-900">{ADMIN_ACCOUNT_NUMBER}</p>
@@ -162,6 +163,7 @@ export default function SubscriptionPage() {
                 <Copy size={20} />
               </button>
             </div>
+            <p className="text-sm font-bold text-primary-700 mt-2">بإسم {ADMIN_ACCOUNT_NAME}</p>
           </div>
 
           <div>
