@@ -143,8 +143,9 @@ TELEGRAM_ADMIN_CHAT_ID: str = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 ADMIN_PHONE: str = os.getenv("ADMIN_PHONE", "0902642768")
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "nice@247")
 
-# ============ OCR ============
-TESSERACT_LANG: str = os.getenv("TESSERACT_LANG", "eng")
+# ============ Google Cloud APIs ============
+GOOGLE_VISION_API_KEY: str = os.getenv("GOOGLE_VISION_API_KEY", "")
+GOOGLE_GEMINI_API_KEY: str = os.getenv("GOOGLE_GEMINI_API_KEY", "")
 
 # ============ Bank Account Info ============
 BANK_ACCOUNT_NUMBER: str = os.getenv("BANK_ACCOUNT_NUMBER", "7712964")

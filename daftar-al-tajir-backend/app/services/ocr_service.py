@@ -1,159 +1,125 @@
-"""OCR Service for reading bank transfer receipts using Tesseract."""
-import io
-import re
+import os
+import json
 import logging
-from decimal import Decimal, InvalidOperation
-from typing import Optional
-from PIL import Image
-import pytesseract
-from app.core.config import BANK_ACCOUNT_NUMBER, TESSERACT_LANG
+import base64
+import requests
+from decimal import Decimal
+import google.generativeai as genai
 from app.schemas.schemas import OCRResult
 
 logger = logging.getLogger(__name__)
 
-
 class OCRService:
-    """Service to extract bank transfer information from receipt images."""
-
     def __init__(self):
-        self.bank_account = BANK_ACCOUNT_NUMBER
-        self.lang = TESSERACT_LANG
+        pass
+        
+    async def extract_from_image(self, image_bytes: bytes) -> OCRResult:
+        vision_key = os.getenv("GOOGLE_VISION_API_KEY")
+        gemini_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+        
+        if not vision_key or not gemini_key:
+            logger.error("Missing Google API keys. Ensure GOOGLE_VISION_API_KEY and GOOGLE_GEMINI_API_KEY are set.")
+            return OCRResult(success=False, error="إعدادات الخادم غير مكتملة")
 
-    async def extract_from_image(self, image_data: bytes) -> OCRResult:
-        """
-        Extract bank transfer details from a receipt image.
-        Looks for: recipient account number, amount, transaction ID.
-        """
+        # ============ Stage 1: Vision API ============
         try:
-            image = Image.open(io.BytesIO(image_data))
-
-            # Pre-process image for better OCR
-            image = self._preprocess_image(image)
-
-            # Run OCR with Arabic+English support
-            text = pytesseract.image_to_string(image, lang=self.lang)
-
-            logger.info(f"OCR raw text: {text[:500]}")
-
-            # Extract information
-            recipient_number = self._extract_account_number(text)
-            amount = self._extract_amount(text)
-            transaction_id = self._extract_transaction_id(text)
-
-            success = recipient_number is not None or amount is not None
-
-            return OCRResult(
-                success=success,
-                recipient_number=recipient_number,
-                amount=amount,
-                transaction_id=transaction_id,
-                raw_text=text,
-                error=None if success else "لم يتم التعرف على بيانات كافية في الصورة"
-            )
-
+            base64_image = base64.b64encode(image_bytes).decode("utf-8")
+            url = f"https://vision.googleapis.com/v1/images:annotate?key={vision_key}"
+            payload = {
+                "requests": [
+                    {
+                        "image": {"content": base64_image},
+                        "features": [{"type": "TEXT_DETECTION"}]
+                    }
+                ]
+            }
+            
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            vision_data = response.json()
+            
+            responses = vision_data.get("responses", [])
+            if not responses or not responses[0].get("fullTextAnnotation"):
+                logger.error("Vision API returned empty text or no fullTextAnnotation.")
+                return OCRResult(success=False, error="فشل استخراج النص من الصورة")
+                
+            raw_text = responses[0]["fullTextAnnotation"]["text"]
+            
+            if not raw_text.strip():
+                 return OCRResult(success=False, error="فشل استخراج النص من الصورة")
+                 
         except Exception as e:
-            logger.error(f"OCR extraction failed: {str(e)}")
+            logger.error(f"Vision API error: {e}")
+            return OCRResult(success=False, error="فشل استخراج النص من الصورة")
+            
+        # ============ Stage 2: Gemini API ============
+        try:
+            genai.configure(api_key=gemini_key)
+            # Using gemini-1.5-flash as it's the current flash model
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            prompt = f"""
+            أنت مساعد لاستخراج البيانات. الإدخال التالي هو نص مستخرج من إشعار دفع بنكي.
+            قد يكون الإشعار باللغة العربية أو الإنجليزية.
+            قم باستخراج الحقول التالية فقط:
+            - amount: مبلغ التحويل كرقم فقط بدون أي عملة أو فواصل نصية (مثال: 1000.00).
+            - reference_number: رقم العملية أو Reference Number أو Transaction ID.
+            - date: التاريخ كما هو مكتوب في الإشعار.
+            
+            إذا لم تجد أي حقل، ضع قيمته null.
+            يجب أن ترجع النتيجة بصيغة JSON فقط، بدون أي نص إضافي أو شروحات وبدون علامات ` ```json `.
+            
+            النص المستخرج:
+            {raw_text}
+            """
+            
+            gemini_response = model.generate_content(prompt)
+            gemini_text = gemini_response.text.strip()
+            
+        except Exception as e:
+            logger.error(f"Gemini API error: {e}")
+            return OCRResult(success=False, raw_text=raw_text, error="فشل تحليل بيانات الإشعار")
+            
+        # ============ Stage 3: Parse ============
+        try:
+            # Clean markdown if present
+            if gemini_text.startswith("```json"):
+                gemini_text = gemini_text[7:]
+            if gemini_text.startswith("```"):
+                gemini_text = gemini_text[3:]
+            if gemini_text.endswith("```"):
+                gemini_text = gemini_text[:-3]
+                
+            gemini_text = gemini_text.strip()
+            
+            parsed_data = json.loads(gemini_text)
+            
+            amount_val = parsed_data.get("amount")
+            amount = None
+            if amount_val is not None:
+                # remove any commas from the amount string
+                amount_str = str(amount_val).replace(",", "").replace(" ", "")
+                amount = Decimal(amount_str)
+                
+            reference_number = parsed_data.get("reference_number")
+            date_str = parsed_data.get("date")
+            
             return OCRResult(
-                success=False,
-                error=f"فشل في قراءة الصورة: {str(e)}"
+                success=True,
+                amount=amount,
+                reference_number=str(reference_number) if reference_number else None,
+                date=str(date_str) if date_str else None,
+                raw_text=raw_text
             )
+            
+        except Exception as e:
+            logger.error(f"JSON Parse error: {e}. Raw output: {gemini_text}")
+            return OCRResult(success=False, raw_text=raw_text, error="البيانات المستخرجة غير صالحة")
 
-    def _preprocess_image(self, image: Image.Image) -> Image.Image:
-        """Pre-process image to improve OCR accuracy."""
-        # Convert to grayscale
-        if image.mode != 'L':
-            image = image.convert('L')
-
-        # Resize if too small
-        width, height = image.size
-        if width < 1000:
-            scale_factor = 1000 / width
-            image = image.resize(
-                (int(width * scale_factor), int(height * scale_factor)),
-                Image.Resampling.LANCZOS
-            )
-
-        # Apply threshold for better contrast
-        image = image.point(lambda x: 0 if x < 128 else 255, '1')
-        image = image.convert('L')
-
-        return image
-
-    def _extract_account_number(self, text: str) -> Optional[str]:
-        """Extract bank account number from OCR text."""
-        # Look for patterns like account numbers (7-10 digits)
-        patterns = [
-            r'7712964',  # Exact bank account
-            r'(?:account|حساب|رقم\s*الحساب)[:\s]*(\d{7,10})',
-            r'(?:إلى|الى|to)[:\s]*(\d{7,10})',
-            r'\b(\d{7,10})\b',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                number = match.group(1) if match.lastindex else match.group(0)
-                if number == self.bank_account or len(number) >= 7:
-                    return number
-
-        return None
-
-    def _extract_amount(self, text: str) -> Optional[Decimal]:
-        """Extract monetary amount from OCR text."""
-        # Look for patterns indicating amounts
-        patterns = [
-            r'(?:amount|المبلغ|مبلغ|قيمة|value)[:\s]*([\d,]+\.?\d*)',
-            r'(?:SDG|جنيه|ج\.س)[:\s]*([\d,]+\.?\d*)',
-            r'([\d,]+\.?\d*)\s*(?:SDG|جنيه|ج\.س)',
-            r'(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                amount_str = match.group(1).replace(',', '')
-                try:
-                    amount = Decimal(amount_str)
-                    if amount > 0:
-                        return amount
-                except InvalidOperation:
-                    continue
-
-        return None
-
-    def _extract_transaction_id(self, text: str) -> Optional[str]:
-        """Extract transaction/reference ID from OCR text."""
-        patterns = [
-            r'(?:ref|reference|رقم\s*العملية|رقم\s*المرجع|operation)[:\s#]*(\w+)',
-            r'(?:TXN|txn|ID|id)[:\s]*(\w+)',
-        ]
-
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(1)
-
-        return None
-
-    def verify_payment(self, ocr_result: OCRResult) -> dict:
-        """Verify if the OCR extracted data matches expected payment details."""
-        verification = {
-            "account_matches": False,
-            "amount_found": ocr_result.amount is not None,
-            "transaction_found": ocr_result.transaction_id is not None,
-            "overall_valid": False,
-        }
-
-        if ocr_result.recipient_number:
-            verification["account_matches"] = (
-                ocr_result.recipient_number == self.bank_account
-            )
-
-        verification["overall_valid"] = (
-            verification["account_matches"] and verification["amount_found"]
-        )
-
-        return verification
-
+    def verify_payment(self, ocr_result: OCRResult) -> str:
+        """Fallback verifier text."""
+        if not ocr_result.success:
+            return "فشل التعرف على البيانات"
+        return "تم استخراج البيانات، بانتظار المطابقة"
 
 ocr_service = OCRService()

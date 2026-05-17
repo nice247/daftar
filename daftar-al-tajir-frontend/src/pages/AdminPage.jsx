@@ -79,8 +79,10 @@ export default function AdminPage() {
   const handleReviewSubscription = async (subId, action) => {
     let reason = null;
     if (action === 'reject') {
-      reason = prompt('سبب الرفض:');
-      if (!reason) return;
+      reason = prompt('سبب الرفض (اختياري):');
+      // If the user clicks "Cancel" on the prompt, reason is null, so we abort.
+      // If they click "OK" without typing anything, reason is "", which is perfectly fine.
+      if (reason === null) return;
     }
     
     setActionLoading(prev => ({ ...prev, [subId]: true }));
@@ -189,17 +191,17 @@ export default function AdminPage() {
               <div className="bg-white rounded-xl p-3 card-shadow text-center">
                 <FiUsers className="mx-auto text-blue-500 mb-1" size={20} />
                 <p className="text-xl font-bold">{stats.total_users}</p>
-                <p className="text-xs text-gray-500">إجمالي</p>
+                <p className="text-xs text-gray-500">إجمالي التجار</p>
               </div>
               <div className="bg-white rounded-xl p-3 card-shadow text-center">
                 <FiUserCheck className="mx-auto text-green-500 mb-1" size={20} />
                 <p className="text-xl font-bold">{stats.active_users}</p>
-                <p className="text-xs text-gray-500">نشط</p>
+                <p className="text-xs text-gray-500">تاجر نشط</p>
               </div>
               <div className="bg-white rounded-xl p-3 card-shadow text-center">
                 <FiUserX className="mx-auto text-red-500 mb-1" size={20} />
                 <p className="text-xl font-bold">{stats.frozen_users}</p>
-                <p className="text-xs text-gray-500">مجمد</p>
+                <p className="text-xs text-gray-500">تاجر مجمد</p>
               </div>
               <div className="bg-white rounded-xl p-3 card-shadow text-center">
                 <FiClock className="mx-auto text-amber-500 mb-1" size={20} />
@@ -295,7 +297,8 @@ export default function AdminPage() {
                         onClick={() => sendRenewalReminder(u)}
                         className="w-full mt-1 py-2 bg-[#25D366] text-white rounded-lg text-xs font-medium hover:bg-[#128C7E] flex items-center justify-center gap-1"
                       >
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/></svg>
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
+                        </svg>
                         إرسال تذكير تجديد
                       </button>
                     )}
@@ -325,8 +328,10 @@ export default function AdminPage() {
                   </span>
                 </div>
                 
-                <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm">
-                  <p><strong>المبلغ المرفق بالطلب:</strong> {sub.amount ? `${formatCurrency(sub.amount)} ج.س` : 'غير محدد'}</p>
+                <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm space-y-1">
+                  <p><strong>المبلغ المستخرج:</strong> {sub.ocr_data?.amount ? `${formatCurrency(sub.ocr_data.amount)} ج.س` : 'غير متوفر'}</p>
+                  <p><strong>رقم العملية:</strong> {sub.ocr_data?.reference_number || 'غير متوفر'}</p>
+                  <p><strong>التاريخ المكتوب:</strong> {sub.ocr_data?.date || 'غير متوفر'}</p>
                 </div>
 
                 {sub.receipt_image && (

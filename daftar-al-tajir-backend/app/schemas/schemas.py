@@ -155,6 +155,7 @@ class SubscriptionResponse(BaseModel):
     status: str
     rejection_reason: Optional[str]
     created_at: datetime
+    ocr_data: Optional[Dict[str, Any]] = None # Added to view in Admin panel
 
     model_config = {"from_attributes": True}
 
@@ -387,9 +388,9 @@ class AdminAddUser(BaseModel):
 
 class OCRResult(BaseModel):
     success: bool
-    recipient_number: Optional[str] = None
     amount: Optional[Decimal] = None
-    transaction_id: Optional[str] = None
+    reference_number: Optional[str] = None
+    date: Optional[str] = None
     raw_text: Optional[str] = None
     error: Optional[str] = None
 

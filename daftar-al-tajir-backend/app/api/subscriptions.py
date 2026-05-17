@@ -1,5 +1,6 @@
 """Subscription API endpoints - registration with OCR verification."""
 import base64
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +23,7 @@ async def upload_receipt(
 ):
     """
     Upload a bank transfer receipt for subscription renewal.
-    OCR will extract: account number, amount, transaction ID.
+    OCR will extract: amount, reference_number, date.
     """
     # Read image data
     image_data = await receipt_image.read()
@@ -30,7 +31,7 @@ async def upload_receipt(
     # Run OCR on the receipt
     ocr_result = await ocr_service.extract_from_image(image_data)
 
-    # Verify payment details
+    # Verify payment details (fallback logic)
     verification = ocr_service.verify_payment(ocr_result)
 
     # Create subscription record
@@ -40,9 +41,9 @@ async def upload_receipt(
         amount=ocr_result.amount,
         receipt_image=base64.b64encode(image_data).decode('utf-8')[:50000],  # Truncate for storage
         ocr_data={
-            "recipient_number": ocr_result.recipient_number,
             "amount": str(ocr_result.amount) if ocr_result.amount else None,
-            "transaction_id": ocr_result.transaction_id,
+            "reference_number": ocr_result.reference_number,
+            "date": ocr_result.date,
             "raw_text": ocr_result.raw_text[:2000] if ocr_result.raw_text else None,
             "verification": verification,
         },
@@ -60,13 +61,18 @@ async def upload_receipt(
         )
 
     db.add(subscription)
-    await db.flush()
+    await db.commit()
 
     return {
         "message": "تم استلام الإشعار وهو قيد المراجعة" if ocr_result.success else "لم يتم التعرف على الصورة بوضوح، سيتم المراجعة يدوياً",
         "subscription_id": str(subscription.id),
         "ocr_status": subscription.ocr_status,
-        "verification": verification
+        "verification": verification,
+        "extracted_data": {
+            "amount": str(ocr_result.amount) if ocr_result.amount else None,
+            "reference_number": ocr_result.reference_number,
+            "date": ocr_result.date,
+        }
     }
 
 
@@ -109,7 +115,6 @@ async def review_subscription(
     if request.action == "approve":
         subscription.status = "APPROVED"
         subscription.reviewed_by = admin.id
-        from datetime import datetime, timedelta, timezone
         if user:
             user.status = "ACTIVE"
             
@@ -122,7 +127,8 @@ async def review_subscription(
                 user.subscription_end_date += timedelta(days=days)
             else:
                 user.subscription_end_date = datetime.now(timezone.utc).date() + timedelta(days=days)
-                
+        
+        await db.commit()
         return MessageResponse(message="تم الموافقة على الاشتراك وتمديده")
 
     else:  # reject
@@ -131,6 +137,8 @@ async def review_subscription(
         subscription.reviewed_by = admin.id
         if user and user.subscription_end_date and user.subscription_end_date < datetime.now(timezone.utc).date():
             user.status = "FROZEN"
+        
+        await db.commit()
         return MessageResponse(
             message="تم رفض الاشتراك",
             detail=request.rejection_reason
