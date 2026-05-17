@@ -1,8 +1,6 @@
 import os
 import json
 import logging
-import base64
-import requests
 from decimal import Decimal
 import google.generativeai as genai
 from app.schemas.schemas import OCRResult
@@ -14,73 +12,47 @@ class OCRService:
         pass
         
     async def extract_from_image(self, image_bytes: bytes) -> OCRResult:
-        vision_key = os.getenv("GOOGLE_VISION_API_KEY")
         gemini_key = os.getenv("GOOGLE_GEMINI_API_KEY")
         
-        if not vision_key or not gemini_key:
-            logger.error("Missing Google API keys. Ensure GOOGLE_VISION_API_KEY and GOOGLE_GEMINI_API_KEY are set.")
+        if not gemini_key:
+            logger.error("Missing Google API key. Ensure GOOGLE_GEMINI_API_KEY is set.")
             return OCRResult(success=False, error="إعدادات الخادم غير مكتملة")
 
-        # ============ Stage 1: Vision API ============
-        try:
-            base64_image = base64.b64encode(image_bytes).decode("utf-8")
-            url = f"https://vision.googleapis.com/v1/images:annotate?key={vision_key}"
-            payload = {
-                "requests": [
-                    {
-                        "image": {"content": base64_image},
-                        "features": [{"type": "TEXT_DETECTION"}]
-                    }
-                ]
-            }
-            
-            response = requests.post(url, json=payload)
-            response.raise_for_status()
-            vision_data = response.json()
-            
-            responses = vision_data.get("responses", [])
-            if not responses or not responses[0].get("fullTextAnnotation"):
-                logger.error("Vision API returned empty text or no fullTextAnnotation.")
-                return OCRResult(success=False, error="فشل استخراج النص من الصورة")
-                
-            raw_text = responses[0]["fullTextAnnotation"]["text"]
-            
-            if not raw_text.strip():
-                 return OCRResult(success=False, error="فشل استخراج النص من الصورة")
-                 
-        except Exception as e:
-            logger.error(f"Vision API error: {e}")
-            return OCRResult(success=False, error="فشل استخراج النص من الصورة")
-            
-        # ============ Stage 2: Gemini API ============
+        # ============ Stage 1: Gemini API ============
         try:
             genai.configure(api_key=gemini_key)
-            # Using gemini-1.5-flash as it's the current flash model
+            # Using gemini-1.5-flash as requested (can process images + text natively)
             model = genai.GenerativeModel('gemini-1.5-flash')
             
-            prompt = f"""
-            أنت مساعد لاستخراج البيانات. الإدخال التالي هو نص مستخرج من إشعار دفع بنكي.
-            قد يكون الإشعار باللغة العربية أو الإنجليزية.
-            قم باستخراج الحقول التالية فقط:
+            prompt = """
+            أنت مساعد مالي لاستخراج البيانات من صور إشعارات الدفع البنكية أو التحويلات.
+            يرجى قراءة الصورة المرفقة واستخراج الحقول التالية فقط:
             - amount: مبلغ التحويل كرقم فقط بدون أي عملة أو فواصل نصية (مثال: 1000.00).
-            - reference_number: رقم العملية أو Reference Number أو Transaction ID.
+            - reference_number: رقم العملية أو Reference Number أو Transaction ID أو أي رقم مرجعي يميز هذه العملية.
             - date: التاريخ كما هو مكتوب في الإشعار.
             
-            إذا لم تجد أي حقل، ضع قيمته null.
-            يجب أن ترجع النتيجة بصيغة JSON فقط، بدون أي نص إضافي أو شروحات وبدون علامات ` ```json `.
-            
-            النص المستخرج:
-            {raw_text}
+            ملاحظات هامة:
+            - الإشعار قد يكون باللغة العربية أو الإنجليزية.
+            - إذا لم تجد أي حقل، ضع قيمته null.
+            - يجب أن ترجع النتيجة بصيغة JSON فقط، بدون أي نص إضافي أو شروحات وبدون علامات ` ```json `.
             """
             
-            gemini_response = model.generate_content(prompt)
+            # Construct the multi-modal request
+            image_parts = [
+                {
+                    "mime_type": "image/jpeg", # Gemini accepts standard image mime types. We'll use jpeg as a generic fallback, it reads bytes anyway
+                    "data": image_bytes
+                }
+            ]
+            
+            gemini_response = model.generate_content([prompt, image_parts[0]])
             gemini_text = gemini_response.text.strip()
             
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
-            return OCRResult(success=False, raw_text=raw_text, error="فشل تحليل بيانات الإشعار")
+            return OCRResult(success=False, error="فشل تحليل بيانات الإشعار")
             
-        # ============ Stage 3: Parse ============
+        # ============ Stage 2: Parse JSON ============
         try:
             # Clean markdown if present
             if gemini_text.startswith("```json"):
@@ -109,12 +81,12 @@ class OCRService:
                 amount=amount,
                 reference_number=str(reference_number) if reference_number else None,
                 date=str(date_str) if date_str else None,
-                raw_text=raw_text
+                raw_text=gemini_text
             )
             
         except Exception as e:
             logger.error(f"JSON Parse error: {e}. Raw output: {gemini_text}")
-            return OCRResult(success=False, raw_text=raw_text, error="البيانات المستخرجة غير صالحة")
+            return OCRResult(success=False, raw_text=gemini_text, error="البيانات المستخرجة غير صالحة")
 
     def verify_payment(self, ocr_result: OCRResult) -> str:
         """Fallback verifier text."""
