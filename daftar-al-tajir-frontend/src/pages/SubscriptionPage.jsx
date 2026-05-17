@@ -3,8 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { subscriptionAPI, ocrAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { UploadCloud, CheckCircle, AlertTriangle, Loader, Copy } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { formatDate } from '../utils/helpers'; // Using built-in helper
 
 const ADMIN_ACCOUNT_NUMBER = '123456789'; // Replace with actual admin account number
 const PLANS = {
@@ -103,9 +102,21 @@ export default function SubscriptionPage() {
   }
 
   const isSubscriptionActive = user && new Date(user.subscription_end_date) > new Date();
-  const daysRemaining = user?.subscription_end_date
-    ? formatDistanceToNow(new Date(user.subscription_end_date), { addSuffix: true, locale: ar })
-    : '';
+  
+  // Custom simple logic instead of date-fns
+  let daysRemaining = '';
+  if (user?.subscription_end_date) {
+    const end = new Date(user.subscription_end_date);
+    const today = new Date();
+    const diffTime = Math.abs(end - today);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (end > today) {
+       daysRemaining = `بعد ${diffDays} يوم`;
+    } else {
+       daysRemaining = `منذ ${diffDays} يوم`;
+    }
+  }
 
   return (
     <div className="space-y-6 p-4 animate-fade-in">
@@ -116,7 +127,7 @@ export default function SubscriptionPage() {
             <CheckCircle size={24} />
             <div>
               <p className="font-bold">الاشتراك مفعل</p>
-              <p className="text-sm text-gray-500">ينتهي {daysRemaining}</p>
+              <p className="text-sm text-gray-500">ينتهي {daysRemaining} ({formatDate(user.subscription_end_date)})</p>
             </div>
           </div>
         ) : (
@@ -125,7 +136,7 @@ export default function SubscriptionPage() {
             <div>
               <p className="font-bold">الاشتراك غير مفعل</p>
               <p className="text-sm text-gray-500">
-                {user?.subscription_end_date ? `انتهى ${daysRemaining}` : 'لا يوجد اشتراك حالي'}
+                {user?.subscription_end_date ? `انتهى ${daysRemaining} (${formatDate(user.subscription_end_date)})` : 'لا يوجد اشتراك حالي'}
               </p>
             </div>
           </div>
