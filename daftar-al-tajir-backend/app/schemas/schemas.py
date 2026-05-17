@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
@@ -95,14 +95,19 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="كلمة المرور")
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user_id: UUID
+class TokenUser(BaseModel):
+    id: UUID
     phone: str
     store_name: str
     role: str
     status: str
+    subscription_end_date: Optional[str] = None
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: TokenUser
 
 
 class OTPRequest(BaseModel):
