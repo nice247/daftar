@@ -199,7 +199,7 @@ app.include_router(ocr_router, prefix="/api/v1")
 
 # ============ Health Check ============
 
-@app.get("/", tags=["الصحة"])
+@app.api_route("/", methods=["GET", "HEAD"], tags=["الصحة"])
 async def root():
     """Root endpoint - health check."""
     return {
@@ -210,7 +210,7 @@ async def root():
     }
 
 
-@app.get("/health", tags=["الصحة"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["الصحة"])
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
