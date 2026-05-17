@@ -206,10 +206,10 @@ class AuthService:
     async def get_current_user(db: AsyncSession, token: str) -> User:
         """Validate token and get the user from the database."""
         token_data = decode_access_token(token)
-        if not token_data or not token_data.user_id:
+        if not token_data or not token_data.get("sub"):
             raise ValueError("توكن المصادقة غير صالح أو منتهي الصلاحية")
 
-        result = await db.execute(select(User).where(User.id == token_data.user_id))
+        result = await db.execute(select(User).where(User.id == token_data.get("sub")))
         user = result.scalar_one_or_none()
 
         if not user:
