@@ -83,7 +83,8 @@ function RegisterPage() {
       localStorage.setItem('user', JSON.stringify(userData.user));
 
       toast.success('تم إنشاء الحساب بنجاح! الشهر الأول مجاني');
-      navigate('/eod');
+      // Force reload to update AuthContext state from localStorage
+      window.location.href = '/eod';
     } catch (error) {
       toast.error(error.response?.data?.detail || 'حدث خطأ في التسجيل');
     } finally {

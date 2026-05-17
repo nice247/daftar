@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { BookOpen, Phone, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { authAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { normalizePhone } from '../utils/helpers';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,15 +19,11 @@ function LoginPage() {
 
     try {
       const localPhone = normalizePhone(phone);
-      const response = await authAPI.login(localPhone, password);
-      const userData = response.data;
-
-      localStorage.setItem('access_token', userData.access_token);
-      localStorage.setItem('user', JSON.stringify(userData.user));
+      const userData = await login(localPhone, password);
 
       toast.success('تم تسجيل الدخول بنجاح');
 
-      if (userData.user.role === 'admin') {
+      if (userData.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/eod');
