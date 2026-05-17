@@ -199,6 +199,11 @@ class BusinessService:
             customer.total_debt += amount
 
         await db.flush()
+
+        # Update current cycle totals since new debt doesn't add to cash immediately
+        # But we want to ensure any changes trigger a cycle update
+        await BusinessService._update_cycle_totals(db, user_id)
+
         return invoice
 
     @staticmethod
@@ -254,6 +259,10 @@ class BusinessService:
                 customer.total_debt = Decimal(0)
 
         await db.flush()
+
+        # Update cycle totals because debt payment is REVENUE
+        await BusinessService._update_cycle_totals(db, user_id)
+
         return payment
 
     @staticmethod
@@ -285,6 +294,10 @@ class BusinessService:
                 customer.total_debt = Decimal(0)
 
         await db.flush()
+
+        # Update cycle totals because waiver is EXPENSE
+        await BusinessService._update_cycle_totals(db, user_id)
+
         return expense
 
     # ============ Expense Management ============
@@ -354,7 +367,7 @@ class BusinessService:
     @staticmethod
     async def _calculate_cycle_totals(db: AsyncSession, cycle: RestockCycle):
         """Calculate and update cycle totals."""
-        # Sales
+        # Base Sales (EOD Cash + Bankak)
         sales_result = await db.execute(
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == cycle.user_id,
@@ -364,9 +377,32 @@ class BusinessService:
                 Invoice.invoice_type.in_(["EOD_CASH", "EOD_BANKAK"])
             )
         )
-        cycle.total_sales = sales_result.scalar() or Decimal(0)
+        base_sales = sales_result.scalar() or Decimal(0)
 
-        # Expenses
+        # Debt Payments (Revenue)
+        payments_result = await db.execute(
+            select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
+                DebtPayment.user_id == cycle.user_id,
+                DebtPayment.payment_date >= cycle.start_date,
+                DebtPayment.payment_date <= (cycle.end_date or date.max)
+            )
+        )
+        debt_payments = payments_result.scalar() or Decimal(0)
+
+        # Other Incomes (Revenue)
+        incomes_result = await db.execute(
+            select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
+                OtherIncome.user_id == cycle.user_id,
+                OtherIncome.income_date >= cycle.start_date,
+                OtherIncome.income_date <= (cycle.end_date or date.max)
+            )
+        )
+        other_incomes = incomes_result.scalar() or Decimal(0)
+
+        # Total Sales / Revenues
+        cycle.total_sales = base_sales + debt_payments + other_incomes
+
+        # Expenses (includes DEBT_WAIVER automatically since it's an Expense)
         expenses_result = await db.execute(
             select(func.coalesce(func.sum(Expense.amount), 0)).where(
                 Expense.user_id == cycle.user_id,
@@ -376,6 +412,7 @@ class BusinessService:
         )
         cycle.total_expenses = expenses_result.scalar() or Decimal(0)
 
+        # Net Profit
         cycle.net_cashflow = cycle.total_sales - cycle.total_expenses
 
     @staticmethod

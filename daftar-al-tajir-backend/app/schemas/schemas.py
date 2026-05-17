@@ -142,6 +142,7 @@ class UserUpdateRequest(BaseModel):
     store_name: Optional[str] = None
     email: Optional[str] = None
     restock_cycle_days: Optional[int] = Field(None, ge=1, le=365)
+    cycle_start_date: Optional[date] = None
 
 
 # ============ Subscription Schemas ============

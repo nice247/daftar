@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 from app.core.database import get_db
 from app.models.models import User, Customer, Invoice, DebtPayment
 from app.services.business_service import business_service
@@ -85,6 +85,44 @@ async def get_customer(
             for inv in invoices
         ]
     }
+
+
+@router.put("/{customer_id}", response_model=CustomerResponse, summary="تعديل عميل")
+async def update_customer(
+    customer_id: UUID,
+    request: CustomerCreate,
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update customer details."""
+    customer = await business_service.get_customer(db, customer_id, current_user.id)
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="العميل غير موجود")
+
+    customer.name = request.name
+    customer.phone = request.phone
+    await db.commit()
+    await db.refresh(customer)
+    return customer
+
+
+@router.delete("/{customer_id}", response_model=MessageResponse, summary="حذف عميل")
+async def delete_customer(
+    customer_id: UUID,
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a customer."""
+    customer = await business_service.get_customer(db, customer_id, current_user.id)
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="العميل غير موجود")
+
+    if customer.total_debt > 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="لا يمكن حذف عميل لديه ديون قائمة")
+
+    await db.delete(customer)
+    await db.commit()
+    return MessageResponse(message="تم حذف العميل بنجاح")
 
 
 # ============ Debt Management ============

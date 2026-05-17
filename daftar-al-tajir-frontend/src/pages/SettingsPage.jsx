@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [email, setEmail] = useState(user?.email || '');
   const [restockCycle, setRestockCycle] = useState(user?.restock_cycle_days || 7);
   const [customCycle, setCustomCycle] = useState('');
+  const [cycleStartDate, setCycleStartDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,9 +40,11 @@ export default function SettingsPage() {
         store_name: storeName,
         email: email || null,
         restock_cycle_days: cycleDays,
+        ...(cycleStartDate && { cycle_start_date: cycleStartDate }),
       });
       await refreshUser();
       toast.success('تم تحديث البيانات بنجاح');
+      setCycleStartDate(''); // Reset after successful save
     } catch (error) {
       toast.error('فشل في تحديث البيانات');
     } finally {
@@ -120,47 +123,62 @@ export default function SettingsPage() {
             <FiPackage className="text-amber-600" size={20} />
             <h3 className="font-bold text-gray-800">دورة الشراء (المدة بين إعادة التخزين)</h3>
           </div>
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: 7, label: 'أسبوع' },
-                { value: 14, label: 'أسبوعين' },
-                { value: 30, label: 'شهر' },
-                { value: 'custom', label: 'تحديد فترة' },
-              ].map((option) => (
-                <label
-                  key={option.value}
-                  className={`p-3 border rounded-xl cursor-pointer text-center text-sm ${
-                    restockCycle == option.value ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="restockCycle"
-                    value={option.value}
-                    checked={restockCycle == option.value}
-                    onChange={(e) => setRestockCycle(e.target.value)}
-                    className="hidden"
-                  />
-                  {option.label}
-                </label>
-              ))}
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs text-gray-500 mb-2">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 7, label: 'أسبوع' },
+                  { value: 14, label: 'أسبوعين' },
+                  { value: 30, label: 'شهر' },
+                  { value: 'custom', label: 'تحديد فترة' },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className={`p-3 border rounded-xl cursor-pointer text-center text-sm ${
+                      restockCycle == option.value ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="restockCycle"
+                      value={option.value}
+                      checked={restockCycle == option.value}
+                      onChange={(e) => setRestockCycle(e.target.value)}
+                      className="hidden"
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+              {restockCycle === 'custom' && (
+                 <div className="mt-3">
+                   <label className="block text-xs text-gray-600 mb-1">أدخل عدد الأيام</label>
+                   <input
+                     type="number"
+                     min="1"
+                     value={customCycle}
+                     onChange={(e) => setCustomCycle(e.target.value)}
+                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm text-left"
+                     dir="ltr"
+                     placeholder="مثال: 10"
+                   />
+                 </div>
+              )}
             </div>
-            {restockCycle === 'custom' && (
-               <div className="mt-3">
-                 <label className="block text-xs text-gray-600 mb-1">أدخل عدد الأيام</label>
-                 <input
-                   type="number"
-                   min="1"
-                   value={customCycle}
-                   onChange={(e) => setCustomCycle(e.target.value)}
-                   className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm text-left"
-                   dir="ltr"
-                   placeholder="مثال: 10"
-                 />
-               </div>
-            )}
+
+            <div className="pt-3 border-t border-gray-100">
+              <label className="block text-xs font-bold text-gray-700 mb-1">تعديل تاريخ بداية الدورة الحالية</label>
+              <p className="text-[10px] text-gray-500 mb-2">
+                إذا كنت في منتصف الدورة بالفعل، يمكنك إدخال تاريخ بدايتها الفعلي لضبط حساباتك. (اتركه فارغاً لبقاء الدورة كما هي).
+              </p>
+              <input
+                type="date"
+                value={cycleStartDate}
+                onChange={(e) => setCycleStartDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+              />
+            </div>
           </div>
         </div>
       )}

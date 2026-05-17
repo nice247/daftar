@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.models.models import User
+from app.models.models import User, RestockCycle
 from app.services.auth_service import AuthService
+from app.services.business_service import business_service
 from app.schemas.schemas import UserResponse, UserUpdateRequest, MessageResponse
 from app.api.deps import get_current_user
 
@@ -32,5 +33,24 @@ async def update_my_profile(
     if request.restock_cycle_days:
         current_user.restock_cycle_days = request.restock_cycle_days
 
-    await db.flush()
+    if request.cycle_start_date:
+        # Update the active cycle's start date
+        current_cycle = await business_service.get_current_cycle(db, current_user.id)
+        if current_cycle:
+            current_cycle.start_date = request.cycle_start_date
+            await db.flush()
+            # Recalculate totals based on the new start date
+            await business_service._update_cycle_totals(db, current_user.id)
+        else:
+            # Create a new cycle with the specified start date if none exists
+            new_cycle = RestockCycle(
+                user_id=current_user.id,
+                start_date=request.cycle_start_date,
+                status="ACTIVE"
+            )
+            db.add(new_cycle)
+            await db.flush()
+            await business_service._update_cycle_totals(db, current_user.id)
+
+    await db.commit()
     return current_user
