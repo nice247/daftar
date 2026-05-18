@@ -178,20 +178,19 @@ app.include_router(products_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(ocr_router, prefix="/api/v1")
 
+# ============ Root Route ============
 
-# ============ Health Check ============
-
-@app.api_route("/health", methods=["GET", "HEAD"], tags=["الصحة"])
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
-
+@app.api_route("/", methods=["GET", "HEAD"], tags=["الصحة"])
+async def root():
+    return {
+        "message": "جاري التحميل...",
+        "docs": "/api/docs"
+    }
 
 # ============ Serve React Frontend ============
 # This must be at the very bottom to act as a catch-all route.
 
-# Path to the frontend build directory relative to this file
-FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../daftar-al-tajir-frontend/dist"))
+
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_frontend(full_path: str):
