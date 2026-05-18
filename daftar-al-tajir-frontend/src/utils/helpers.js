@@ -49,6 +49,15 @@ export function normalizePhone(value) {
   return cleaned;
 }
 
+export function phoneToWhatsApp(phone) {
+  if (!phone) return '';
+  let cleaned = phone.replace(/[\s+]/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '249' + cleaned.substring(1);
+  }
+  return cleaned;
+}
+
 export const PLAN_NAMES = {
   monthly: 'شهري',
   quarterly: 'ربع سنوي',

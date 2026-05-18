@@ -134,6 +134,7 @@ class UserResponse(BaseModel):
     subscription_end_date: Optional[date]
     restock_cycle_days: int
     created_at: datetime
+    support_phone: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

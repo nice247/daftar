@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
-import { formatCurrency, formatDate, getDaysRemaining } from '../utils/helpers';
-import { FiUser, FiCalendar, FiRefreshCw, FiPackage } from 'react-icons/fi';
+import { formatCurrency, formatDate, getDaysRemaining, phoneToWhatsApp } from '../utils/helpers';
+import { FiUser, FiCalendar, FiRefreshCw, FiPackage, FiPhoneCall } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -54,7 +54,28 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in pb-8">
-      <h2 className="text-lg font-bold text-gray-800">الإعدادات</h2>
+      <h2 className="text-lg font-bold text-gray-800">الإعدادات والدعم</h2>
+
+      {/* Support Section */}
+      {user?.support_phone && (
+        <div className="bg-white rounded-xl p-4 card-shadow border-2 border-green-200">
+          <div className="flex items-center gap-3">
+            <FiPhoneCall className="text-green-600" size={24} />
+            <div>
+              <h3 className="font-bold text-gray-800">الدعم الفني</h3>
+              <p className="text-sm text-gray-500">لأي استفسار أو مساعدة، تواصل معنا عبر واتساب</p>
+              <a 
+                href={`https://wa.me/${phoneToWhatsApp(user.support_phone)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-600 font-bold mt-1 inline-block"
+              >
+                اضغط هنا للتواصل
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Subscription Status - Only for Merchants */}
       {user?.role !== 'admin' && (

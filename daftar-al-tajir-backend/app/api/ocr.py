@@ -9,21 +9,21 @@ router = APIRouter(prefix="/ocr", tags=["التعرف الضوئي"])
 
 @router.post("/extract", response_model=OCRResult, summary="استخراج بيانات من صورة إشعار تحويل")
 async def extract_receipt_data(
-    receipt: UploadFile = File(..., description="صورة إشعار التحويل البنكي")
+    receipt_image: UploadFile = File(..., description="صورة إشعار التحويل البنكي")
 ):
     """
     Extract bank transfer information from a receipt image using OCR.
-    Returns: recipient account number, amount, transaction ID.
+    Returns: amount, reference_number, date.
     """
     # Validate file type
-    if not receipt.content_type or not receipt.content_type.startswith("image/"):
+    if not receipt_image.content_type or not receipt_image.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="يجب رفع ملف صورة"
         )
 
     # Read image
-    image_data = await receipt.read()
+    image_data = await receipt_image.read()
 
     # Check size (max 10MB)
     if len(image_data) > 10 * 1024 * 1024:
@@ -39,10 +39,10 @@ async def extract_receipt_data(
 
 @router.post("/verify", summary="التحقق من بيانات التحويل")
 async def verify_payment(
-    receipt: UploadFile = File(..., description="صورة إشعار التحويل")
+    receipt_image: UploadFile = File(..., description="صورة إشعار التحويل")
 ):
     """Extract and verify bank transfer data from receipt."""
-    image_data = await receipt.read()
+    image_data = await receipt_image.read()
     ocr_result = await ocr_service.extract_from_image(image_data)
     verification = ocr_service.verify_payment(ocr_result)
 

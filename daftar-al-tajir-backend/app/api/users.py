@@ -9,6 +9,7 @@ from app.services.auth_service import AuthService
 from app.services.business_service import business_service
 from app.schemas.schemas import UserResponse, UserUpdateRequest, MessageResponse
 from app.api.deps import get_current_user
+from app.core.config import SUPPORT_PHONE
 
 router = APIRouter(prefix="/users", tags=["المستخدمين"])
 
@@ -16,7 +17,9 @@ router = APIRouter(prefix="/users", tags=["المستخدمين"])
 @router.get("/me", response_model=UserResponse, summary="بيانات المستخدم الحالي")
 async def get_my_profile(current_user: User = Depends(get_current_user)):
     """Get the current authenticated user's profile."""
-    return current_user
+    user_data = UserResponse.from_orm(current_user).dict()
+    user_data["support_phone"] = SUPPORT_PHONE
+    return user_data
 
 
 @router.put("/me", response_model=UserResponse, summary="تحديث بيانات المستخدم")

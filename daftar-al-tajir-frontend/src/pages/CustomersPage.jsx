@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { customerAPI } from '../services/api';
 import { formatCurrency } from '../utils/helpers';
-import { FiUserPlus, FiDollarSign, FiX, FiCheck, FiSearch } from 'react-icons/fi';
+import { FiUserPlus, FiSearch, FiX, FiEdit2, FiTrash2, FiGift } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,9 +10,14 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // Modals
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showWaiveModal, setShowWaiveModal] = useState(false);
+  
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -20,6 +25,10 @@ export default function CustomersPage() {
   const [debtType, setDebtType] = useState('DEBT');
   const [debtDesc, setDebtDesc] = useState('');
   const [payAmount, setPayAmount] = useState('');
+  
+  const [waiveAmount, setWaiveAmount] = useState('');
+  const [waiveReason, setWaiveReason] = useState('');
+
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -49,7 +58,7 @@ export default function CustomersPage() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      await customerAPI.create({ name: newName, phone: newPhone || null });
+      await customerAPI.create({ name: newName, phone: newPhone });
       toast.success('تم إضافة العميل بنجاح');
       setShowAddModal(false);
       setNewName('');
@@ -61,6 +70,47 @@ export default function CustomersPage() {
       setActionLoading(false);
     }
   };
+
+  const openEditModal = (customer) => {
+    setSelectedCustomer(customer);
+    setNewName(customer.name);
+    setNewPhone(customer.phone || '');
+    setShowEditModal(true);
+  };
+
+  const handleEditCustomer = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      await customerAPI.update(selectedCustomer.id, { name: newName, phone: newPhone });
+      toast.success('تم تعديل العميل بنجاح');
+      setShowEditModal(false);
+      loadCustomers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل التعديل');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  
+  const handleDeleteCustomer = async (customer) => {
+      if (customer.total_debt > 0) {
+          toast.error('لا يمكن حذف عميل لديه ديون قائمة');
+          return;
+      }
+      if (!window.confirm(`هل أنت متأكد من حذف العميل ${customer.name}؟`)) return;
+      
+      setActionLoading(true);
+      try {
+          await customerAPI.delete(customer.id);
+          toast.success('تم حذف العميل بنجاح');
+          loadCustomers();
+      } catch(error) {
+          toast.error(error.response?.data?.detail || 'فشل في الحذف');
+      } finally {
+          setActionLoading(false);
+      }
+  }
 
   const handleAddDebt = async (e) => {
     e.preventDefault();
@@ -103,6 +153,27 @@ export default function CustomersPage() {
     }
   };
 
+  const handleWaiveDebt = async (e) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      await customerAPI.waiveDebt({
+        customer_id: selectedCustomer.id,
+        amount: parseFloat(waiveAmount),
+        reason: waiveReason || null,
+      });
+      toast.success('تم تسجيل الإعفاء بنجاح');
+      setShowWaiveModal(false);
+      setWaiveAmount('');
+      setWaiveReason('');
+      loadCustomers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل في تسجيل الإعفاء');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleWhatsAppReminder = (customer) => {
     if (!customer.phone) {
       toast.error('لا يوجد رقم هاتف مسجل لهذا العميل');
@@ -127,7 +198,11 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-800">العملاء والديون</h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setNewName('');
+            setNewPhone('');
+            setShowAddModal(true);
+          }}
           className="flex items-center gap-1 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 shadow-sm"
         >
           <FiUserPlus size={16} />
@@ -167,8 +242,14 @@ export default function CustomersPage() {
           {filteredCustomers.map((customer) => (
             <div key={customer.id} className="bg-white rounded-xl p-4 card-shadow">
               <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-bold text-gray-800 text-lg">{customer.name}</h4>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-gray-800 text-lg">{customer.name}</h4>
+                    <button onClick={() => openEditModal(customer)} className="text-gray-400 hover:text-primary-600"><FiEdit2 size={14} /></button>
+                    {customer.total_debt == 0 && (
+                        <button onClick={() => handleDeleteCustomer(customer)} className="text-gray-400 hover:text-red-600"><FiTrash2 size={14} /></button>
+                    )}
+                  </div>
                   {customer.phone && <p className="text-sm text-gray-500" dir="ltr">{customer.phone}</p>}
                 </div>
                 <div className="text-left bg-gray-50 px-3 py-2 rounded-lg">
@@ -185,13 +266,19 @@ export default function CustomersPage() {
                     onClick={() => { setSelectedCustomer(customer); setShowDebtModal(true); }}
                     className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
                   >
-                    + إضافة دين
+                    + دين
                   </button>
                   <button
                     onClick={() => { setSelectedCustomer(customer); setShowPayModal(true); }}
                     className="flex-1 py-2.5 bg-green-50 text-green-600 rounded-lg text-sm font-bold hover:bg-green-100 transition-colors"
                   >
-                    تسجيل سداد
+                    سداد
+                  </button>
+                  <button
+                    onClick={() => { setSelectedCustomer(customer); setShowWaiveModal(true); }}
+                    className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <FiGift size={14} /> إعفاء
                   </button>
                 </div>
                 {customer.total_debt > 0 && (
@@ -234,16 +321,57 @@ export default function CustomersPage() {
                 type="tel"
                 value={newPhone}
                 onChange={(e) => setNewPhone(e.target.value)}
-                placeholder="رقم الهاتف (اختياري)"
+                placeholder="رقم الهاتف (إجباري)"
                 className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
                 dir="ltr"
+                required
               />
               <button
                 type="submit"
-                disabled={actionLoading || !newName}
+                disabled={actionLoading || !newName || !newPhone}
                 className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50"
               >
                 {actionLoading ? 'جاري الحفظ...' : 'حفظ العميل'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Customer Modal */}
+      {showEditModal && selectedCustomer && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">تعديل بيانات العميل</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400">
+                <FiX size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleEditCustomer} className="space-y-3">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="اسم العميل"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                required
+              />
+              <input
+                type="tel"
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                placeholder="رقم الهاتف (إجباري)"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                dir="ltr"
+                required
+              />
+              <button
+                type="submit"
+                disabled={actionLoading || !newName || !newPhone}
+                className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50"
+              >
+                {actionLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
               </button>
             </form>
           </div>
@@ -329,6 +457,50 @@ export default function CustomersPage() {
                 className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50"
               >
                 {actionLoading ? 'جاري الحفظ...' : 'حفظ السداد'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Waive Debt Modal */}
+      {showWaiveModal && selectedCustomer && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">إعفاء دين للعميل: {selectedCustomer.name}</h3>
+              <button onClick={() => setShowWaiveModal(false)} className="text-gray-400">
+                <FiX size={20} />
+              </button>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3 text-center">
+              <p className="text-sm text-gray-500 mb-1">إجمالي الدين المتبقي:</p>
+              <p className="font-bold text-red-600 text-xl">{formatCurrency(selectedCustomer.total_debt)} ج.س</p>
+            </div>
+            <p className="text-xs text-gray-500 mb-3 text-center">مبلغ الإعفاء سيتم تسجيله كمصروف (DEBT_WAIVER) وسيتم تخفيض دين العميل به.</p>
+            <form onSubmit={handleWaiveDebt} className="space-y-3">
+              <input
+                type="number"
+                value={waiveAmount}
+                onChange={(e) => setWaiveAmount(e.target.value)}
+                placeholder="مبلغ الإعفاء"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gray-500 text-left text-lg font-bold"
+                dir="ltr"
+                required
+              />
+              <input
+                type="text"
+                value={waiveReason}
+                onChange={(e) => setWaiveReason(e.target.value)}
+                placeholder="سبب الإعفاء (اختياري)"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gray-500"
+              />
+              <button
+                type="submit"
+                disabled={actionLoading || !waiveAmount}
+                className="w-full py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-900 disabled:opacity-50"
+              >
+                {actionLoading ? 'جاري الحفظ...' : 'تأكيد الإعفاء'}
               </button>
             </form>
           </div>
