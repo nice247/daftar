@@ -200,7 +200,7 @@ export default function SubscriptionPage() {
             <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
               <h4 className="font-bold">البيانات المستخرجة (للتأكيد):</h4>
               <p><strong>المبلغ:</strong> {ocrData.amount ? `${ocrData.amount.toLocaleString()} ج.س` : 'لم يتم التعرف عليه'}</p>
-              <p><strong>رقم العملية:</strong> {ocrData.transaction_id || 'لم يتم التعرف عليه'}</p>
+              <p><strong>رقم العملية:</strong>{ocrData.reference_number || 'لم يتم التعرف عليه'}</p>
               <p><strong>التاريخ:</strong> {ocrData.date || 'لم يتم التعرف عليه'}</p>
             </div>
           )}
