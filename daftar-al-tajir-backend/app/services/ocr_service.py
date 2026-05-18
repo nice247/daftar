@@ -22,7 +22,7 @@ class OCRService:
         try:
             genai.configure(api_key=gemini_key)
             # Using gemini-1.5-flash as requested (can process images + text natively)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3-flash')
             
             prompt = """
             أنت مساعد مالي لاستخراج البيانات من صور إشعارات الدفع البنكية أو التحويلات.
