@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function EODPage() {
-  const [cashSales, setCashSales] = useState('');
-  const [bankakSales, setBankakSales] = useState('');
+  const [cashSales, setCashSales] = useState([]);
+  const [bankakSales, setBankakSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [merchantDebts, setMerchantDebts] = useState([]); // ديون على التاجر
   const [merchantDebtPayments, setMerchantDebtPayments] = useState([]); // سداد ديون التاجر
@@ -40,8 +40,8 @@ export default function EODPage() {
       // New day - clear local form data
       localStorage.removeItem('eod_date');
       localStorage.removeItem('eod_form');
-      setCashSales('');
-      setBankakSales('');
+      setCashSales([]);
+      setBankakSales([]);
       setExpenses([]);
       setMerchantDebts([]);
       setOtherIncomes([]);
@@ -74,8 +74,8 @@ export default function EODPage() {
         if (td.has_data) {
           setTodaySaved(true);
           // Populate sales fields from server so they persist all day
-          if (td.total_cash_sales > 0) setCashSales(String(td.total_cash_sales));
-          if (td.total_bankak_sales > 0) setBankakSales(String(td.total_bankak_sales));
+          if (td.total_cash_sales > 0) setCashSales([{ amount: String(td.total_cash_sales), description: 'إجمالي محفوظ' }]);
+          if (td.total_bankak_sales > 0) setBankakSales([{ amount: String(td.total_bankak_sales), description: 'إجمالي محفوظ' }]);
         }
         setTodayData(td);
       }
@@ -126,6 +126,27 @@ export default function EODPage() {
 
   const removeOtherIncome = (index) => {
     setOtherIncomes(otherIncomes.filter((_, i) => i !== index));
+  };
+
+  // Add & Remove Sales
+  const addCashSale = () => setCashSales([...cashSales, { amount: '', description: '' }]);
+  const updateCashSale = (index, field, value) => {
+    const newList = [...cashSales];
+    newList[index][field] = value;
+    setCashSales(newList);
+  };
+  const removeCashSale = (index) => {
+    setCashSales(cashSales.filter((_, i) => i !== index));
+  };
+
+  const addBankakSale = () => setBankakSales([...bankakSales, { amount: '', description: '' }]);
+  const updateBankakSale = (index, field, value) => {
+    const newList = [...bankakSales];
+    newList[index][field] = value;
+    setBankakSales(newList);
+  };
+  const removeBankakSale = (index) => {
+    setBankakSales(bankakSales.filter((_, i) => i !== index));
   };
 
   // Merchant debt payment handling (سداد ديون التاجر)
@@ -197,9 +218,12 @@ export default function EODPage() {
         })
       ];
 
+      const totalCash = cashSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const totalBankak = bankakSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
       await eodAPI.save({
         eod_date: new Date().toISOString().split('T')[0],
-        sales: { cash_sales: parseFloat(cashSales) || 0, bankak_sales: parseFloat(bankakSales) || 0 },
+        sales: { cash_sales: totalCash, bankak_sales: totalBankak },
         expenses: combinedExpenses,
         other_incomes: combinedOtherIncomes,
       });
@@ -391,44 +415,76 @@ export default function EODPage() {
             <FiShoppingCart className="text-primary-600" size={20} />
             <h3 className="font-bold text-gray-800">المبيعات النقدية (كاش)</h3>
           </div>
+          <button onClick={addCashSale} className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-md font-bold hover:bg-primary-100">+ إضافة مبيعات</button>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">الكاش في الدرج (إضافة مبيعات)</label>
-          <input
-            type="number"
-            value={cashSales}
-            onChange={(e) => setCashSales(e.target.value)}
-            placeholder="0"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
-            dir="ltr"
-          />
-        </div>
+        {cashSales.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-2">لا توجد مبيعات كاش مسجلة</p>
+        )}
+        {cashSales.map((cs, i) => (
+          <div key={`cash-${i}`} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+            <input
+              type="number"
+              value={cs.amount}
+              onChange={(e) => updateCashSale(i, 'amount', e.target.value)}
+              placeholder="المبلغ"
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
+              dir="ltr"
+            />
+            <input
+              type="text"
+              placeholder="وصف (اختياري)"
+              value={cs.description || ''}
+              onChange={(e) => updateCashSale(i, 'description', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+            />
+            <button onClick={() => removeCashSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
+          </div>
+        ))}
+        {cashSales.length > 0 && (
+          <div className="text-left text-xs font-bold text-gray-600 mt-1">الإجمالي: {formatCurrency(cashSales.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0))}</div>
+        )}
 
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50 mt-6">
           <div className="flex items-center gap-2">
             <FiShoppingCart className="text-blue-600" size={20} />
             <h3 className="font-bold text-gray-800">مبيعات تحويل (بنكك)</h3>
           </div>
+          <button onClick={addBankakSale} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة مبيعات</button>
         </div>
-        <div>
-          <label className="block text-xs font-bold text-gray-700 mb-1">مبيعات بنكك (تحويلات)</label>
-          <input
-            type="number"
-            value={bankakSales}
-            onChange={(e) => setBankakSales(e.target.value)}
-            placeholder="0"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
-            dir="ltr"
-          />
-        </div>
+        {bankakSales.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-2">لا توجد مبيعات بنكك مسجلة</p>
+        )}
+        {bankakSales.map((bs, i) => (
+          <div key={`bankak-${i}`} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+            <input
+              type="number"
+              value={bs.amount}
+              onChange={(e) => updateBankakSale(i, 'amount', e.target.value)}
+              placeholder="المبلغ"
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
+              dir="ltr"
+            />
+            <input
+              type="text"
+              placeholder="وصف (اختياري)"
+              value={bs.description || ''}
+              onChange={(e) => updateBankakSale(i, 'description', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+            />
+            <button onClick={() => removeBankakSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
+          </div>
+        ))}
+        {bankakSales.length > 0 && (
+          <div className="text-left text-xs font-bold text-gray-600 mt-1">الإجمالي: {formatCurrency(bankakSales.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0))}</div>
+        )}
       </div>
 
-      {/* Merchant Debts (ديون على التاجر) */}
+      {/* Merchant Debts (ديون التاجر للموردين) */}
       <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <FiTrendingUp className="text-blue-500" size={20} />
-            <h3 className="font-bold text-gray-800">ديون على التاجر</h3>
+            <h3 className="font-bold text-gray-800">ديون التاجر للموردين</h3>
           </div>
           <div className="flex gap-1">
             <button onClick={addMerchantDebt} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة دين</button>

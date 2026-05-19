@@ -63,7 +63,8 @@ async def create_merchant_debt(
         description=request.description,
     )
     db.add(debt)
-    await db.flush()
+    await db.commit()
+    await db.refresh(debt)
 
     return {
         "message": "تم تسجيل الدين بنجاح",
@@ -111,7 +112,8 @@ async def pay_merchant_debt(
     else:
         debt.status = "partial"
 
-    await db.flush()
+    await db.commit()
+    await db.refresh(debt)
 
     return {
         "message": "تم تسجيل السداد بنجاح",
