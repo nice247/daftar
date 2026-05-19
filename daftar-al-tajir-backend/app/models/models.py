@@ -47,7 +47,6 @@ class User(Base):
     restock_cycles = relationship("RestockCycle", back_populates="user", lazy="select")
     products = relationship("Product", back_populates="user", lazy="select")
     merchant_debts = relationship("MerchantDebt", back_populates="user", lazy="select")
-    suppliers = relationship("Supplier", back_populates="user", lazy="select")
 
     def is_admin(self) -> bool:
         return self.role == "admin"
@@ -263,29 +262,13 @@ class OTPCode(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class Supplier(Base):
-    """Suppliers table - merchant's suppliers."""
-    __tablename__ = "suppliers"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    name = Column(String(255), nullable=False)
-    phone = Column(String(20), nullable=True)
-    total_debt = Column(Numeric(15, 2), default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    user = relationship("User", back_populates="suppliers")
-    merchant_debts = relationship("MerchantDebt", back_populates="supplier", lazy="select")
-
-
 class MerchantDebt(Base):
     """Merchant debts table - debts the merchant owes to suppliers."""
     __tablename__ = "merchant_debts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
-    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id"), nullable=True, index=True)
-    supplier_name = Column(String(255), nullable=False)  # اسم المورد (for backwards compatibility/backup)
+    supplier_name = Column(String(255), nullable=False)  # اسم المورد
     debt_type = Column(
         String(20),
         CheckConstraint("debt_type IN ('cash','bank','goods')"),
@@ -303,7 +286,6 @@ class MerchantDebt(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="merchant_debts")
-    supplier = relationship("Supplier", back_populates="merchant_debts")
     payments = relationship("MerchantDebtPayment", back_populates="merchant_debt", lazy="select")
 
 

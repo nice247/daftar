@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { eodAPI, customerAPI, expenseAPI, merchantDebtAPI } from '../services/api';
-import { formatCurrency, EXPENSE_CATEGORIES } from '../utils/helpers';
+import { formatCurrency, EXPENSE_CATEGORIES, normalizeArabicNumber } from '../utils/helpers';
 import { FiShoppingCart, FiCreditCard, FiTrendingUp, FiPackage, FiDollarSign, FiSave, FiList, FiEye, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
@@ -8,7 +8,6 @@ import { Link } from 'react-router-dom';
 export default function EODPage() {
   const [incomes, setIncomes] = useState([{ category: 'EOD_CASH', amount: '', description: '' }]);
   const [expenses, setExpenses] = useState([{ category: 'RESTOCK', amount: '', description: '', merchant_debt_id: '' }]);
-  const [merchantDebts, setMerchantDebts] = useState([]);
   const [otherIncomes, setOtherIncomes] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [lastRestock, setLastRestock] = useState(null);
@@ -29,7 +28,7 @@ export default function EODPage() {
   const [viewLoading, setViewLoading] = useState(false);
   const [showYesterdayModal, setShowYesterdayModal] = useState(false);
   const [yesterdayData, setYesterdayData] = useState(null);
-  const [viewOtherIncomes, setViewOtherIncomes] = useState([]);
+  const [viewIncomesData, setViewIncomesData] = useState(null);
 
   // Check if day changed (midnight reset)
   const checkDayReset = useCallback(() => {
@@ -75,7 +74,7 @@ export default function EODPage() {
   const addIncome = () => setIncomes([...incomes, { category: 'EOD_CASH', amount: '', description: '' }]);
   const updateIncome = (i, field, value) => {
     const newIncomes = [...incomes];
-    newIncomes[i][field] = value;
+    newIncomes[i][field] = field === 'amount' ? normalizeArabicNumber(value) : value;
     setIncomes(newIncomes);
   };
   const removeIncome = (i) => setIncomes(incomes.filter((_, idx) => idx !== i));
@@ -83,38 +82,12 @@ export default function EODPage() {
   const addExpense = () => setExpenses([...expenses, { category: 'RESTOCK', amount: '', description: '', merchant_debt_id: '' }]);
   const updateExpense = (i, field, value) => {
     const newExp = [...expenses];
-    newExp[i][field] = value;
+    newExp[i][field] = field === 'amount' ? normalizeArabicNumber(value) : value;
     setExpenses(newExp);
   };
   const removeExpense = (i) => setExpenses(expenses.filter((_, idx) => idx !== i));
 
-  const addMerchantDebt = () => setMerchantDebts([...merchantDebts, { amount: '', description: '' }]);
-  const updateMerchantDebt = (index, field, value) => {
-    const updated = [...merchantDebts];
-    updated[index][field] = value;
-    setMerchantDebts(updated);
-  };
-  const removeMerchantDebt = (index) => setMerchantDebts(merchantDebts.filter((_, i) => i !== index));
 
-  const [savingDebtIndex, setSavingDebtIndex] = useState(null);
-  const handleSaveMerchantDebt = async (index, md) => {
-    if (!md.amount || parseFloat(md.amount) <= 0) return;
-    setSavingDebtIndex(index);
-    try {
-      await merchantDebtAPI.create({
-        supplier_name: md.description || 'مورد غير محدد',
-        debt_type: 'cash',
-        total_amount: parseFloat(md.amount),
-        description: 'دين تم تسجيله عبر المعاملات'
-      });
-      removeMerchantDebt(index);
-      loadData();
-    } catch (err) {
-      setError(err.message || 'فشل في حفظ الدين');
-    } finally {
-      setSavingDebtIndex(null);
-    }
-  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -226,13 +199,13 @@ export default function EODPage() {
     setViewLoading(true);
     setShowOtherIncomesModal(true);
     try {
-      // eodAPI should get other incomes if there is an endpoint, or we can use todayData.total_other_income if they just want to see it
-      // Since there's no dedicated other_incomes endpoint yet, let's just show an alert or placeholder
-      // For now, I'll fetch today's data or we can just open a modal.
       const res = await eodAPI.getToday();
-      setViewOtherIncomes(res.data?.other_incomes || []);
-    } catch { toast.error('فشل تحميل الإيرادات الإضافية'); }
-    finally { setViewLoading(false); }
+      setViewIncomesData(res.data);
+    } catch { 
+      toast.error('فشل تحميل الإيرادات الكلية لليوم'); 
+    } finally { 
+      setViewLoading(false); 
+    }
   };
 
   // View Yesterday's Data
@@ -276,21 +249,26 @@ export default function EODPage() {
 
       {/* Today's Summary Card */}
       {todayData && todayData.has_data && (
-        <div className="bg-gradient-to-l from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+        <div className="bg-gradient-to-l from-indigo-600 to-purple-700 rounded-xl p-4 text-white shadow-lg">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold">ملخص اليوم (حتى الآن)</span>
+            <span className="text-sm font-bold">ملخص معاملات اليوم (الخزينة)</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center mt-3">
-            <div className="bg-white/10 rounded-lg p-2">
-              <p className="text-[10px] opacity-90 mb-1">الإيرادات</p>
-              <p className="font-bold text-sm">{formatCurrency((todayData.total_cash_sales || 0) + (todayData.total_bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
+            <div className="bg-white/10 rounded-lg p-2 flex flex-col justify-between">
+              <div>
+                <p className="text-[10px] opacity-90 mb-1">إجمالي الإيرادات</p>
+                <p className="font-bold text-sm">{formatCurrency((todayData.total_cash_sales || 0) + (todayData.total_bankak_sales || 0) + (todayData.total_other_income || 0) + (todayData.total_debt_payments || 0))}</p>
+              </div>
+              {parseFloat(todayData.total_debt_payments || 0) > 0 && (
+                <p className="text-[8px] text-emerald-200 mt-1 font-bold">شامل تحصيل ديون: {formatCurrency(todayData.total_debt_payments)}</p>
+              )}
             </div>
-            <div className="bg-white/10 rounded-lg p-2">
+            <div className="bg-white/10 rounded-lg p-2 flex flex-col justify-center">
               <p className="text-[10px] opacity-90 mb-1">المصروفات</p>
               <p className="font-bold text-sm">{formatCurrency(todayData.total_expenses || 0)}</p>
             </div>
-            <div className="bg-white/20 rounded-lg p-2 border border-white/30">
-              <p className="text-[10px] font-bold mb-1">الصافي</p>
+            <div className="bg-white/20 rounded-lg p-2 border border-white/30 flex flex-col justify-center">
+              <p className="text-[10px] font-bold mb-1">صافي الدخل</p>
               <p className="font-bold text-sm">{formatCurrency(todayData.net_cashflow || 0)}</p>
             </div>
           </div>
@@ -337,113 +315,169 @@ export default function EODPage() {
 
 
 
+
+
       {/* Expenses Section */}
-      <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FiCreditCard className="text-red-500" size={20} />
-            <h3 className="font-bold text-gray-800">المصروفات والمشتريات</h3>
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+              <FiCreditCard className="text-red-500" size={18} />
+            </div>
+            <h3 className="font-black text-gray-800 text-base">المصروفات والمشتريات</h3>
           </div>
-          <button onClick={addExpense} className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded-md font-bold hover:bg-red-100">+ إضافة مصروف</button>
+          <button 
+            onClick={addExpense} 
+            className="text-xs bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1.5 rounded-lg font-bold transition-all border border-red-100 flex items-center gap-1"
+          >
+            <span>+</span> إضافة مصروف
+          </button>
         </div>
-        {expenses.map((exp, i) => (
-          <div key={i} className="flex flex-col gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <div className="flex gap-2">
-              <select
-                value={exp.category}
-                onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none font-bold bg-white"
-              >
-                {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
-                  // Hide RESTOCK if cycle is still active, and hide MERCHANT_DEBT_PAY
-                  if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
-                  if (key === 'MERCHANT_DEBT_PAY') return null;
-                  return <option key={key} value={key}>{label}</option>;
-                })}
-              </select>
-              {exp.category === 'MERCHANT_DEBT_PAY' ? (
+        
+        <div className="space-y-3">
+          {expenses.map((exp, i) => (
+            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-3 rounded-xl border border-slate-100 transition-all flex flex-col gap-2.5">
+              <div className="flex gap-2 items-center">
                 <select
-                  value={exp.merchant_debt_id || ''}
-                  onChange={(e) => updateExpense(i, 'merchant_debt_id', e.target.value)}
-                  className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none bg-white"
+                  value={exp.category}
+                  onChange={(e) => updateExpense(i, 'category', e.target.value)}
+                  className="px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 cursor-pointer shadow-sm text-gray-700 h-9"
                 >
-                  <option value="">اختر الدين لسداده</option>
-                  {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
-                    <option key={d.id} value={d.id}>{d.supplier_name} ({formatCurrency(d.remaining)})</option>
-                  ))}
+                  {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
+                    // Hide RESTOCK if cycle is still active
+                    if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
+                    return <option key={key} value={key}>{label}</option>;
+                  })}
                 </select>
-              ) : (
+                
                 <input
                   type="text"
-                  value={exp.description}
+                  inputMode="decimal"
+                  value={exp.amount}
+                  onChange={(e) => updateExpense(i, 'amount', e.target.value)}
+                  placeholder="المبلغ"
+                  className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-red-600 bg-red-50/30 focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
+                  dir="ltr"
+                />
+
+                {exp.category === 'MERCHANT_DEBT_PAY' ? (
+                  <select
+                    value={exp.merchant_debt_id || ''}
+                    onChange={(e) => updateExpense(i, 'merchant_debt_id', e.target.value)}
+                    className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none bg-white font-bold focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
+                  >
+                    <option value="">اختر المورد والدين...</option>
+                    {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
+                      <option key={d.id} value={d.id}>{d.supplier_name} ({formatCurrency(d.remaining)})</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={exp.description || ''}
+                    onChange={(e) => updateExpense(i, 'description', e.target.value)}
+                    placeholder="وصف المصروف (مثال: كهرباء، عمال)"
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
+                  />
+                )}
+                
+                <button 
+                  onClick={() => removeExpense(i)} 
+                  className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {exp.category === 'MERCHANT_DEBT_PAY' && (
+                <input
+                  type="text"
+                  value={exp.description || ''}
                   onChange={(e) => updateExpense(i, 'description', e.target.value)}
-                  placeholder="وصف المصروف"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs outline-none"
+                  placeholder="ملاحظة حول السداد (اختياري)"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                 />
               )}
-              <button onClick={() => removeExpense(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
             </div>
-            {exp.category === 'MERCHANT_DEBT_PAY' && (
-              <input
-                type="text"
-                value={exp.description}
-                onChange={(e) => updateExpense(i, 'description', e.target.value)}
-                placeholder="ملاحظة حول السداد (اختياري)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs outline-none"
-              />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
+
         {expenses.length > 0 && (
-          <div className="bg-red-50 rounded-lg p-2 text-center mt-2 border border-red-100">
-            <span className="text-xs font-bold text-red-800">إجمالي المصروفات والمشتريات لليوم: </span>
-            <span className="font-bold text-red-700 text-lg">{formatCurrency(expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))}</span>
+          <div className="bg-red-50/50 rounded-xl p-3 text-center mt-3 border border-red-100/60 flex justify-between items-center px-4">
+            <span className="text-xs font-bold text-red-800">إجمالي المصروفات لليوم:</span>
+            <span className="font-extrabold text-red-700 text-base font-mono">{formatCurrency(expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))} ج.س</span>
           </div>
         )}
       </div>
 
       {/* Incomes Section */}
-      <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FiTrendingUp className="text-primary-500" size={20} />
-            <h3 className="font-bold text-gray-800">الإيرادات</h3>
-          </div>
-          <button onClick={addIncome} className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-md font-bold hover:bg-primary-100">+ إضافة إيراد</button>
-        </div>
-        {incomes.map((oi, i) => (
-          <div key={i} className="flex flex-col gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <div className="flex gap-2">
-              <select
-                value={oi.category}
-                onChange={(e) => updateIncome(i, 'category', e.target.value)}
-                className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none bg-white font-bold"
-              >
-                <option value="EOD_CASH">مبيعات كاش</option>
-                <option value="EOD_BANKAK">مبيعات بنكك</option>
-                <option value="bankak_commission">عمولة بنكك</option>
-                <option value="balance_commission">عمولة رصيد</option>
-                <option value="other">أخرى</option>
-              </select>
-              <input
-                type="number"
-                value={oi.amount}
-                onChange={(e) => updateIncome(i, 'amount', e.target.value)}
-                placeholder="المبلغ"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
-                dir="ltr"
-              />
-              <button onClick={() => removeIncome(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <FiTrendingUp className="text-emerald-500" size={18} />
             </div>
-            <input
-              type="text"
-              value={oi.description || ''}
-              onChange={(e) => updateIncome(i, 'description', e.target.value)}
-              placeholder="وصف (اختياري)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs outline-none"
-            />
+            <h3 className="font-black text-gray-800 text-base">الإيرادات اليومية</h3>
           </div>
-        ))}
+          <button 
+            onClick={addIncome} 
+            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-bold transition-all border border-emerald-100 flex items-center gap-1"
+          >
+            <span>+</span> إضافة إيراد
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          {incomes.map((oi, i) => (
+            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-3 rounded-xl border border-slate-100 transition-all flex flex-col gap-2.5">
+              <div className="flex gap-2 items-center">
+                <select
+                  value={oi.category}
+                  onChange={(e) => updateIncome(i, 'category', e.target.value)}
+                  className="px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-sm text-gray-700 h-9"
+                >
+                  <option value="EOD_CASH">مبيعات كاش</option>
+                  <option value="EOD_BANKAK">مبيعات بنكك</option>
+                  <option value="bankak_commission">عمولة بنكك</option>
+                  <option value="balance_commission">عمولة رصيد</option>
+                  <option value="other">أخرى</option>
+                </select>
+                
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={oi.amount}
+                  onChange={(e) => updateIncome(i, 'amount', e.target.value)}
+                  placeholder="المبلغ"
+                  className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-emerald-600 bg-emerald-50/30 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-9"
+                  dir="ltr"
+                />
+                
+                <input
+                  type="text"
+                  value={oi.description || ''}
+                  onChange={(e) => updateIncome(i, 'description', e.target.value)}
+                  placeholder="وصف الإيراد (اختياري)"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-9"
+                />
+                
+                <button 
+                  onClick={() => removeIncome(i)} 
+                  className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {incomes.length > 0 && (
+          <div className="bg-emerald-50/50 rounded-xl p-3 text-center mt-3 border border-emerald-100/60 flex justify-between items-center px-4">
+            <span className="text-xs font-bold text-emerald-800">إجمالي الإيرادات المدخلة لليوم:</span>
+            <span className="font-extrabold text-emerald-700 text-base font-mono">{formatCurrency(incomes.reduce((sum, oi) => sum + (parseFloat(oi.amount) || 0), 0))} ج.س</span>
+          </div>
+        )}
       </div>
 
       {/* Save Button */}
@@ -462,8 +496,8 @@ export default function EODPage() {
 
       {/* ===== Expenses View Modal ===== */}
       {showExpensesModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">سجل المصروفات</h3>
               <button onClick={() => setShowExpensesModal(false)} className="text-gray-400 hover:text-red-500">
@@ -503,8 +537,8 @@ export default function EODPage() {
 
       {/* ===== Purchases View Modal ===== */}
       {showPurchasesModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">المشتريات السابقة (تجديد مخزون)</h3>
               <button onClick={() => setShowPurchasesModal(false)} className="text-gray-400 hover:text-red-500">
@@ -535,8 +569,8 @@ export default function EODPage() {
 
       {/* ===== Merchant Debts View Modal ===== */}
       {showMerchantDebtsModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">ديون التاجر على الموردين</h3>
               <button onClick={() => setShowMerchantDebtsModal(false)} className="text-gray-400 hover:text-red-500">
@@ -575,61 +609,82 @@ export default function EODPage() {
           </div>
         </div>
       )}
-
-      {/* ===== Yesterday's Data Modal ===== */}
       {showYesterdayModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">ملخص معاملات أمس</h3>
-              <button onClick={() => setShowYesterdayModal(false)} className="text-gray-400 hover:text-red-500">
-                <span className="text-xl">✖</span>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                  <FiList size={18} />
+                </div>
+                <h3 className="font-black text-gray-800 text-base">ملخص معاملات أمس</h3>
+              </div>
+              <button onClick={() => setShowYesterdayModal(false)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">
+                <span className="text-lg">✖</span>
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-4">
+            
+            <div className="overflow-y-auto flex-1 space-y-3.5 pr-1">
               {viewLoading ? (
                 <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
               ) : !yesterdayData || !yesterdayData.has_data ? (
                 <p className="text-center text-gray-400 py-8">لا توجد أي معاملات مسجلة لأمس</p>
               ) : (
-                <div className="space-y-4">
-                  {/* Sales Summary */}
-                  <div className="bg-blue-50 rounded-xl p-4">
-                    <h4 className="font-bold text-blue-800 mb-2">المبيعات</h4>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>نقدي (كاش):</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_cash_sales)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>بنكك:</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_bankak_sales)}</span>
+                <div className="space-y-3">
+                  {/* Inflows summary */}
+                  <div className="bg-blue-50/50 rounded-xl p-3.5 border border-blue-100/50">
+                    <h4 className="font-bold text-blue-900 mb-2.5 text-xs">المقبوضات والمبيعات</h4>
+                    <div className="space-y-1.5 text-xs text-gray-600">
+                      <div className="flex justify-between">
+                        <span>مبيعات نقدي (كاش):</span>
+                        <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_cash_sales)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>مبيعات بنكك:</span>
+                        <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_bankak_sales)}</span>
+                      </div>
+                      {parseFloat(yesterdayData.total_other_income || 0) > 0 && (
+                        <div className="flex justify-between text-green-700 font-medium">
+                          <span>عمولات وإيرادات إضافية:</span>
+                          <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_other_income)}</span>
+                        </div>
+                      )}
+                      {parseFloat(yesterdayData.total_debt_payments || 0) > 0 && (
+                        <div className="flex justify-between text-emerald-700 font-medium border-t border-blue-100/50 pt-1.5 mt-1.5">
+                          <span>سدادات ديون العملاء:</span>
+                          <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_debt_payments)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-800 font-black border-t border-blue-200/50 pt-1.5 mt-1.5 text-sm">
+                        <span>إجمالي المقبوضات:</span>
+                        <span className="font-mono text-blue-700">
+                          {formatCurrency(
+                            (yesterdayData.total_cash_sales || 0) + 
+                            (yesterdayData.total_bankak_sales || 0) + 
+                            (yesterdayData.total_other_income || 0) + 
+                            (yesterdayData.total_debt_payments || 0)
+                          )}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Expenses Summary */}
-                  <div className="bg-red-50 rounded-xl p-4">
-                    <h4 className="font-bold text-red-800 mb-2">المصروفات والمشتريات</h4>
-                    <div className="flex justify-between text-sm">
-                      <span>الإجمالي:</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_expenses)}</span>
-                    </div>
-                  </div>
-
-                  {/* Other Income Summary */}
-                  <div className="bg-green-50 rounded-xl p-4">
-                    <h4 className="font-bold text-green-800 mb-2">إيرادات أخرى</h4>
-                    <div className="flex justify-between text-sm">
-                      <span>الإجمالي:</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_other_income)}</span>
+                  <div className="bg-red-50/50 rounded-xl p-3.5 border border-red-100/50">
+                    <h4 className="font-bold text-red-900 mb-2 text-xs">المصروفات والمشتريات</h4>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-600">إجمالي المدفوعات:</span>
+                      <span className="font-bold text-red-700 font-mono">{formatCurrency(yesterdayData.total_expenses)}</span>
                     </div>
                   </div>
 
                   {/* Net Summary */}
-                  <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
-                    <h4 className="font-bold text-gray-800 mb-2">الصافي</h4>
-                    <div className="flex justify-between text-sm">
-                      <span>صافي الدخل:</span>
-                      <span className="font-bold text-primary-600">{formatCurrency(yesterdayData.net_cashflow)}</span>
+                  <div className="bg-slate-100/80 rounded-xl p-3.5 border border-slate-200/60 mt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-gray-700">صافي الدخل لليوم:</span>
+                      <span className={`font-black text-base font-mono ${yesterdayData.net_cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {formatCurrency(yesterdayData.net_cashflow)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -638,33 +693,106 @@ export default function EODPage() {
           </div>
         </div>
       )}
-      {/* ===== Other Incomes View Modal ===== */}
+
+      {/* ===== Incomes View Modal ===== */}
       {showOtherIncomesModal && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">سجل الإيرادات الإضافية</h3>
-              <button onClick={() => setShowOtherIncomesModal(false)} className="text-gray-400 hover:text-red-500">
-                <span className="text-xl">✖</span>
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                  <FiTrendingUp size={18} />
+                </div>
+                <h3 className="font-black text-gray-800 text-base">سجل الإيرادات والمقبوضات لليوم</h3>
+              </div>
+              <button onClick={() => setShowOtherIncomesModal(false)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">
+                <span className="text-lg">✖</span>
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-2">
+
+            <div className="overflow-y-auto flex-1 space-y-4 pr-1">
               {viewLoading ? (
                 <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
-              ) : viewOtherIncomes.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">لا توجد إيرادات مسجلة</p>
+              ) : !viewIncomesData ? (
+                <p className="text-center text-gray-400 py-8">لا توجد إيرادات مسجلة لليوم</p>
               ) : (
-                viewOtherIncomes.map((inc, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-600">{inc.category}</span>
-                        <span className="font-bold text-green-600">{formatCurrency(inc.amount)} ج.س</span>
+                <div className="space-y-4">
+                  {/* Daily In-Store Sales */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-200/50 pb-1.5">مبيعات المحل (اليومية)</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-100 text-center">
+                        <span className="text-[10px] text-gray-500 block mb-0.5">نقدي (كاش)</span>
+                        <span className="font-bold text-gray-800 text-sm font-mono">{formatCurrency(viewIncomesData.total_cash_sales || 0)}</span>
                       </div>
-                      {inc.description && <p className="text-xs text-gray-500 mt-1">{inc.description}</p>}
+                      <div className="bg-white p-2.5 rounded-lg border border-slate-100 text-center">
+                        <span className="text-[10px] text-gray-500 block mb-0.5">بنكك</span>
+                        <span className="font-bold text-gray-800 text-sm font-mono">{formatCurrency(viewIncomesData.total_bankak_sales || 0)}</span>
+                      </div>
                     </div>
                   </div>
-                ))
+
+                  {/* Customer Debt Payments */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-100 pb-1 flex justify-between">
+                      <span>دفعات ديون العملاء المحصلة</span>
+                      <span className="text-[10px] text-emerald-600 font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_debt_payments || 0)}</span>
+                    </h4>
+                    {!viewIncomesData.debt_payments || viewIncomesData.debt_payments.length === 0 ? (
+                      <p className="text-[11px] text-gray-400 text-center py-2 bg-slate-50/30 rounded-lg">لا توجد تحصيلات ديون اليوم</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {viewIncomesData.debt_payments.map((dp, i) => (
+                          <div key={i} className="bg-emerald-50/30 rounded-xl p-2.5 border border-emerald-100/30 flex justify-between items-center text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                              <span className="font-bold text-slate-700">{dp.customer_name}</span>
+                            </div>
+                            <span className="font-extrabold text-emerald-700 font-mono">{formatCurrency(dp.amount)} ج.س</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other/Additional Incomes */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-100 pb-1 flex justify-between">
+                      <span>العمولات والإيرادات الإضافية</span>
+                      <span className="text-[10px] text-green-600 font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_other_income || 0)}</span>
+                    </h4>
+                    {!viewIncomesData.other_incomes || viewIncomesData.other_incomes.length === 0 ? (
+                      <p className="text-[11px] text-gray-400 text-center py-2 bg-slate-50/30 rounded-lg">لا توجد عمولات أو إيرادات إضافية اليوم</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {viewIncomesData.other_incomes.map((inc, i) => (
+                          <div key={i} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100/70 flex justify-between items-center text-xs">
+                            <div>
+                              <span className="font-bold text-gray-700 block text-xs">
+                                {inc.category === 'bankak_commission' ? 'عمولة بنكك' : inc.category === 'balance_commission' ? 'عمولة رصيد' : 'أخرى'}
+                              </span>
+                              {inc.description && <span className="text-[10px] text-gray-400 block mt-0.5">{inc.description}</span>}
+                            </div>
+                            <span className="font-extrabold text-green-600 font-mono">{formatCurrency(inc.amount)} ج.س</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Total Inflows Banner */}
+                  <div className="bg-emerald-600 rounded-xl p-3.5 text-white flex justify-between items-center mt-6 shadow-md">
+                    <span className="text-xs font-black">إجمالي المقبوضات لليوم:</span>
+                    <span className="font-black text-lg font-mono">
+                      {formatCurrency(
+                        (viewIncomesData.total_cash_sales || 0) + 
+                        (viewIncomesData.total_bankak_sales || 0) + 
+                        (viewIncomesData.total_other_income || 0) + 
+                        (viewIncomesData.total_debt_payments || 0)
+                      )} ج.س
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
           </div>

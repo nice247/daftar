@@ -17,6 +17,7 @@ export default function SubscriptionPage() {
   const [uploading, setUploading] = useState(false);
   const [ocrData, setOcrData] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [monthlyPrice, setMonthlyPrice] = useState(10000);
 
   useEffect(() => {
     if (!authLoading) {
@@ -26,10 +27,18 @@ export default function SubscriptionPage() {
 
   const loadSubscription = async () => {
     try {
-      const response = await subscriptionAPI.getMy();
-      setSubscription(response.data);
+      const [subRes, priceRes] = await Promise.all([
+        subscriptionAPI.getMy().catch(() => ({ data: null })),
+        subscriptionAPI.getPrices().catch(() => ({ data: { monthly: 10000 } }))
+      ]);
+      if (subRes && subRes.data) {
+        setSubscription(subRes.data);
+      }
+      if (priceRes && priceRes.data && priceRes.data.monthly) {
+        setMonthlyPrice(priceRes.data.monthly);
+      }
     } catch (error) {
-      // It's okay if it fails, means no subscription yet
+      // Ignore
     } finally {
       setLoading(false);
     }
@@ -154,8 +163,8 @@ export default function SubscriptionPage() {
           <h2 className="text-lg font-bold text-gray-800">تجديد الاشتراك</h2>
           
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-primary-800 mb-2">الرسوم الأساسية: 10,000 ج.س للشهر الواحد</p>
-            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)</p>
+            <p className="text-sm text-primary-800 mb-2 font-bold">الرسوم الأساسية: {Number(monthlyPrice).toLocaleString()} ج.س للشهر الواحد</p>
+            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: {(Number(monthlyPrice) * 10).toLocaleString()} تعني 10 أشهر)</p>
             <p className="text-sm text-primary-800">قم بالتحويل إلى حساب بنكك التالي:</p>
             <div className="flex items-center justify-center gap-2 my-2">
               <p className="text-2xl font-mono font-bold text-primary-900">{ADMIN_ACCOUNT_NUMBER}</p>

@@ -124,9 +124,14 @@ async def review_subscription(
         if user:
             user.status = "ACTIVE"
             
-            # Calculate months based on 10,000 per month
-            amount = float(subscription.amount) if subscription.amount else 10000.0
-            months = max(1, int(amount // 10000))
+            # Calculate months based on monthly_price from SystemSettings
+            from app.models.models import SystemSettings
+            settings_result = await db.execute(select(SystemSettings).order_by(SystemSettings.id.desc()).limit(1))
+            settings = settings_result.scalar_one_or_none()
+            monthly_price = float(settings.monthly_price) if settings and settings.monthly_price else 10000.0
+
+            amount = float(subscription.amount) if subscription.amount else monthly_price
+            months = max(1, int(amount // monthly_price))
             days = months * 30
             
             if user.subscription_end_date and user.subscription_end_date > datetime.now(timezone.utc).date():
@@ -163,3 +168,30 @@ async def get_my_subscriptions(
         .order_by(Subscription.created_at.desc())
     )
     return list(result.scalars().all())
+
+
+@router.get("/prices", summary="الحصول على أسعار الاشتراكات الحالية")
+async def get_subscription_prices(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the active subscription prices set by the admin."""
+    from app.models.models import SystemSettings
+    result = await db.execute(select(SystemSettings).order_by(SystemSettings.id.desc()).limit(1))
+    settings = result.scalar_one_or_none()
+    
+    if not settings:
+        # Default settings if none exist
+        settings = SystemSettings(
+            monthly_price=10000,
+            quarterly_price=30000,
+            semi_annual_price=60000
+        )
+        db.add(settings)
+        await db.commit()
+        await db.refresh(settings)
+        
+    return {
+        "monthly": float(settings.monthly_price),
+        "quarterly": float(settings.quarterly_price),
+        "semi_annual": float(settings.semi_annual_price)
+    }

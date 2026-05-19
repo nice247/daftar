@@ -123,6 +123,7 @@ export const subscriptionAPI = {
   getMy: () => api.get('/subscriptions/my'),
   getPending: () => api.get('/subscriptions/pending'),
   review: (data) => api.post('/subscriptions/review', data),
+  getPrices: () => api.get('/subscriptions/prices'),
 };
 
 // ============ Admin API ============
@@ -157,10 +158,6 @@ export const merchantDebtAPI = {
   getPayments: (debtId) => api.get(`/merchant-debts/${debtId}/payments`),
   delete: (debtId) => api.delete(`/merchant-debts/${debtId}`),
   summary: () => api.get('/merchant-debts/summary'),
-  listSuppliers: () => api.get('/merchant-debts/suppliers'),
-  createSupplier: (data) => api.post('/merchant-debts/suppliers', data),
-  updateSupplier: (id, data) => api.put(`/merchant-debts/suppliers/${id}`, data),
-  deleteSupplier: (id) => api.delete(`/merchant-debts/suppliers/${id}`),
 };
 
 export default api;

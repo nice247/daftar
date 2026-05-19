@@ -45,12 +45,6 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        from sqlalchemy import text
-        try:
-            await conn.execute(text("ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS supplier_id UUID REFERENCES suppliers(id);"))
-            logger.info("Database schema migrations applied (supplier_id added to merchant_debts)")
-        except Exception as alter_err:
-            logger.warning(f"Alter table warning (expected if table has no data yet or DB is sqlite): {alter_err}")
     logger.info("Database tables created/verified")
 
     # Seed admin account

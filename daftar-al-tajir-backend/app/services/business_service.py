@@ -81,7 +81,7 @@ class BusinessService:
             starts_new = exp.category == "RESTOCK"
             expense = Expense(
                 user_id=user_id,
-                category=exp.category,
+                category="OTHER" if exp.category == "MERCHANT_DEBT_PAY" else exp.category,
                 amount=exp.amount,
                 description=exp.description,
                 receipt_image=exp.receipt_image,
@@ -679,7 +679,7 @@ class BusinessService:
         ]
         total_expenses = sum(e["amount"] for e in expenses)
 
-        # Today's debt payments received
+        # Today's debt payments received (total and detailed list)
         debt_pay_result = await db.execute(
             select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
                 DebtPayment.user_id == user_id,
@@ -688,7 +688,23 @@ class BusinessService:
         )
         total_debt_payments = debt_pay_result.scalar() or Decimal(0)
 
-        # Today's other income
+        debt_list_result = await db.execute(
+            select(DebtPayment, Customer.name).join(
+                Customer, DebtPayment.customer_id == Customer.id
+            ).where(
+                DebtPayment.user_id == user_id,
+                func.date(DebtPayment.payment_date) == target
+            ).order_by(DebtPayment.payment_date)
+        )
+        debt_payments = [
+            {
+                "customer_name": cust_name,
+                "amount": dp.amount
+            }
+            for dp, cust_name in debt_list_result.all()
+        ]
+
+        # Today's other income (total and detailed list)
         other_result = await db.execute(
             select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
                 OtherIncome.user_id == user_id,
@@ -696,6 +712,21 @@ class BusinessService:
             )
         )
         total_other_income = other_result.scalar() or Decimal(0)
+
+        other_list_result = await db.execute(
+            select(OtherIncome).where(
+                OtherIncome.user_id == user_id,
+                OtherIncome.income_date == target
+            ).order_by(OtherIncome.income_date)
+        )
+        other_incomes = [
+            {
+                "category": oi.category,
+                "amount": oi.amount,
+                "description": oi.description
+            }
+            for oi in other_list_result.scalars().all()
+        ]
 
         total_sales = cash_sales + bankak_sales
         net = total_sales + total_debt_payments + total_other_income - total_expenses
@@ -710,7 +741,9 @@ class BusinessService:
             "expenses": expenses,
             "total_expenses": total_expenses,
             "total_debt_payments": total_debt_payments,
+            "debt_payments": debt_payments,
             "total_other_income": total_other_income,
+            "other_incomes": other_incomes,
             "net_cashflow": net,
         }
 

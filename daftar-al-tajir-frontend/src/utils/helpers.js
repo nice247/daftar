@@ -93,3 +93,37 @@ export function getDaysRemaining(endDate) {
   const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
   return Math.max(0, diff);
 }
+
+/**
+ * Normalizes Eastern Arabic-Indic numerals (٠-٩) and commas (، or ,) to clean English decimals (0-9 and .)
+ */
+export function normalizeArabicNumber(value) {
+  if (value === null || value === undefined) return '';
+  let str = String(value);
+  
+  // Eastern Arabic/Indic digits
+  const arabicIndicDigits = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+  for (let i = 0; i < 10; i++) {
+    str = str.replace(arabicIndicDigits[i], String(i));
+  }
+  
+  // Persian digits
+  const persianDigits = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+  for (let i = 0; i < 10; i++) {
+    str = str.replace(persianDigits[i], String(i));
+  }
+  
+  // Replace commas with dot
+  str = str.replace(/،/g, '.').replace(/,/g, '.');
+  
+  // Clean other non-numeric chars but keep decimal dot
+  str = str.replace(/[^\d.]/g, '');
+  
+  // Prevent multiple dots
+  const parts = str.split('.');
+  if (parts.length > 2) {
+    str = parts[0] + '.' + parts.slice(1).join('');
+  }
+  
+  return str;
+}

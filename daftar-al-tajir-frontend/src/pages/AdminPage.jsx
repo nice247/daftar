@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminAPI, subscriptionAPI } from '../services/api';
-import { formatCurrency, formatDate } from '../utils/helpers';
+import { formatCurrency, formatDate, normalizeArabicNumber } from '../utils/helpers';
 import { FiUsers, FiUserCheck, FiUserX, FiClock, FiAlertTriangle, FiRefreshCw, FiShield, FiFileText, FiUserPlus, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
-  const [activeTab, setActiveTab] = useState('users'); // 'users' | 'subscriptions'
+  const [activeTab, setActiveTab] = useState('users'); // 'users' | 'subscriptions' | 'settings'
+
+  // Settings State
+  const [settings, setSettings] = useState({
+    monthly_price: 10000,
+    quarterly_price: 30000,
+    semi_annual_price: 60000
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Add User Modal State
   const [showAddModal, setShowAddModal] = useState(false);
@@ -28,18 +36,40 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
-      const [statsRes, usersRes, pendingSubsRes] = await Promise.all([
+      const [statsRes, usersRes, pendingSubsRes, settingsRes] = await Promise.all([
         adminAPI.getStats(),
         adminAPI.listUsers({}),
         subscriptionAPI.getPending(),
+        adminAPI.getSettings().catch(() => ({ data: { monthly_price: 10000, quarterly_price: 30000, semi_annual_price: 60000 } })),
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data);
       setPendingSubscriptions(pendingSubsRes.data);
+      if (settingsRes && settingsRes.data) {
+        setSettings(settingsRes.data);
+      }
     } catch (error) {
       toast.error('فشل في تحميل البيانات');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    try {
+      await adminAPI.updateSettings({
+        monthly_price: parseFloat(settings.monthly_price),
+        quarterly_price: parseFloat(settings.quarterly_price),
+        semi_annual_price: parseFloat(settings.semi_annual_price)
+      });
+      toast.success('تم حفظ إعدادات الأسعار بنجاح');
+      loadData();
+    } catch (error) {
+      toast.error('فشل في حفظ إعدادات الأسعار');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -181,9 +211,17 @@ export default function AdminPage() {
             </span>
           )}
         </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${
+            activeTab === 'settings' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          إعدادات الأسعار
+        </button>
       </div>
 
-      {activeTab === 'users' ? (
+      {activeTab === 'users' && (
         <div className="space-y-4">
           {/* Stats */}
           {stats && (
@@ -308,7 +346,9 @@ export default function AdminPage() {
             })}
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'subscriptions' && (
         <div className="space-y-3">
           {pendingSubscriptions.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
@@ -362,6 +402,64 @@ export default function AdminPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="bg-white rounded-xl p-5 card-shadow space-y-4">
+          <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-3">
+            <FiShield className="text-primary-600" size={20} />
+            <h3 className="font-bold text-gray-800 text-base">إعدادات أسعار الاشتراكات</h3>
+          </div>
+          <form onSubmit={handleSaveSettings} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">سعر الاشتراك الشهري (ج.س)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={settings.monthly_price}
+                onChange={(e) => setSettings(prev => ({ ...prev, monthly_price: normalizeArabicNumber(e.target.value) }))}
+                placeholder="مثال: 10000"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                dir="ltr"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">سعر الاشتراك الربع سنوي - 3 أشهر (ج.س)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={settings.quarterly_price}
+                onChange={(e) => setSettings(prev => ({ ...prev, quarterly_price: normalizeArabicNumber(e.target.value) }))}
+                placeholder="مثال: 27000"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                dir="ltr"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500">سعر الاشتراك النصف سنوي - 6 أشهر (ج.س)</label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={settings.semi_annual_price}
+                onChange={(e) => setSettings(prev => ({ ...prev, semi_annual_price: normalizeArabicNumber(e.target.value) }))}
+                placeholder="مثال: 50000"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                dir="ltr"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingSettings}
+              className="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors shadow-lg shadow-primary-500/20"
+            >
+              {savingSettings ? 'جاري الحفظ...' : '✔ حفظ الأسعار الجديدة'}
+            </button>
+          </form>
         </div>
       )}
 

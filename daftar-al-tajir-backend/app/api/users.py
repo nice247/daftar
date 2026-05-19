@@ -57,4 +57,6 @@ async def update_my_profile(
             await business_service._update_cycle_totals(db, current_user.id)
 
     await db.commit()
-    return current_user
+    user_dict = UserResponse.model_validate(current_user).model_dump()
+    user_dict["support_phone"] = SUPPORT_PHONE
+    return user_dict
