@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.models.models import (
     User, Customer, Invoice, Expense, DebtPayment,
-    OtherIncome, RestockCycle, Product, StockTransaction
+    OtherIncome, RestockCycle, Product, StockTransaction,
+    MerchantDebt, MerchantDebtPayment
 )
 from app.schemas.schemas import (
     EODRequest, EODSummary, EODResponse, CycleSummary, CycleComparison, ReportResponse

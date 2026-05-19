@@ -71,11 +71,12 @@ export const PLAN_PRICES = {
 };
 
 export const EXPENSE_CATEGORIES = {
-  PURCHASE: 'مشتريات',
+  PURCHASE: 'مشتريات بضاعة',
   RESTOCK: 'تجديد مخزون',
-  BILL: 'فاتورة',
-  OTHER: 'أخرى',
-  DEBT_WAIVER: 'إعفاء دين',
+  BILL: 'فاتورة (كهرباء/إيجار...)',
+  OTHER: 'مصروفات أخرى',
+  DEBT_WAIVER: 'إعفاء دين عميل',
+  MERCHANT_DEBT_PAY: 'سداد دين مورد',
 };
 
 export const INVOICE_TYPES = {
