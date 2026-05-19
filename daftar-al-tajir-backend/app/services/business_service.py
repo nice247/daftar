@@ -649,8 +649,8 @@ class BusinessService:
         other_result = await db.execute(
             select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
                 OtherIncome.user_id == user_id,
-                OtherIncome.created_at >= today_start,
-                OtherIncome.created_at <= today_end,
+                OtherIncome.income_date >= today_start.date(),
+                OtherIncome.income_date <= today_end.date(),
             )
         )
         total_other_income = other_result.scalar() or Decimal(0)

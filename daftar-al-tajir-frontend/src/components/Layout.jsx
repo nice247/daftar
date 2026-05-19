@@ -26,51 +26,8 @@ export default function Layout({ children }) {
   // Choose navigation based on role
   const navItems = isAdmin ? adminNavItems : merchantNavItems;
 
-  // Swipe navigation logic
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-
-  // Minimum swipe distance
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEndHandler = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe || isRightSwipe) {
-      const currentIndex = navItems.findIndex((item) => isActive(item.path));
-      if (currentIndex === -1) return;
-
-      if (isRightSwipe && currentIndex < navItems.length - 1) {
-        // Swiped right (drag from left to right) -> Reveal what's on the left
-        // In RTL, items with higher indexes are on the left
-        navigate(navItems[currentIndex + 1].path);
-      } else if (isLeftSwipe && currentIndex > 0) {
-        // Swiped left (drag from right to left) -> Reveal what's on the right
-        // In RTL, items with lower indexes are on the right
-        navigate(navItems[currentIndex - 1].path);
-      }
-    }
-  };
-
   return (
-    <div 
-      className="min-h-screen bg-gray-50 flex flex-col"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEndHandler}
-    >
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">

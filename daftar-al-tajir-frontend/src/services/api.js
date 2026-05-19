@@ -96,6 +96,7 @@ export const customerAPI = {
 export const expenseAPI = {
   list: (params) => api.get('/expenses/', { params }),
   create: (data) => api.post('/expenses/', data),
+  delete: (id) => api.delete(`/expenses/${id}`),
 };
 
 // ============ Report API ============

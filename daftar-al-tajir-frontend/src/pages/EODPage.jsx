@@ -216,6 +216,19 @@ export default function EODPage() {
     finally { setViewLoading(false); }
   };
 
+  const handleDeleteExpense = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+    try {
+      await expenseAPI.delete(id);
+      toast.success('تم حذف المصروف بنجاح');
+      // Refresh the view
+      setViewExpenses(viewExpenses.filter(e => e.id !== id));
+      loadData(); // To update the cycle totals
+    } catch {
+      toast.error('فشل حذف المصروف');
+    }
+  };
+
   // View purchases (RESTOCK expenses)
   const handleViewPurchases = async () => {
     setViewLoading(true);
@@ -543,13 +556,22 @@ export default function EODPage() {
                 <p className="text-center text-gray-400 py-8">لا توجد مصروفات مسجلة</p>
               ) : (
                 viewExpenses.map((exp, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-gray-600">{EXPENSE_CATEGORIES[exp.category] || exp.category}</span>
-                      <span className="font-bold text-red-600">{formatCurrency(exp.amount)} ج.س</span>
+                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex justify-between items-center">
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-600">{EXPENSE_CATEGORIES[exp.category] || exp.category}</span>
+                        <span className="font-bold text-red-600">{formatCurrency(exp.amount)} ج.س</span>
+                      </div>
+                      {exp.description && <p className="text-xs text-gray-500 mt-1">{exp.description}</p>}
+                      <p className="text-[10px] text-gray-400 mt-1">{exp.created_at}</p>
                     </div>
-                    {exp.description && <p className="text-xs text-gray-500 mt-1">{exp.description}</p>}
-                    <p className="text-[10px] text-gray-400 mt-1">{exp.created_at}</p>
+                    <button 
+                      onClick={() => handleDeleteExpense(exp.id)}
+                      className="mr-3 text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="حذف"
+                    >
+                      ✖
+                    </button>
                   </div>
                 ))
               )}

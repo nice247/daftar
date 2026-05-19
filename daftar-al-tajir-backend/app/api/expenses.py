@@ -72,3 +72,33 @@ async def add_expense(
         "message": "تم إضافة المصروف بنجاح",
         "expense_id": str(expense.id)
     }
+
+@router.delete("/{expense_id}", response_model=MessageResponse, summary="حذف مصروف")
+async def delete_expense(
+    expense_id: str,
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete an expense by ID."""
+    from sqlalchemy import select
+    result = await db.execute(
+        select(Expense).where(
+            Expense.id == expense_id,
+            Expense.user_id == current_user.id
+        )
+    )
+    expense = result.scalar_one_or_none()
+    
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="المصروف غير موجود"
+        )
+        
+    await db.delete(expense)
+    
+    # Recalculate totals to reflect the deletion
+    await business_service._update_cycle_totals(db, current_user.id)
+    await db.commit()
+    
+    return {"message": "تم حذف المصروف بنجاح"}
