@@ -76,9 +76,18 @@ class BusinessService:
                 )
                 db.add(bankak_invoice)
 
+        # Check if an active cycle exists
+        active_cycle_result = await db.execute(
+            select(RestockCycle).where(
+                RestockCycle.user_id == user_id,
+                RestockCycle.status == "ACTIVE"
+            )
+        )
+        has_active_cycle = active_cycle_result.scalar_one_or_none() is not None
+
         # 3. Save expenses
         for exp in eod.expenses:
-            starts_new = exp.category == "RESTOCK"
+            starts_new = (exp.category == "RESTOCK") and (not has_active_cycle)
             expense = Expense(
                 user_id=user_id,
                 category="OTHER" if exp.category == "MERCHANT_DEBT_PAY" else exp.category,
@@ -90,9 +99,10 @@ class BusinessService:
             )
             db.add(expense)
 
-            # If restock, start a new cycle
+            # If restock and starts a new cycle, start it
             if starts_new:
                 await BusinessService._start_new_cycle(db, user_id, eod.eod_date)
+                has_active_cycle = True
 
             # If merchant debt payment, update the debt
             if exp.category == "MERCHANT_DEBT_PAY" and exp.merchant_debt_id:
@@ -415,12 +425,23 @@ class BusinessService:
     @staticmethod
     async def _calculate_cycle_totals(db: AsyncSession, cycle: RestockCycle):
         """Calculate and update cycle totals."""
+        from datetime import datetime, time, timedelta
+        # Convert cycle.start_date and cycle.end_date to UTC datetime boundaries for timezone-aware tables
+        start_datetime_local = datetime.combine(cycle.start_date, time.min)
+        start_datetime_utc = start_datetime_local - timedelta(hours=2)
+
+        if cycle.end_date:
+            end_datetime_local = datetime.combine(cycle.end_date, time.max)
+            end_datetime_utc = end_datetime_local - timedelta(hours=2)
+        else:
+            end_datetime_utc = datetime.max
+
         # Base Sales (EOD Cash + Bankak)
         sales_result = await db.execute(
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == cycle.user_id,
-                Invoice.created_at >= cycle.start_date,
-                Invoice.created_at <= (cycle.end_date or date.max),
+                Invoice.created_at >= start_datetime_utc,
+                Invoice.created_at <= end_datetime_utc,
                 Invoice.is_cancelled == False,
                 Invoice.invoice_type.in_(["EOD_CASH", "EOD_BANKAK"])
             )
@@ -454,8 +475,8 @@ class BusinessService:
         expenses_result = await db.execute(
             select(func.coalesce(func.sum(Expense.amount), 0)).where(
                 Expense.user_id == cycle.user_id,
-                Expense.created_at >= cycle.start_date,
-                Expense.created_at <= (cycle.end_date or date.max)
+                Expense.created_at >= start_datetime_utc,
+                Expense.created_at <= end_datetime_utc
             )
         )
         cycle.total_expenses = expenses_result.scalar() or Decimal(0)

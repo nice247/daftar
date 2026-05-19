@@ -33,7 +33,9 @@ export default function EODPage() {
   // Check if day changed (midnight reset)
   const checkDayReset = useCallback(() => {
     const savedDate = localStorage.getItem('eod_date');
-    const today = new Date().toISOString().split('T')[0];
+    const offset = new Date().getTimezoneOffset();
+    const localDate = new Date(new Date().getTime() - (offset * 60 * 1000));
+    const today = localDate.toISOString().split('T')[0];
     if (savedDate && savedDate !== today) {
       localStorage.removeItem('eod_date');
       setIncomes([]);
@@ -118,8 +120,12 @@ export default function EODPage() {
         merchant_debt_id: e.category === 'MERCHANT_DEBT_PAY' ? e.merchant_debt_id || null : null
       }));
 
+      const offset = new Date().getTimezoneOffset();
+      const localDate = new Date(new Date().getTime() - (offset * 60 * 1000));
+      const localDateString = localDate.toISOString().split('T')[0];
+
       const eodData = {
-        eod_date: new Date().toISOString().split('T')[0],
+        eod_date: localDateString,
         sales: {
           cash_sales: totalCashSales,
           bankak_sales: totalBankakSales,

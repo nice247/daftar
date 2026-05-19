@@ -53,17 +53,20 @@ async def add_expense(
 ):
     """Add a single expense."""
     from app.models.models import Expense as ExpenseModel
+    active_cycle = await business_service.get_current_cycle(db, current_user.id)
+    starts_new = (request.category == "RESTOCK") and (active_cycle is None)
+
     expense = ExpenseModel(
         user_id=current_user.id,
         category=request.category,
         amount=request.amount,
         description=request.description,
         receipt_image=request.receipt_image,
-        starts_new_cycle=(request.category == "RESTOCK")
+        starts_new_cycle=starts_new
     )
     db.add(expense)
 
-    if request.category == "RESTOCK":
+    if starts_new:
         await business_service._start_new_cycle(db, current_user.id, date.today())
 
     await db.flush()
