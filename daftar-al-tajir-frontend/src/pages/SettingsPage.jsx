@@ -239,29 +239,11 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك الشهري</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">سعر الاشتراك (تجديد 30 يوم)</label>
               <input
                 type="number"
                 value={adminSettings.monthly_price}
                 onChange={(e) => setAdminSettings({...adminSettings, monthly_price: e.target.value})}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك الربع سنوي</label>
-              <input
-                type="number"
-                value={adminSettings.quarterly_price}
-                onChange={(e) => setAdminSettings({...adminSettings, quarterly_price: e.target.value})}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك النصف سنوي</label>
-              <input
-                type="number"
-                value={adminSettings.semi_annual_price}
-                onChange={(e) => setAdminSettings({...adminSettings, semi_annual_price: e.target.value})}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
               />
             </div>

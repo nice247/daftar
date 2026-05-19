@@ -7,12 +7,11 @@ import { Link } from 'react-router-dom';
 
 export default function EODPage() {
   const [sales, setSales] = useState([{ type: 'cash', amount: '' }]);
-  const [cashSales, setCashSales] = useState([]);
-  const [bankakSales, setBankakSales] = useState([]);
+  const [cashSales, setCashSales] = useState('');
+  const [bankakSales, setBankakSales] = useState('');
   const [expenses, setExpenses] = useState([]);
-  const [debtPayments, setDebtPayments] = useState([]);
   const [merchantDebts, setMerchantDebts] = useState([]); // ديون على التاجر (إيراد)
-  const [otherIncomes, setOtherIncomes] = useState([{ category: 'bankak_commission', amount: '', description: 'عمولة بنكك' }]);
+  const [otherIncomes, setOtherIncomes] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [lastRestock, setLastRestock] = useState(null);
   const [cycleStatus, setCycleStatus] = useState(null);
@@ -24,12 +23,14 @@ export default function EODPage() {
   const [showExpensesModal, setShowExpensesModal] = useState(false);
   const [showPurchasesModal, setShowPurchasesModal] = useState(false);
   const [showMerchantDebtsModal, setShowMerchantDebtsModal] = useState(false);
+  const [showOtherIncomesModal, setShowOtherIncomesModal] = useState(false);
   const [viewExpenses, setViewExpenses] = useState([]);
   const [viewPurchases, setViewPurchases] = useState([]);
   const [viewMerchantDebts, setViewMerchantDebts] = useState([]);
   const [viewLoading, setViewLoading] = useState(false);
   const [showYesterdayModal, setShowYesterdayModal] = useState(false);
   const [yesterdayData, setYesterdayData] = useState(null);
+  const [viewOtherIncomes, setViewOtherIncomes] = useState([]);
 
   // Check if day changed (midnight reset)
   const checkDayReset = useCallback(() => {
@@ -39,12 +40,11 @@ export default function EODPage() {
       // New day - clear local form data
       localStorage.removeItem('eod_date');
       localStorage.removeItem('eod_form');
-      setCashSales([]);
-      setBankakSales([]);
+      setCashSales('');
+      setBankakSales('');
       setExpenses([]);
-      setDebtPayments([]);
       setMerchantDebts([]);
-      setOtherIncomes([{ category: 'bankak_commission', amount: '', description: '\u0639\u0645\u0648\u0644\u0629 \u0628\u0646\u0643\u0643' }]);
+      setOtherIncomes([]);
       setTodaySaved(false);
     }
   }, []);
@@ -88,21 +88,6 @@ export default function EODPage() {
 
   const removeExpense = (index) => {
     setExpenses(expenses.filter((_, i) => i !== index));
-  };
-
-  // Debt payment handling (سداد ديون العملاء)
-  const addDebtPayment = () => {
-    setDebtPayments([...debtPayments, { customer_id: '', amount: '' }]);
-  };
-
-  const updateDebtPayment = (index, field, value) => {
-    const updated = [...debtPayments];
-    updated[index][field] = value;
-    setDebtPayments(updated);
-  };
-
-  const removeDebtPayment = (index) => {
-    setDebtPayments(debtPayments.filter((_, i) => i !== index));
   };
 
   // Merchant Debt handling (ديون على التاجر)
@@ -164,8 +149,6 @@ export default function EODPage() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const totalCash = cashSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-      const totalBankak = bankakSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
       // 1. Create actual merchant debts in the DB
       const validDebts = merchantDebts.filter(md => md.amount && parseFloat(md.amount) > 0);
       for (const md of validDebts) {
@@ -193,7 +176,7 @@ export default function EODPage() {
 
       await eodAPI.save({
         eod_date: new Date().toISOString().split('T')[0],
-        sales: { cash_sales: totalCash, bankak_sales: totalBankak },
+        sales: { cash_sales: parseFloat(cashSales) || 0, bankak_sales: parseFloat(bankakSales) || 0 },
         expenses: expenses
           .filter(e => e.amount && parseFloat(e.amount) > 0)
           .map(e => ({
@@ -217,12 +200,10 @@ export default function EODPage() {
       setTodaySaved(true);
 
       // Reset all inputs - data is sent as an incremental transaction
-      setCashSales([]);
-      setBankakSales([]);
+      // Sales stay visible per user request
       setExpenses([]);
-      setDebtPayments([]);
       setMerchantDebts([]);
-      setOtherIncomes([{ category: 'bankak_commission', amount: '', description: 'عمولة بنكك' }]);
+      setOtherIncomes([]);
       loadData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'حدث خطأ في الحفظ');
@@ -274,6 +255,20 @@ export default function EODPage() {
       const res = await merchantDebtAPI.list();
       setViewMerchantDebts(res.data || []);
     } catch { toast.error('فشل تحميل ديون التاجر'); }
+    finally { setViewLoading(false); }
+  };
+
+  // View Other Incomes
+  const handleViewOtherIncomes = async () => {
+    setViewLoading(true);
+    setShowOtherIncomesModal(true);
+    try {
+      // eodAPI should get other incomes if there is an endpoint, or we can use todayData.total_other_income if they just want to see it
+      // Since there's no dedicated other_incomes endpoint yet, let's just show an alert or placeholder
+      // For now, I'll fetch today's data or we can just open a modal.
+      const res = await eodAPI.getToday();
+      setViewOtherIncomes(res.data?.other_incomes || []);
+    } catch { toast.error('فشل تحميل الإيرادات الإضافية'); }
     finally { setViewLoading(false); }
   };
 
@@ -353,6 +348,10 @@ export default function EODPage() {
           <FiEye size={14} />
           ديون التاجر
         </button>
+        <button onClick={handleViewOtherIncomes} className="flex items-center gap-1 text-sm text-emerald-600 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
+          <FiEye size={14} />
+          الإيرادات
+        </button>
         <button onClick={handleViewYesterday} className="flex items-center gap-1 text-sm text-purple-600 font-bold bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors">
           <FiEye size={14} />
           معاملات أمس
@@ -380,56 +379,36 @@ export default function EODPage() {
             <FiShoppingCart className="text-primary-600" size={20} />
             <h3 className="font-bold text-gray-800">المبيعات النقدية (كاش)</h3>
           </div>
-          <button onClick={addCashSale} className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-md font-bold hover:bg-primary-100">+ إضافة مبيعات</button>
         </div>
-        {cashSales.map((cs, i) => (
-          <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <input
-              type="number"
-              value={cs.amount}
-              onChange={(e) => updateCashSale(i, 'amount', e.target.value)}
-              placeholder="المبلغ"
-              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
-              dir="ltr"
-            />
-            <input
-              type="text"
-              placeholder="وصف (اختياري)"
-              value={cs.description}
-              onChange={(e) => updateCashSale(i, 'description', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
-            />
-            <button onClick={() => removeCashSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
-          </div>
-        ))}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">الكاش في الدرج (إضافة مبيعات)</label>
+          <input
+            type="number"
+            value={cashSales}
+            onChange={(e) => setCashSales(e.target.value)}
+            placeholder="0"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
+            dir="ltr"
+          />
+        </div>
 
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50 mt-6">
           <div className="flex items-center gap-2">
             <FiShoppingCart className="text-blue-600" size={20} />
             <h3 className="font-bold text-gray-800">مبيعات تحويل (بنكك)</h3>
           </div>
-          <button onClick={addBankakSale} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة مبيعات</button>
         </div>
-        {bankakSales.map((bs, i) => (
-          <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <input
-              type="number"
-              value={bs.amount}
-              onChange={(e) => updateBankakSale(i, 'amount', e.target.value)}
-              placeholder="المبلغ"
-              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
-              dir="ltr"
-            />
-            <input
-              type="text"
-              placeholder="وصف (اختياري)"
-              value={bs.description}
-              onChange={(e) => updateBankakSale(i, 'description', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
-            />
-            <button onClick={() => removeBankakSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
-          </div>
-        ))}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">مبيعات بنكك (تحويلات)</label>
+          <input
+            type="number"
+            value={bankakSales}
+            onChange={(e) => setBankakSales(e.target.value)}
+            placeholder="0"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
+            dir="ltr"
+          />
+        </div>
       </div>
 
       {/* Merchant Debts (ديون على التاجر) */}
@@ -512,41 +491,6 @@ export default function EODPage() {
             <span className="font-bold text-red-700 text-lg">{formatCurrency(totalExpenses)}</span>
           </div>
         )}
-      </div>
-
-      {/* Debt Payments Section */}
-      <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <FiDollarSign className="text-green-600" size={20} />
-            <h3 className="font-bold text-gray-800">سداد ديون العملاء</h3>
-          </div>
-          <button onClick={addDebtPayment} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-md font-bold hover:bg-green-100">+ إضافة سداد</button>
-        </div>
-        <p className="text-[10px] text-gray-500 mb-3">ديون قام العملاء بتسديدها اليوم.</p>
-        {debtPayments.map((dp, i) => (
-          <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <select
-              value={dp.customer_id}
-              onChange={(e) => updateDebtPayment(i, 'customer_id', e.target.value)}
-              className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none bg-white"
-            >
-              <option value="">اختر العميل</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.name} ({formatCurrency(c.total_debt)})</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              value={dp.amount}
-              onChange={(e) => updateDebtPayment(i, 'amount', e.target.value)}
-              placeholder="المبلغ"
-              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
-              dir="ltr"
-            />
-            <button onClick={() => removeDebtPayment(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
-          </div>
-        ))}
       </div>
 
       {/* Other Income Section */}
@@ -776,6 +720,39 @@ export default function EODPage() {
           </div>
         </div>
       )}
+      {/* ===== Other Incomes View Modal ===== */}
+      {showOtherIncomesModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">سجل الإيرادات الإضافية</h3>
+              <button onClick={() => setShowOtherIncomesModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {viewLoading ? (
+                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+              ) : viewOtherIncomes.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">لا توجد إيرادات مسجلة</p>
+              ) : (
+                viewOtherIncomes.map((inc, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex justify-between items-center">
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-gray-600">{inc.category}</span>
+                        <span className="font-bold text-green-600">{formatCurrency(inc.amount)} ج.س</span>
+                      </div>
+                      {inc.description && <p className="text-xs text-gray-500 mt-1">{inc.description}</p>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

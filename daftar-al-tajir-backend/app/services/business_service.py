@@ -40,8 +40,8 @@ class BusinessService:
             )
             cash_invoice = result.scalar_one_or_none()
             if cash_invoice:
-                cash_invoice.total_amount += eod.sales.cash_sales
-                cash_invoice.paid_amount += eod.sales.cash_sales
+                cash_invoice.total_amount = eod.sales.cash_sales
+                cash_invoice.paid_amount = eod.sales.cash_sales
             else:
                 cash_invoice = Invoice(
                     user_id=user_id,
@@ -63,8 +63,8 @@ class BusinessService:
             )
             bankak_invoice = result.scalar_one_or_none()
             if bankak_invoice:
-                bankak_invoice.total_amount += eod.sales.bankak_sales
-                bankak_invoice.paid_amount += eod.sales.bankak_sales
+                bankak_invoice.total_amount = eod.sales.bankak_sales
+                bankak_invoice.paid_amount = eod.sales.bankak_sales
             else:
                 bankak_invoice = Invoice(
                     user_id=user_id,
