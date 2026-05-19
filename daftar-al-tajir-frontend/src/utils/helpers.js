@@ -71,6 +71,7 @@ export const PLAN_PRICES = {
 };
 
 export const EXPENSE_CATEGORIES = {
+  PURCHASE: 'مشتريات',
   RESTOCK: 'تجديد مخزون',
   BILL: 'فاتورة',
   OTHER: 'أخرى',

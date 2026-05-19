@@ -102,16 +102,30 @@ export default function ReportsPage() {
             </div>
           )}
 
-          <div className="mt-3 bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500 mb-2">المتوسط العام</p>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">متوسط الايرادات</span>
-              <span className="font-bold text-primary-700">{formatCurrency(report.comparison.average_sales)}</span>
+          <div className="mt-4 bg-gradient-to-l from-gray-800 to-gray-900 rounded-xl p-4 text-white shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-bl-full -z-10"></div>
+            <p className="text-xs text-gray-400 mb-3 font-bold">الأداء العام للنظام (متوسط فترات الشراء)</p>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm items-center bg-white/10 p-2 rounded-lg">
+                <span className="text-gray-300">متوسط الايرادات للدورة</span>
+                <span className="font-bold text-green-400">{formatCurrency(report.comparison.average_sales)}</span>
+              </div>
+              <div className="flex justify-between text-sm items-center bg-white/10 p-2 rounded-lg">
+                <span className="text-gray-300">متوسط المصروفات للدورة</span>
+                <span className="font-bold text-red-400">{formatCurrency(report.comparison.average_expenses)}</span>
+              </div>
+              <div className="pt-2 border-t border-white/20 flex justify-between items-center">
+                <span className="font-bold">متوسط صافي الربح</span>
+                <span className={`font-black text-xl ${
+                  (report.comparison.average_sales - report.comparison.average_expenses) >= 0 
+                  ? 'text-green-400' 
+                  : 'text-red-400'
+                }`}>
+                  {formatCurrency(report.comparison.average_sales - report.comparison.average_expenses)} ج.س
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">متوسط المصروفات</span>
-              <span className="font-bold text-red-600">{formatCurrency(report.comparison.average_expenses)}</span>
-            </div>
+            <p className="text-[10px] text-gray-400 mt-3 text-center">هذا التقرير التراكمي يغني عن التقارير (الربع/نصف سنوية) لأنه يقيس كفاءة دورة رأس المال الخاص بك.</p>
           </div>
         </div>
       )}

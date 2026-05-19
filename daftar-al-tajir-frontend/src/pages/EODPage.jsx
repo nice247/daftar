@@ -72,7 +72,7 @@ export default function EODPage() {
 
   // Expense handling
   const addExpense = () => {
-    setExpenses([...expenses, { category: 'OTHER', amount: '', description: '' }]);
+    setExpenses([...expenses, { category: 'PURCHASE', amount: '', description: '' }]);
   };
 
   const updateExpense = (index, field, value) => {
@@ -266,12 +266,8 @@ export default function EODPage() {
         </div>
       )}
 
-      {/* History Link + View Buttons */}
+      {/* View Buttons */}
       <div className="flex flex-wrap gap-2">
-        <Link to="/reports" className="flex items-center gap-1 text-sm text-primary-600 font-bold bg-primary-50 px-3 py-1.5 rounded-lg hover:bg-primary-100 transition-colors">
-          <FiList size={16} />
-          التقارير
-        </Link>
         <button onClick={handleViewExpenses} className="flex items-center gap-1 text-sm text-red-600 font-bold bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
           <FiEye size={14} />
           المصروفات
@@ -388,9 +384,11 @@ export default function EODPage() {
                 onChange={(e) => updateExpense(i, 'category', e.target.value)}
                 className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none font-bold bg-white"
               >
-                {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
+                {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
+                  // Hide RESTOCK if cycle is still active
+                  if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
+                  return <option key={key} value={key}>{label}</option>;
+                })}
               </select>
               <input
                 type="number"
@@ -530,7 +528,7 @@ export default function EODPage() {
 
       {/* ===== Expenses View Modal ===== */}
       {showExpensesModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">سجل المصروفات</h3>
@@ -562,7 +560,7 @@ export default function EODPage() {
 
       {/* ===== Purchases View Modal ===== */}
       {showPurchasesModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">المشتريات السابقة (تجديد مخزون)</h3>
@@ -594,7 +592,7 @@ export default function EODPage() {
 
       {/* ===== Merchant Debts View Modal ===== */}
       {showMerchantDebtsModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">ديون التاجر على الموردين</h3>
