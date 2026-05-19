@@ -6,8 +6,8 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function EODPage() {
-  const [incomes, setIncomes] = useState([{ category: 'EOD_CASH', amount: '', description: '' }]);
-  const [expenses, setExpenses] = useState([{ category: 'RESTOCK', amount: '', description: '', merchant_debt_id: '' }]);
+  const [incomes, setIncomes] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [otherIncomes, setOtherIncomes] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [lastRestock, setLastRestock] = useState(null);
@@ -36,9 +36,8 @@ export default function EODPage() {
     const today = new Date().toISOString().split('T')[0];
     if (savedDate && savedDate !== today) {
       localStorage.removeItem('eod_date');
-      setIncomes([{ category: 'EOD_CASH', amount: '', description: '' }]);
-      setExpenses([{ category: 'RESTOCK', amount: '', description: '', merchant_debt_id: '' }]);
-      setMerchantDebts([]);
+      setIncomes([]);
+      setExpenses([]);
       setTodaySaved(false);
     }
   }, []);
@@ -137,8 +136,8 @@ export default function EODPage() {
       setTodaySaved(true);
 
       // Clear all inputs after successful save
-      setIncomes([{ category: 'EOD_CASH', amount: '', description: '' }]);
-      setExpenses([{ category: 'RESTOCK', amount: '', description: '', merchant_debt_id: '' }]);
+      setIncomes([]);
+      setExpenses([]);
       
       await loadData();
     } catch (error) {
@@ -222,33 +221,35 @@ export default function EODPage() {
   return (
     <div className="space-y-4 pb-8 animate-fade-in">
       {/* Cycle Status Card */}
-      {cycleStatus && cycleStatus.status === 'ACTIVE' && (
+      {cycleStatus && (
         <div className="bg-gradient-to-l from-primary-600 to-primary-700 rounded-xl p-4 text-white shadow-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-bold">ملخص الدورة الحالية (فترة الشراء)</span>
             <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
-              {cycleStatus.days_remaining !== null ? `متبقي ${cycleStatus.days_remaining} يوم` : 'نشطة'}
+              {cycleStatus.status === 'ACTIVE'
+                ? (cycleStatus.days_remaining !== null ? `متبقي ${cycleStatus.days_remaining} يوم` : 'نشطة')
+                : 'غير نشطة'}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center mt-3">
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">المبيعات الكلية</p>
-              <p className="font-bold text-sm">{formatCurrency(cycleStatus.total_sales)}</p>
+              <p className="font-bold text-sm">{formatCurrency(cycleStatus.status === 'ACTIVE' ? cycleStatus.total_sales : 0)}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">المصروفات/مشتريات</p>
-              <p className="font-bold text-sm">{formatCurrency(cycleStatus.total_expenses)}</p>
+              <p className="font-bold text-sm">{formatCurrency(cycleStatus.status === 'ACTIVE' ? cycleStatus.total_expenses : 0)}</p>
             </div>
             <div className="bg-white/20 rounded-lg p-2 border border-white/30">
               <p className="text-[10px] font-bold mb-1">صافي الأرباح</p>
-              <p className="font-bold text-sm">{formatCurrency(cycleStatus.net_cashflow)}</p>
+              <p className="font-bold text-sm">{formatCurrency(cycleStatus.status === 'ACTIVE' ? cycleStatus.net_cashflow : 0)}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Today's Summary Card */}
-      {todayData && todayData.has_data && (
+      {todayData && (
         <div className="bg-gradient-to-l from-indigo-600 to-purple-700 rounded-xl p-4 text-white shadow-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-bold">ملخص معاملات اليوم</span>
