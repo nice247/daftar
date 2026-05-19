@@ -337,50 +337,6 @@ export default function EODPage() {
 
 
 
-      {/* Merchant Debts (ديون التاجر للموردين) */}
-      <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <FiTrendingUp className="text-blue-500" size={20} />
-            <h3 className="font-bold text-gray-800">ديون التاجر للموردين</h3>
-          </div>
-          <button onClick={addMerchantDebt} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة دين</button>
-        </div>
-
-        {merchantDebts.length > 0 && (
-          <p className="text-[10px] text-gray-500 mb-2">تسجيل دين جديد على التاجر (لا يسجل كإيراد):</p>
-        )}
-        {merchantDebts.map((md, i) => (
-          <div key={i} className="flex flex-col gap-2 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={md.amount}
-                onChange={(e) => updateMerchantDebt(i, 'amount', e.target.value)}
-                placeholder="المبلغ"
-                className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
-                dir="ltr"
-              />
-              <input
-                type="text"
-                placeholder="اسم المورد / الجهة"
-                value={md.description}
-                onChange={(e) => updateMerchantDebt(i, 'description', e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
-              />
-              <button onClick={() => removeMerchantDebt(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
-            </div>
-            <button
-              onClick={() => handleSaveMerchantDebt(i, md)}
-              disabled={savingDebtIndex === i || !md.amount}
-              className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {savingDebtIndex === i ? 'جاري الحفظ...' : '✔ حفظ الدين'}
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* Expenses Section */}
       <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
         <div className="flex items-center justify-between mb-3">
@@ -399,8 +355,9 @@ export default function EODPage() {
                 className="px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none font-bold bg-white"
               >
                 {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
-                  // Hide RESTOCK if cycle is still active
+                  // Hide RESTOCK if cycle is still active, and hide MERCHANT_DEBT_PAY
                   if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
+                  if (key === 'MERCHANT_DEBT_PAY') return null;
                   return <option key={key} value={key}>{label}</option>;
                 })}
               </select>

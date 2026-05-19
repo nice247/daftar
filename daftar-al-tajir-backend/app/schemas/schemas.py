@@ -405,10 +405,28 @@ class OCRResult(BaseModel):
     error: Optional[str] = None
 
 
+# ============ Supplier Schemas ============
+
+class SupplierCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="اسم المورد")
+    phone: Optional[str] = Field(None, max_length=20, description="هاتف المورد")
+
+
+class SupplierResponse(BaseModel):
+    id: UUID
+    name: str
+    phone: Optional[str]
+    total_debt: Decimal
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ============ Merchant Debt Schemas ============
 
 class MerchantDebtCreate(BaseModel):
-    supplier_name: str = Field(..., min_length=1, max_length=255, description="اسم المورد")
+    supplier_id: Optional[UUID] = None
+    supplier_name: Optional[str] = Field(None, max_length=255, description="اسم المورد (للتوافقية)")
     debt_type: str = Field(..., description="cash, bank, goods")
     total_amount: Decimal = Field(..., gt=0)
     description: Optional[str] = None
@@ -423,6 +441,7 @@ class MerchantDebtCreate(BaseModel):
 
 class MerchantDebtResponse(BaseModel):
     id: UUID
+    supplier_id: Optional[UUID] = None
     supplier_name: str
     debt_type: str
     total_amount: Decimal
