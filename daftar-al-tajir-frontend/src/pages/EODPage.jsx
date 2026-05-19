@@ -73,9 +73,6 @@ export default function EODPage() {
         const td = todayRes.value.data;
         if (td.has_data) {
           setTodaySaved(true);
-          // Populate sales fields from server so they persist all day
-          if (td.total_cash_sales > 0) setCashSales([{ amount: String(td.total_cash_sales), description: 'إجمالي محفوظ' }]);
-          if (td.total_bankak_sales > 0) setBankakSales([{ amount: String(td.total_bankak_sales), description: 'إجمالي محفوظ' }]);
         }
         setTodayData(td);
       }
@@ -176,16 +173,8 @@ export default function EODPage() {
         });
       }
 
-      // 2. Pay merchant debts (سداد ديون التاجر - يسجل كمصروف)
+      // 2. Prepare merchant debts payments
       const validDebtPayments = merchantDebtPayments.filter(dp => dp.debt_id && dp.amount && parseFloat(dp.amount) > 0);
-      for (const dp of validDebtPayments) {
-        await merchantDebtAPI.pay({
-          merchant_debt_id: dp.debt_id,
-          amount: parseFloat(dp.amount),
-          payment_method: 'cash',
-          description: 'سداد عبر المعاملات'
-        });
-      }
 
       // Combine other incomes and merchant debts into the same API payload for cashflow balance
       const combinedOtherIncomes = [
@@ -211,9 +200,10 @@ export default function EODPage() {
         ...validDebtPayments.map(dp => {
           const debtInfo = viewMerchantDebts.find(d => String(d.id) === String(dp.debt_id));
           return {
-            category: 'OTHER', // Defaulting to OTHER or BILL for debt payment
+            category: 'MERCHANT_DEBT_PAY',
             amount: parseFloat(dp.amount),
             description: `سداد دين مورد: ${debtInfo ? debtInfo.supplier_name : ''}`.trim(),
+            merchant_debt_id: dp.debt_id,
           };
         })
       ];

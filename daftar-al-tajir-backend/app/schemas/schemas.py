@@ -182,15 +182,16 @@ class EODSales(BaseModel):
 
 
 class ExpenseItem(BaseModel):
-    category: str = Field(..., description="RESTOCK, BILL, OTHER, DEBT_WAIVER")
+    category: str = Field(..., description="RESTOCK, BILL, OTHER, DEBT_WAIVER, MERCHANT_DEBT_PAY")
     amount: Decimal = Field(..., gt=0)
     description: Optional[str] = None
     receipt_image: Optional[str] = None
+    merchant_debt_id: Optional[UUID] = None
 
     @field_validator("category")
     @classmethod
     def validate_category(cls, v):
-        if v not in ("RESTOCK", "BILL", "OTHER", "DEBT_WAIVER"):
+        if v not in ("RESTOCK", "BILL", "OTHER", "DEBT_WAIVER", "MERCHANT_DEBT_PAY"):
             raise ValueError("فئة غير صالحة")
         return v
 

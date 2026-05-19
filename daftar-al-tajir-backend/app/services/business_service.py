@@ -40,8 +40,8 @@ class BusinessService:
             )
             cash_invoice = result.scalar_one_or_none()
             if cash_invoice:
-                cash_invoice.total_amount = eod.sales.cash_sales
-                cash_invoice.paid_amount = eod.sales.cash_sales
+                cash_invoice.total_amount += eod.sales.cash_sales
+                cash_invoice.paid_amount += eod.sales.cash_sales
             else:
                 cash_invoice = Invoice(
                     user_id=user_id,
@@ -63,8 +63,8 @@ class BusinessService:
             )
             bankak_invoice = result.scalar_one_or_none()
             if bankak_invoice:
-                bankak_invoice.total_amount = eod.sales.bankak_sales
-                bankak_invoice.paid_amount = eod.sales.bankak_sales
+                bankak_invoice.total_amount += eod.sales.bankak_sales
+                bankak_invoice.paid_amount += eod.sales.bankak_sales
             else:
                 bankak_invoice = Invoice(
                     user_id=user_id,
@@ -92,6 +92,29 @@ class BusinessService:
             # If restock, start a new cycle
             if starts_new:
                 await BusinessService._start_new_cycle(db, user_id, eod.eod_date)
+
+            # If merchant debt payment, update the debt
+            if exp.category == "MERCHANT_DEBT_PAY" and exp.merchant_debt_id:
+                debt_result = await db.execute(
+                    select(MerchantDebt).where(
+                        MerchantDebt.id == exp.merchant_debt_id,
+                        MerchantDebt.user_id == user_id
+                    )
+                )
+                debt = debt_result.scalar_one_or_none()
+                if debt:
+                    payment = MerchantDebtPayment(
+                        merchant_debt_id=debt.id,
+                        amount=exp.amount,
+                        payment_method="cash",
+                        description=exp.description
+                    )
+                    db.add(payment)
+                    debt.paid_amount += exp.amount
+                    if debt.paid_amount >= debt.total_amount:
+                        debt.status = "paid"
+                    else:
+                        debt.status = "partial"
 
         # 4. Save debt payments
         for dp in eod.debt_payments:
