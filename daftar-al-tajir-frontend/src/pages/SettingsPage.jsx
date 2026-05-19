@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { userAPI } from '../services/api';
-import { formatCurrency, formatDate, getDaysRemaining, phoneToWhatsApp } from '../utils/helpers';
-import { FiUser, FiCalendar, FiRefreshCw, FiPackage, FiPhoneCall } from 'react-icons/fi';
+import { userAPI, adminAPI } from '../services/api';
+import { formatCurrency, formatDate, getDaysRemaining } from '../utils/helpers';
+import { FiUser, FiCalendar, FiRefreshCw, FiPackage, FiPhoneCall, FiDollarSign } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -13,11 +13,16 @@ export default function SettingsPage() {
   const [customCycle, setCustomCycle] = useState('');
   const [cycleStartDate, setCycleStartDate] = useState('');
   const [saving, setSaving] = useState(false);
+  const [adminSettings, setAdminSettings] = useState(null);
 
   useEffect(() => {
     if (user?.restock_cycle_days && ![7, 14, 30].includes(user.restock_cycle_days)) {
       setRestockCycle('custom');
       setCustomCycle(user.restock_cycle_days.toString());
+    }
+    
+    if (user?.role === 'admin') {
+      adminAPI.getSettings().then(res => setAdminSettings(res.data)).catch(console.error);
     }
   }, [user]);
 
@@ -43,6 +48,15 @@ export default function SettingsPage() {
         ...(cycleStartDate && { cycle_start_date: cycleStartDate }),
       });
       await refreshUser();
+      
+      if (user?.role === 'admin' && adminSettings) {
+        await adminAPI.updateSettings({
+          monthly_price: parseFloat(adminSettings.monthly_price),
+          quarterly_price: parseFloat(adminSettings.quarterly_price),
+          semi_annual_price: parseFloat(adminSettings.semi_annual_price),
+        });
+      }
+      
       toast.success('تم تحديث البيانات بنجاح');
       setCycleStartDate(''); // Reset after successful save
     } catch (error) {
@@ -105,7 +119,7 @@ export default function SettingsPage() {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">رقم الواتساب</label>
+            <label className="block text-xs text-gray-600 mb-1">رقم الواتساب (حسابك)</label>
             <input
               type="tel"
               value={user?.phone || ''}
@@ -114,6 +128,18 @@ export default function SettingsPage() {
               dir="ltr"
             />
           </div>
+          {user?.support_phone && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">رقم خدمة العملاء (للتواصل)</label>
+              <input
+                type="tel"
+                value={user.support_phone}
+                disabled
+                className="w-full px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-bold"
+                dir="ltr"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-xs text-gray-600 mb-1">{user?.role === 'admin' ? 'اسم الأدمن' : 'اسم المتجر'}</label>
             <input
@@ -197,6 +223,45 @@ export default function SettingsPage() {
                 type="date"
                 value={cycleStartDate}
                 onChange={(e) => setCycleStartDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Settings Section */}
+      {user?.role === 'admin' && adminSettings && (
+        <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
+          <div className="flex items-center gap-3 text-primary-600 font-bold mb-4">
+            <FiDollarSign />
+            <h3>إعدادات الأسعار (خاص بالمدير)</h3>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك الشهري</label>
+              <input
+                type="number"
+                value={adminSettings.monthly_price}
+                onChange={(e) => setAdminSettings({...adminSettings, monthly_price: e.target.value})}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك الربع سنوي</label>
+              <input
+                type="number"
+                value={adminSettings.quarterly_price}
+                onChange={(e) => setAdminSettings({...adminSettings, quarterly_price: e.target.value})}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">الاشتراك النصف سنوي</label>
+              <input
+                type="number"
+                value={adminSettings.semi_annual_price}
+                onChange={(e) => setAdminSettings({...adminSettings, semi_annual_price: e.target.value})}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
               />
             </div>

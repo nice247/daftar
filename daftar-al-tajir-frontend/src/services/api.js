@@ -133,6 +133,8 @@ export const adminAPI = {
   toggleUser: (data) => api.post('/admin/toggle-user', data),
   addUser: (data) => api.post('/admin/add-user', data),
   getStats: () => api.get('/admin/stats'),
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (settings) => api.post('/admin/settings', { settings }),
 };
 
 // ============ OCR API ============

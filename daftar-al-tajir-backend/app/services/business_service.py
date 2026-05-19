@@ -617,16 +617,13 @@ class BusinessService:
     async def get_today_summary(db: AsyncSession, user_id: UUID, target_date: Optional[date] = None) -> dict:
         """Get all transactions for a specific date (defaults to today)."""
         target = target_date or date.today()
-        today_start = datetime.combine(target, datetime.min.time()).replace(tzinfo=timezone.utc)
-        today_end = datetime.combine(target, datetime.max.time()).replace(tzinfo=timezone.utc)
 
         # Today's cash sales
         cash_result = await db.execute(
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == user_id,
                 Invoice.invoice_type == "EOD_CASH",
-                Invoice.created_at >= today_start,
-                Invoice.created_at <= today_end,
+                func.date(Invoice.created_at) == target
             )
         )
         cash_sales = cash_result.scalar() or Decimal(0)
@@ -636,8 +633,7 @@ class BusinessService:
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == user_id,
                 Invoice.invoice_type == "EOD_BANKAK",
-                Invoice.created_at >= today_start,
-                Invoice.created_at <= today_end,
+                func.date(Invoice.created_at) == target
             )
         )
         bankak_sales = bankak_result.scalar() or Decimal(0)
@@ -646,8 +642,7 @@ class BusinessService:
         expenses_result = await db.execute(
             select(Expense).where(
                 Expense.user_id == user_id,
-                Expense.created_at >= today_start,
-                Expense.created_at <= today_end,
+                func.date(Expense.created_at) == target
             ).order_by(Expense.created_at)
         )
         expenses = [
@@ -682,18 +677,19 @@ class BusinessService:
 
         total_sales = cash_sales + bankak_sales
         net = total_sales + total_debt_payments + total_other_income - total_expenses
+        has_data = total_sales > 0 or total_expenses > 0 or total_debt_payments > 0 or total_other_income > 0
 
         return {
-            "date": str(date.today()),
-            "cash_sales": cash_sales,
-            "bankak_sales": bankak_sales,
+            "date": str(target),
+            "has_data": has_data,
+            "total_cash_sales": cash_sales,
+            "total_bankak_sales": bankak_sales,
             "total_sales": total_sales,
             "expenses": expenses,
             "total_expenses": total_expenses,
             "total_debt_payments": total_debt_payments,
             "total_other_income": total_other_income,
-            "net": net,
-            "has_data": total_sales > 0 or total_expenses > 0 or total_debt_payments > 0 or total_other_income > 0,
+            "net_cashflow": net,
         }
 
 

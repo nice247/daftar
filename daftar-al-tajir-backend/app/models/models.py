@@ -301,3 +301,14 @@ class MerchantDebtPayment(Base):
     payment_date = Column(DateTime(timezone=True), server_default=func.now())
 
     merchant_debt = relationship("MerchantDebt", back_populates="payments")
+
+
+class SystemSettings(Base):
+    """Global system settings, e.g., subscription prices."""
+    __tablename__ = "system_settings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    monthly_price = Column(Numeric(10, 2), default=3000)
+    quarterly_price = Column(Numeric(10, 2), default=8000)
+    semi_annual_price = Column(Numeric(10, 2), default=15000)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

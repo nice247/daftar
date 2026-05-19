@@ -6,8 +6,9 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function EODPage() {
-  const [cashSales, setCashSales] = useState('');
-  const [bankakSales, setBankakSales] = useState('');
+  const [sales, setSales] = useState([{ type: 'cash', amount: '' }]);
+  const [cashSales, setCashSales] = useState([]);
+  const [bankakSales, setBankakSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [debtPayments, setDebtPayments] = useState([]);
   const [merchantDebts, setMerchantDebts] = useState([]); // ديون على التاجر (إيراد)
@@ -38,8 +39,8 @@ export default function EODPage() {
       // New day - clear local form data
       localStorage.removeItem('eod_date');
       localStorage.removeItem('eod_form');
-      setCashSales('');
-      setBankakSales('');
+      setCashSales([]);
+      setBankakSales([]);
       setExpenses([]);
       setDebtPayments([]);
       setMerchantDebts([]);
@@ -134,22 +135,37 @@ export default function EODPage() {
     setOtherIncomes(otherIncomes.filter((_, i) => i !== index));
   };
 
-  // Calculate totals
-  const totalSales = (parseFloat(cashSales) || 0) + (parseFloat(bankakSales) || 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  
-  // Differentiate between other incomes and merchant debts, though both are technically income for the day's cashflow
-  const regularOtherIncome = otherIncomes.reduce((sum, o) => sum + (parseFloat(o.amount) || 0), 0);
-  const totalMerchantDebtReceived = merchantDebts.reduce((sum, md) => sum + (parseFloat(md.amount) || 0), 0);
-  
-  const totalOtherIncome = regularOtherIncome + totalMerchantDebtReceived; // All extra inflows
-  const totalRevenues = totalSales + totalOtherIncome; // الإيرادات الكلية
-  const netProfit = totalRevenues - totalExpenses; // صافي الأرباح
-
   // Save EOD
+  // Add & Remove Sales
+  const addCashSale = () => setCashSales([...cashSales, { amount: '', description: '' }]);
+  const updateCashSale = (index, field, value) => {
+    const newList = [...cashSales];
+    newList[index][field] = value;
+    setCashSales(newList);
+  };
+  const removeCashSale = (index) => {
+    const newList = [...cashSales];
+    newList.splice(index, 1);
+    setCashSales(newList);
+  };
+
+  const addBankakSale = () => setBankakSales([...bankakSales, { amount: '', description: '' }]);
+  const updateBankakSale = (index, field, value) => {
+    const newList = [...bankakSales];
+    newList[index][field] = value;
+    setBankakSales(newList);
+  };
+  const removeBankakSale = (index) => {
+    const newList = [...bankakSales];
+    newList.splice(index, 1);
+    setBankakSales(newList);
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
+      const totalCash = cashSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+      const totalBankak = bankakSales.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
       // 1. Create actual merchant debts in the DB
       const validDebts = merchantDebts.filter(md => md.amount && parseFloat(md.amount) > 0);
       for (const md of validDebts) {
@@ -175,12 +191,9 @@ export default function EODPage() {
         }))
       ];
 
-      const data = {
+      await eodAPI.save({
         eod_date: new Date().toISOString().split('T')[0],
-        sales: {
-          cash_sales: parseFloat(cashSales) || 0,
-          bankak_sales: parseFloat(bankakSales) || 0,
-        },
+        sales: { cash_sales: totalCash, bankak_sales: totalBankak },
         expenses: expenses
           .filter(e => e.amount && parseFloat(e.amount) > 0)
           .map(e => ({
@@ -195,18 +208,17 @@ export default function EODPage() {
             amount: parseFloat(d.amount),
           })),
         other_incomes: combinedOtherIncomes,
-      };
+      });
 
-      const response = await eodAPI.save(data);
-      toast.success(response.data.message);
+      toast.success("تم الحفظ بنجاح");
 
       // Save today's date so midnight reset knows when to clear
       localStorage.setItem('eod_date', new Date().toISOString().split('T')[0]);
       setTodaySaved(true);
 
       // Reset all inputs - data is sent as an incremental transaction
-      setCashSales('');
-      setBankakSales('');
+      setCashSales([]);
+      setBankakSales([]);
       setExpenses([]);
       setDebtPayments([]);
       setMerchantDebts([]);
@@ -313,7 +325,7 @@ export default function EODPage() {
           <div className="grid grid-cols-3 gap-2 text-center mt-3">
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">الإيرادات</p>
-              <p className="font-bold text-sm">{formatCurrency((todayData.total_cash_sales || 0) + (todayData.total_bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
+              <p className="font-bold text-sm">{formatCurrency((todayData.cash_sales || 0) + (todayData.bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">المصروفات</p>
@@ -321,7 +333,7 @@ export default function EODPage() {
             </div>
             <div className="bg-white/20 rounded-lg p-2 border border-white/30">
               <p className="text-[10px] font-bold mb-1">الصافي</p>
-              <p className="font-bold text-sm">{formatCurrency(todayData.net_cashflow || 0)}</p>
+              <p className="font-bold text-sm">{formatCurrency(todayData.net || 0)}</p>
             </div>
           </div>
         </div>
@@ -366,38 +378,58 @@ export default function EODPage() {
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50">
           <div className="flex items-center gap-2">
             <FiShoppingCart className="text-primary-600" size={20} />
-            <h3 className="font-bold text-gray-800">المبيعات والإيرادات</h3>
+            <h3 className="font-bold text-gray-800">المبيعات النقدية (كاش)</h3>
           </div>
-          <div className="text-left bg-green-50 px-3 py-1 rounded-lg">
-            <p className="text-[10px] text-green-800 font-bold">الإيرادات الكلية لليوم</p>
-            <p className="font-bold text-green-700">{formatCurrency(totalRevenues)} ج.س</p>
-          </div>
+          <button onClick={addCashSale} className="text-xs bg-primary-50 text-primary-700 px-2 py-1 rounded-md font-bold hover:bg-primary-100">+ إضافة مبيعات</button>
         </div>
-        
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">المبيعات النقدية (الكاش في الدرج)</label>
+        {cashSales.map((cs, i) => (
+          <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
             <input
               type="number"
-              value={cashSales}
-              onChange={(e) => setCashSales(e.target.value)}
-              placeholder="0"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
+              value={cs.amount}
+              onChange={(e) => updateCashSale(i, 'amount', e.target.value)}
+              placeholder="المبلغ"
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
               dir="ltr"
             />
+            <input
+              type="text"
+              placeholder="وصف (اختياري)"
+              value={cs.description}
+              onChange={(e) => updateCashSale(i, 'description', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+            />
+            <button onClick={() => removeCashSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">مبيعات بنكك (تحويلات)</label>
+        ))}
+
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50 mt-6">
+          <div className="flex items-center gap-2">
+            <FiShoppingCart className="text-blue-600" size={20} />
+            <h3 className="font-bold text-gray-800">مبيعات تحويل (بنكك)</h3>
+          </div>
+          <button onClick={addBankakSale} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة مبيعات</button>
+        </div>
+        {bankakSales.map((bs, i) => (
+          <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
             <input
               type="number"
-              value={bankakSales}
-              onChange={(e) => setBankakSales(e.target.value)}
-              placeholder="0"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none text-left font-mono text-lg"
+              value={bs.amount}
+              onChange={(e) => updateBankakSale(i, 'amount', e.target.value)}
+              placeholder="المبلغ"
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
               dir="ltr"
             />
+            <input
+              type="text"
+              placeholder="وصف (اختياري)"
+              value={bs.description}
+              onChange={(e) => updateBankakSale(i, 'description', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+            />
+            <button onClick={() => removeBankakSale(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* Merchant Debts (ديون على التاجر) */}
@@ -552,31 +584,6 @@ export default function EODPage() {
         ))}
       </div>
 
-      {/* Summary Card */}
-      <div className="bg-white rounded-xl p-5 card-shadow-lg border-2 border-primary-400 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-16 h-16 bg-primary-100 rounded-bl-full -z-10 opacity-50"></div>
-        <h3 className="font-black text-gray-800 mb-4 text-center text-xl">ملخص اليومية</h3>
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm items-center bg-gray-50 p-2 rounded-lg">
-            <span className="text-gray-700 font-bold">الإيرادات الكلية (مبيعات + إيرادات أخرى + ديون مستلمة)</span>
-            <span className="font-black text-green-700 text-lg">{formatCurrency(totalRevenues)}</span>
-          </div>
-          <div className="flex justify-between text-sm items-center bg-gray-50 p-2 rounded-lg">
-            <span className="text-gray-700 font-bold">إجمالي المصروفات (والمشتريات)</span>
-            <span className="font-black text-red-600 text-lg">({formatCurrency(totalExpenses)})</span>
-          </div>
-          <div className="border-t-2 border-dashed border-gray-300 pt-4 flex justify-between items-center mt-2">
-            <div>
-              <span className="font-black text-gray-900 text-xl block">صافي الأرباح (اليوم)</span>
-              <span className="text-[10px] text-gray-500">(الإيرادات الكلية - المصروفات)</span>
-            </div>
-            <span className={`font-black text-2xl px-3 py-1 rounded-lg ${netProfit >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-              {formatCurrency(netProfit)} ج.س
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Save Button */}
       <button
         onClick={handleSave}
@@ -584,11 +591,11 @@ export default function EODPage() {
         className="w-full py-4 bg-primary-600 text-white rounded-xl font-black text-lg hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg active:scale-[0.98]"
       >
         <FiSave size={24} />
-        {loading ? 'جاري الحفظ...' : '✔ حفظ اليومية'}
+        {loading ? 'جاري الحفظ...' : 'حفظ'}
       </button>
 
       {todaySaved && (
-        <p className="text-center text-xs text-green-600 font-bold">✔ تم حفظ بيانات اليوم — يمكنك إضافة المزيد. البيانات تتراكم حتى منتصف الليل.</p>
+        <p className="text-center text-xs text-green-600 font-bold">✔ تم حفظ المعاملات بنجاح — يمكنك إكمال إضافة معاملات أخرى لليوم.</p>
       )}
 
       {/* ===== Expenses View Modal ===== */}
@@ -729,11 +736,11 @@ export default function EODPage() {
                     <h4 className="font-bold text-blue-800 mb-2">المبيعات</h4>
                     <div className="flex justify-between text-sm mb-1">
                       <span>نقدي (كاش):</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_cash_sales)}</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.cash_sales)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>بنكك:</span>
-                      <span className="font-bold">{formatCurrency(yesterdayData.total_bankak_sales)}</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.bankak_sales)}</span>
                     </div>
                   </div>
 
@@ -760,7 +767,7 @@ export default function EODPage() {
                     <h4 className="font-bold text-gray-800 mb-2">الصافي</h4>
                     <div className="flex justify-between text-sm">
                       <span>صافي الدخل:</span>
-                      <span className="font-bold text-primary-600">{formatCurrency(yesterdayData.net_cashflow)}</span>
+                      <span className="font-bold text-primary-600">{formatCurrency(yesterdayData.net)}</span>
                     </div>
                   </div>
                 </div>

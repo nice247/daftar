@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiHome, FiUsers, FiBarChart2, FiSettings, FiShield, FiCreditCard } from 'react-icons/fi';
 
 const merchantNavItems = [
-  { path: '/eod', label: 'إغلاق اليوم', icon: FiHome },
+  { path: '/eod', label: 'المعاملات', icon: FiHome },
   { path: '/customers', label: 'العملاء', icon: FiUsers },
   { path: '/reports', label: 'التقارير', icon: FiBarChart2 },
   { path: '/subscription', label: 'الاشتراك', icon: FiCreditCard },

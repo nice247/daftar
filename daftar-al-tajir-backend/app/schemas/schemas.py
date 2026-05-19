@@ -385,6 +385,14 @@ class AdminAddUser(BaseModel):
     subscription_days: int = 30
 
 
+class SystemSettingsSchema(BaseModel):
+    monthly_price: Decimal
+    quarterly_price: Decimal
+    semi_annual_price: Decimal
+
+    model_config = {"from_attributes": True}
+
+
 # ============ OCR Schema ============
 
 class OCRResult(BaseModel):

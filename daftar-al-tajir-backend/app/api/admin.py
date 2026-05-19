@@ -7,14 +7,54 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from app.core.database import get_db
 from app.core.security import hash_password
-from app.models.models import User, Subscription
+from app.models.models import User, Subscription, SystemSettings
 from app.api.deps import get_current_admin
 from app.schemas.schemas import (
     AdminUserListResponse, AdminExtendSubscription,
-    AdminToggleUser, AdminAddUser, MessageResponse
+    AdminToggleUser, AdminAddUser, MessageResponse, SystemSettingsSchema
 )
 
 router = APIRouter(prefix="/admin", tags=["لوحة تحكم الأدمن"])
+
+
+@router.get("/settings", response_model=SystemSettingsSchema, summary="إعدادات النظام")
+async def get_system_settings(
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get global system settings (prices, etc)."""
+    result = await db.execute(select(SystemSettings).order_by(SystemSettings.id.desc()).limit(1))
+    settings = result.scalar_one_or_none()
+    
+    if not settings:
+        settings = SystemSettings()
+        db.add(settings)
+        await db.commit()
+        await db.refresh(settings)
+        
+    return settings
+
+
+@router.put("/settings", response_model=SystemSettingsSchema, summary="تحديث إعدادات النظام")
+async def update_system_settings(
+    request: SystemSettingsSchema,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update global system settings."""
+    result = await db.execute(select(SystemSettings).order_by(SystemSettings.id.desc()).limit(1))
+    settings = result.scalar_one_or_none()
+    
+    if not settings:
+        settings = SystemSettings(**request.model_dump())
+        db.add(settings)
+    else:
+        for key, value in request.model_dump().items():
+            setattr(settings, key, value)
+            
+    await db.commit()
+    await db.refresh(settings)
+    return settings
 
 
 @router.get("/users", response_model=list[AdminUserListResponse], summary="قائمة المستخدمين")
@@ -197,3 +237,53 @@ async def get_system_stats(
         "pending_subscriptions": pending_subscriptions,
         "expiring_soon": expiring_soon
     }
+
+
+@router.get("/settings", summary="إعدادات النظام")
+async def get_system_settings(
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all system settings."""
+    from app.models.models import SystemSettings
+    result = await db.execute(select(SystemSettings))
+    settings = result.scalars().all()
+    
+    # Default settings if empty
+    settings_dict = {
+        "monthly_price": 10000,
+        "quarterly_price": 27000,
+        "semi_annual_price": 50000,
+    }
+    
+    for s in settings:
+        settings_dict[s.setting_key] = s.setting_value
+        
+    return settings_dict
+
+
+from pydantic import BaseModel
+class SettingsUpdate(BaseModel):
+    settings: dict
+
+@router.post("/settings", summary="تحديث إعدادات النظام")
+async def update_system_settings(
+    request: SettingsUpdate,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update system settings (e.g. prices)."""
+    from app.models.models import SystemSettings
+    
+    for key, value in request.settings.items():
+        result = await db.execute(select(SystemSettings).where(SystemSettings.setting_key == key))
+        setting = result.scalar_one_or_none()
+        
+        if setting:
+            setting.setting_value = value
+        else:
+            setting = SystemSettings(setting_key=key, setting_value=value)
+            db.add(setting)
+            
+    await db.commit()
+    return MessageResponse(message="تم حفظ الإعدادات بنجاح")
