@@ -23,7 +23,8 @@ from app.models.models import Base, User
 from app.api import (
     auth_router, users_router, subscriptions_router,
     eod_router, customers_router, expenses_router,
-    reports_router, products_router, admin_router, ocr_router
+    reports_router, products_router, admin_router, ocr_router,
+    merchant_debts_router
 )
 from app.services.telegram_service import telegram_service
 
@@ -165,6 +166,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ============ GZip Middleware (Performance) ============
+from starlette.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 # ============ Register Routers ============
 
 app.include_router(auth_router, prefix="/api/v1")
@@ -177,6 +182,7 @@ app.include_router(reports_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(ocr_router, prefix="/api/v1")
+app.include_router(merchant_debts_router, prefix="/api/v1")
 
 # ============ Root Route ============
 
@@ -186,6 +192,18 @@ async def root():
         "message": "جاري التحميل...",
         "docs": "/api/docs"
     }
+
+
+@app.get("/health", tags=["الصحة"])
+async def health_check():
+    """Health check - pings DB to keep connection alive (used by cron job)."""
+    try:
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "healthy", "db": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "db": str(e)}
 
 # ============ Serve React Frontend ============
 # This must be at the very bottom to act as a catch-all route.

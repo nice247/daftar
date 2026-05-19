@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { eodAPI, customerAPI } from '../services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { eodAPI, customerAPI, expenseAPI, merchantDebtAPI } from '../services/api';
 import { formatCurrency, EXPENSE_CATEGORIES } from '../utils/helpers';
-import { FiShoppingCart, FiCreditCard, FiTrendingUp, FiPackage, FiDollarSign, FiSave, FiList } from 'react-icons/fi';
+import { FiShoppingCart, FiCreditCard, FiTrendingUp, FiPackage, FiDollarSign, FiSave, FiList, FiEye, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -16,21 +16,57 @@ export default function EODPage() {
   const [lastRestock, setLastRestock] = useState(null);
   const [cycleStatus, setCycleStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [todaySaved, setTodaySaved] = useState(false);
+
+  // View modals
+  const [showExpensesModal, setShowExpensesModal] = useState(false);
+  const [showPurchasesModal, setShowPurchasesModal] = useState(false);
+  const [showMerchantDebtsModal, setShowMerchantDebtsModal] = useState(false);
+  const [viewExpenses, setViewExpenses] = useState([]);
+  const [viewPurchases, setViewPurchases] = useState([]);
+  const [viewMerchantDebts, setViewMerchantDebts] = useState([]);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  // Check if day changed (midnight reset)
+  const checkDayReset = useCallback(() => {
+    const savedDate = localStorage.getItem('eod_date');
+    const today = new Date().toISOString().split('T')[0];
+    if (savedDate && savedDate !== today) {
+      // New day - clear local form data
+      localStorage.removeItem('eod_date');
+      localStorage.removeItem('eod_form');
+      setCashSales('');
+      setBankakSales('');
+      setExpenses([]);
+      setDebtPayments([]);
+      setMerchantDebts([]);
+      setOtherIncomes([{ category: 'bankak_commission', amount: '', description: '\u0639\u0645\u0648\u0644\u0629 \u0628\u0646\u0643\u0643' }]);
+      setTodaySaved(false);
+    }
+  }, []);
 
   useEffect(() => {
+    checkDayReset();
     loadData();
-  }, []);
+    // Check for midnight reset every minute
+    const interval = setInterval(checkDayReset, 60000);
+    return () => clearInterval(interval);
+  }, [checkDayReset]);
 
   const loadData = async () => {
     try {
-      const [custRes, restockRes, cycleRes] = await Promise.allSettled([
+      const [custRes, restockRes, cycleRes, todayRes] = await Promise.allSettled([
         customerAPI.list(),
         eodAPI.getLastRestock(),
         eodAPI.getCycleStatus(),
+        eodAPI.getToday(),
       ]);
       if (custRes.status === 'fulfilled') setCustomers(custRes.value.data);
       if (restockRes.status === 'fulfilled' && restockRes.value.data.date) setLastRestock(restockRes.value.data);
       if (cycleRes.status === 'fulfilled') setCycleStatus(cycleRes.value.data);
+      if (todayRes.status === 'fulfilled' && todayRes.value.data.has_data) {
+        setTodaySaved(true);
+      }
     } catch {}
   };
 
@@ -149,7 +185,12 @@ export default function EODPage() {
       const response = await eodAPI.save(data);
       toast.success(response.data.message);
 
-      // Reset form
+      // Save today's date so midnight reset knows when to clear
+      localStorage.setItem('eod_date', new Date().toISOString().split('T')[0]);
+      setTodaySaved(true);
+
+      // DON'T reset form - data stays visible until midnight
+      // Only clear the input fields so user can add more if needed
       setCashSales('');
       setBankakSales('');
       setExpenses([]);
@@ -162,6 +203,39 @@ export default function EODPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // View all expenses
+  const handleViewExpenses = async () => {
+    setViewLoading(true);
+    setShowExpensesModal(true);
+    try {
+      const res = await expenseAPI.list({ limit: 100 });
+      setViewExpenses(res.data.expenses || res.data || []);
+    } catch { toast.error('فشل تحميل المصروفات'); }
+    finally { setViewLoading(false); }
+  };
+
+  // View purchases (RESTOCK expenses)
+  const handleViewPurchases = async () => {
+    setViewLoading(true);
+    setShowPurchasesModal(true);
+    try {
+      const res = await expenseAPI.list({ category: 'RESTOCK', limit: 100 });
+      setViewPurchases(res.data.expenses || res.data || []);
+    } catch { toast.error('فشل تحميل المشتريات'); }
+    finally { setViewLoading(false); }
+  };
+
+  // View merchant debts
+  const handleViewMerchantDebts = async () => {
+    setViewLoading(true);
+    setShowMerchantDebtsModal(true);
+    try {
+      const res = await merchantDebtAPI.list();
+      setViewMerchantDebts(res.data || []);
+    } catch { toast.error('فشل تحميل ديون التاجر'); }
+    finally { setViewLoading(false); }
   };
 
   return (
@@ -192,12 +266,24 @@ export default function EODPage() {
         </div>
       )}
 
-      {/* History Link */}
-      <div className="flex justify-end">
+      {/* History Link + View Buttons */}
+      <div className="flex flex-wrap gap-2">
         <Link to="/reports" className="flex items-center gap-1 text-sm text-primary-600 font-bold bg-primary-50 px-3 py-1.5 rounded-lg hover:bg-primary-100 transition-colors">
           <FiList size={16} />
-          سجل المعاملات والتقارير السابقة
+          التقارير
         </Link>
+        <button onClick={handleViewExpenses} className="flex items-center gap-1 text-sm text-red-600 font-bold bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
+          <FiEye size={14} />
+          المصروفات
+        </button>
+        <button onClick={handleViewPurchases} className="flex items-center gap-1 text-sm text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors">
+          <FiEye size={14} />
+          المشتريات
+        </button>
+        <button onClick={handleViewMerchantDebts} className="flex items-center gap-1 text-sm text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
+          <FiEye size={14} />
+          ديون التاجر
+        </button>
       </div>
 
       {/* Last Restock Card */}
@@ -435,8 +521,119 @@ export default function EODPage() {
         className="w-full py-4 bg-primary-600 text-white rounded-xl font-black text-lg hover:bg-primary-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-lg active:scale-[0.98]"
       >
         <FiSave size={24} />
-        {loading ? 'جاري الحفظ...' : 'حفظ وإغلاق اليوم'}
+        {loading ? 'جاري الحفظ...' : '✔ حفظ اليومية'}
       </button>
+
+      {todaySaved && (
+        <p className="text-center text-xs text-green-600 font-bold">✔ تم حفظ بيانات اليوم — يمكنك إضافة المزيد. البيانات تتراكم حتى منتصف الليل.</p>
+      )}
+
+      {/* ===== Expenses View Modal ===== */}
+      {showExpensesModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">سجل المصروفات</h3>
+              <button onClick={() => setShowExpensesModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {viewLoading ? (
+                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+              ) : viewExpenses.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">لا توجد مصروفات مسجلة</p>
+              ) : (
+                viewExpenses.map((exp, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-gray-600">{EXPENSE_CATEGORIES[exp.category] || exp.category}</span>
+                      <span className="font-bold text-red-600">{formatCurrency(exp.amount)} ج.س</span>
+                    </div>
+                    {exp.description && <p className="text-xs text-gray-500 mt-1">{exp.description}</p>}
+                    <p className="text-[10px] text-gray-400 mt-1">{exp.created_at}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Purchases View Modal ===== */}
+      {showPurchasesModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">المشتريات السابقة (تجديد مخزون)</h3>
+              <button onClick={() => setShowPurchasesModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {viewLoading ? (
+                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+              ) : viewPurchases.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">لا توجد مشتريات مسجلة</p>
+              ) : (
+                viewPurchases.map((p, i) => (
+                  <div key={i} className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-amber-700">تجديد مخزون</span>
+                      <span className="font-bold text-amber-800">{formatCurrency(p.amount)} ج.س</span>
+                    </div>
+                    {p.description && <p className="text-xs text-gray-600 mt-1">{p.description}</p>}
+                    <p className="text-[10px] text-gray-400 mt-1">{p.created_at}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Merchant Debts View Modal ===== */}
+      {showMerchantDebtsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">ديون التاجر على الموردين</h3>
+              <button onClick={() => setShowMerchantDebtsModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {viewLoading ? (
+                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+              ) : viewMerchantDebts.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">لا توجد ديون مسجلة</p>
+              ) : (
+                viewMerchantDebts.map((d, i) => (
+                  <div key={i} className={`rounded-lg p-3 border ${d.status === 'paid' ? 'bg-green-50 border-green-100' : d.status === 'partial' ? 'bg-yellow-50 border-yellow-100' : 'bg-red-50 border-red-100'}`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-bold text-gray-800">{d.supplier_name}</span>
+                        <span className={`text-[10px] mr-2 px-1.5 py-0.5 rounded-full ${d.debt_type === 'cash' ? 'bg-green-100 text-green-700' : d.debt_type === 'bank' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {d.debt_type === 'cash' ? 'كاش' : d.debt_type === 'bank' ? 'بنكك' : 'بضاعة'}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d.status === 'paid' ? 'bg-green-100 text-green-700' : d.status === 'partial' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                        {d.status === 'paid' ? 'مسدد' : d.status === 'partial' ? 'جزئي' : 'غير مسدد'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-500">المبلغ: {formatCurrency(d.total_amount)}</span>
+                      <span className="text-xs text-gray-500">المتبقي: {formatCurrency(d.remaining)}</span>
+                    </div>
+                    {d.description && <p className="text-xs text-gray-500 mt-1">{d.description}</p>}
+                    <p className="text-[10px] text-gray-400 mt-1">{d.created_at}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

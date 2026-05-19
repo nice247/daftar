@@ -144,7 +144,7 @@ ADMIN_PHONE: str = os.getenv("ADMIN_PHONE", "0902642768")
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "nice@247")
 
 # ============ Support ============
-SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "249902642768")
+SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "201280920179")
 
 # ============ Google Cloud APIs ============
 GOOGLE_GEMINI_API_KEY: str = os.getenv("GOOGLE_GEMINI_API_KEY", "")

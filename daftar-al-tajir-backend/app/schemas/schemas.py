@@ -396,6 +396,43 @@ class OCRResult(BaseModel):
     error: Optional[str] = None
 
 
+# ============ Merchant Debt Schemas ============
+
+class MerchantDebtCreate(BaseModel):
+    supplier_name: str = Field(..., min_length=1, max_length=255, description="اسم المورد")
+    debt_type: str = Field(..., description="cash, bank, goods")
+    total_amount: Decimal = Field(..., gt=0)
+    description: Optional[str] = None
+
+    @field_validator("debt_type")
+    @classmethod
+    def validate_debt_type(cls, v):
+        if v not in ("cash", "bank", "goods"):
+            raise ValueError("نوع الدين يجب أن يكون cash أو bank أو goods")
+        return v
+
+
+class MerchantDebtResponse(BaseModel):
+    id: UUID
+    supplier_name: str
+    debt_type: str
+    total_amount: Decimal
+    paid_amount: Decimal
+    status: str
+    description: Optional[str]
+    created_at: datetime
+    remaining: Optional[Decimal] = None
+
+    model_config = {"from_attributes": True}
+
+
+class MerchantDebtPaymentCreate(BaseModel):
+    merchant_debt_id: UUID
+    amount: Decimal = Field(..., gt=0)
+    payment_method: str = Field("cash", description="cash or bank")
+    description: Optional[str] = None
+
+
 # ============ Message Schemas ============
 
 class MessageResponse(BaseModel):

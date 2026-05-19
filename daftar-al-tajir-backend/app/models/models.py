@@ -37,15 +37,16 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
-    subscriptions = relationship("Subscription", back_populates="user", lazy="selectin")
-    customers = relationship("Customer", back_populates="user", lazy="selectin")
-    invoices = relationship("Invoice", back_populates="user", lazy="selectin")
-    expenses = relationship("Expense", back_populates="user", lazy="selectin")
-    debt_payments = relationship("DebtPayment", back_populates="user", lazy="selectin")
-    other_incomes = relationship("OtherIncome", back_populates="user", lazy="selectin")
-    restock_cycles = relationship("RestockCycle", back_populates="user", lazy="selectin")
-    products = relationship("Product", back_populates="user", lazy="selectin")
+    # Relationships - use lazy="select" (deferred) to avoid loading all data on auth
+    subscriptions = relationship("Subscription", back_populates="user", lazy="select")
+    customers = relationship("Customer", back_populates="user", lazy="select")
+    invoices = relationship("Invoice", back_populates="user", lazy="select")
+    expenses = relationship("Expense", back_populates="user", lazy="select")
+    debt_payments = relationship("DebtPayment", back_populates="user", lazy="select")
+    other_incomes = relationship("OtherIncome", back_populates="user", lazy="select")
+    restock_cycles = relationship("RestockCycle", back_populates="user", lazy="select")
+    products = relationship("Product", back_populates="user", lazy="select")
+    merchant_debts = relationship("MerchantDebt", back_populates="user", lazy="select")
 
     def is_admin(self) -> bool:
         return self.role == "admin"
@@ -101,8 +102,8 @@ class Customer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="customers")
-    invoices = relationship("Invoice", back_populates="customer", lazy="selectin")
-    debt_payments = relationship("DebtPayment", back_populates="customer", lazy="selectin")
+    invoices = relationship("Invoice", back_populates="customer", lazy="select")
+    debt_payments = relationship("DebtPayment", back_populates="customer", lazy="select")
 
 
 class Invoice(Base):
@@ -131,7 +132,7 @@ class Invoice(Base):
 
     user = relationship("User", back_populates="invoices")
     customer = relationship("Customer", back_populates="invoices")
-    debt_payments = relationship("DebtPayment", back_populates="invoice", lazy="selectin")
+    debt_payments = relationship("DebtPayment", back_populates="invoice", lazy="select")
 
 
 class Expense(Base):
@@ -228,7 +229,7 @@ class Product(Base):
     current_stock = Column(Numeric(15, 2), default=0)
 
     user = relationship("User", back_populates="products")
-    stock_transactions = relationship("StockTransaction", back_populates="product", lazy="selectin")
+    stock_transactions = relationship("StockTransaction", back_populates="product", lazy="select")
 
 
 class StockTransaction(Base):
@@ -259,3 +260,44 @@ class OTPCode(Base):
     )
     expires_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MerchantDebt(Base):
+    """Merchant debts table - debts the merchant owes to suppliers."""
+    __tablename__ = "merchant_debts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    supplier_name = Column(String(255), nullable=False)  # اسم المورد
+    debt_type = Column(
+        String(20),
+        CheckConstraint("debt_type IN ('cash','bank','goods')"),
+        nullable=False
+    )  # كاش / بنكك / بضاعة
+    total_amount = Column(Numeric(15, 2), nullable=False)
+    paid_amount = Column(Numeric(15, 2), default=0)
+    status = Column(
+        String(20),
+        CheckConstraint("status IN ('unpaid','partial','paid')"),
+        default="unpaid"
+    )  # غير مسدد / جزئي / مسدد
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="merchant_debts")
+    payments = relationship("MerchantDebtPayment", back_populates="merchant_debt", lazy="select")
+
+
+class MerchantDebtPayment(Base):
+    """Payments on merchant debts to suppliers."""
+    __tablename__ = "merchant_debt_payments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    merchant_debt_id = Column(UUID(as_uuid=True), ForeignKey("merchant_debts.id"), nullable=False, index=True)
+    amount = Column(Numeric(15, 2), nullable=False)
+    payment_method = Column(String(20), default="cash")  # cash / bank
+    description = Column(Text, nullable=True)
+    payment_date = Column(DateTime(timezone=True), server_default=func.now())
+
+    merchant_debt = relationship("MerchantDebt", back_populates="payments")

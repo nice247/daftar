@@ -73,3 +73,16 @@ async def get_cycle_status(
         "net_cashflow": cycle.net_cashflow,
         "status": cycle.status
     }
+
+
+@router.get("/today", summary="بيانات اليوم الحالي")
+async def get_today_data(
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get today's accumulated data (invoices, expenses, payments).
+    Data stays visible until midnight, then resets automatically.
+    """
+    result = await business_service.get_today_summary(db, current_user.id)
+    return result

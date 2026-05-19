@@ -587,5 +587,89 @@ class BusinessService:
         await db.flush()
         return transaction
 
+    # ============ Today's Summary ============
+
+    @staticmethod
+    async def get_today_summary(db: AsyncSession, user_id: UUID) -> dict:
+        """Get all of today's transactions (persists until midnight)."""
+        today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
+        today_end = datetime.combine(date.today(), datetime.max.time()).replace(tzinfo=timezone.utc)
+
+        # Today's cash sales
+        cash_result = await db.execute(
+            select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
+                Invoice.user_id == user_id,
+                Invoice.invoice_type == "EOD_CASH",
+                Invoice.created_at >= today_start,
+                Invoice.created_at <= today_end,
+            )
+        )
+        cash_sales = cash_result.scalar() or Decimal(0)
+
+        # Today's bankak sales
+        bankak_result = await db.execute(
+            select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
+                Invoice.user_id == user_id,
+                Invoice.invoice_type == "EOD_BANKAK",
+                Invoice.created_at >= today_start,
+                Invoice.created_at <= today_end,
+            )
+        )
+        bankak_sales = bankak_result.scalar() or Decimal(0)
+
+        # Today's expenses
+        expenses_result = await db.execute(
+            select(Expense).where(
+                Expense.user_id == user_id,
+                Expense.created_at >= today_start,
+                Expense.created_at <= today_end,
+            ).order_by(Expense.created_at)
+        )
+        expenses = [
+            {
+                "category": e.category,
+                "amount": e.amount,
+                "description": e.description,
+            }
+            for e in expenses_result.scalars().all()
+        ]
+        total_expenses = sum(e["amount"] for e in expenses)
+
+        # Today's debt payments received
+        debt_pay_result = await db.execute(
+            select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
+                DebtPayment.user_id == user_id,
+                DebtPayment.payment_date >= today_start,
+                DebtPayment.payment_date <= today_end,
+            )
+        )
+        total_debt_payments = debt_pay_result.scalar() or Decimal(0)
+
+        # Today's other income
+        other_result = await db.execute(
+            select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
+                OtherIncome.user_id == user_id,
+                OtherIncome.created_at >= today_start,
+                OtherIncome.created_at <= today_end,
+            )
+        )
+        total_other_income = other_result.scalar() or Decimal(0)
+
+        total_sales = cash_sales + bankak_sales
+        net = total_sales + total_debt_payments + total_other_income - total_expenses
+
+        return {
+            "date": str(date.today()),
+            "cash_sales": cash_sales,
+            "bankak_sales": bankak_sales,
+            "total_sales": total_sales,
+            "expenses": expenses,
+            "total_expenses": total_expenses,
+            "total_debt_payments": total_debt_payments,
+            "total_other_income": total_other_income,
+            "net": net,
+            "has_data": total_sales > 0 or total_expenses > 0 or total_debt_payments > 0 or total_other_income > 0,
+        }
+
 
 business_service = BusinessService()

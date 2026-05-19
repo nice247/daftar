@@ -26,6 +26,8 @@ services:
         sync: false
       - key: CORS_ORIGINS
         value: '["https://daftar-tajir.onrender.com"]'
+      - key: SUPPORT_PHONE
+        value: "201280920179"
       - key: PYTHON_VERSION
         value: "3.12.4"
     healthCheckPath: /health

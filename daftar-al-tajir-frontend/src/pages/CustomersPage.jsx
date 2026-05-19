@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { customerAPI } from '../services/api';
 import { formatCurrency } from '../utils/helpers';
-import { FiUserPlus, FiSearch, FiX, FiEdit2, FiTrash2, FiGift } from 'react-icons/fi';
+import { FiUserPlus, FiSearch, FiX, FiEdit2, FiTrash2, FiGift, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 
@@ -245,9 +245,9 @@ export default function CustomersPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-gray-800 text-lg">{customer.name}</h4>
-                    <button onClick={() => openEditModal(customer)} className="text-gray-400 hover:text-primary-600"><FiEdit2 size={14} /></button>
+                    <button onClick={() => openEditModal(customer)} className="text-gray-400 hover:text-primary-600 p-1" title="تعديل"><FiEdit2 size={16} /></button>
                     {customer.total_debt == 0 && (
-                        <button onClick={() => handleDeleteCustomer(customer)} className="text-gray-400 hover:text-red-600"><FiTrash2 size={14} /></button>
+                        <button onClick={() => handleDeleteCustomer(customer)} className="text-gray-400 hover:text-red-600 p-1" title="حذف"><FiTrash2 size={16} /></button>
                     )}
                   </div>
                   {customer.phone && <p className="text-sm text-gray-500" dir="ltr">{customer.phone}</p>}
@@ -304,8 +304,8 @@ export default function CustomersPage() {
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">إضافة عميل جديد</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400">
-                <FiX size={20} />
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
               </button>
             </div>
             <form onSubmit={handleAddCustomer} className="space-y-3">
@@ -331,7 +331,7 @@ export default function CustomersPage() {
                 disabled={actionLoading || !newName || !newPhone}
                 className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50"
               >
-                {actionLoading ? 'جاري الحفظ...' : 'حفظ العميل'}
+                {actionLoading ? 'جاري الحفظ...' : '✔ حفظ العميل'}
               </button>
             </form>
           </div>
@@ -344,8 +344,8 @@ export default function CustomersPage() {
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">تعديل بيانات العميل</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400">
-                <FiX size={20} />
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
               </button>
             </div>
             <form onSubmit={handleEditCustomer} className="space-y-3">
@@ -371,7 +371,7 @@ export default function CustomersPage() {
                 disabled={actionLoading || !newName || !newPhone}
                 className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50"
               >
-                {actionLoading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                {actionLoading ? 'جاري الحفظ...' : '✔ حفظ التعديلات'}
               </button>
             </form>
           </div>
@@ -384,8 +384,8 @@ export default function CustomersPage() {
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">تسجيل دين على: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowDebtModal(false)} className="text-gray-400">
-                <FiX size={20} />
+              <button onClick={() => setShowDebtModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
               </button>
             </div>
             <form onSubmit={handleAddDebt} className="space-y-3">
@@ -420,7 +420,7 @@ export default function CustomersPage() {
                 disabled={actionLoading || !debtAmount}
                 className="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 disabled:opacity-50"
               >
-                {actionLoading ? 'جاري الحفظ...' : 'حفظ الدين'}
+                {actionLoading ? 'جاري الحفظ...' : '✔ حفظ الدين'}
               </button>
             </form>
           </div>
@@ -433,8 +433,8 @@ export default function CustomersPage() {
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">تسجيل سداد من: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowPayModal(false)} className="text-gray-400">
-                <FiX size={20} />
+              <button onClick={() => setShowPayModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
               </button>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3 text-center">
@@ -456,7 +456,7 @@ export default function CustomersPage() {
                 disabled={actionLoading || !payAmount}
                 className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 disabled:opacity-50"
               >
-                {actionLoading ? 'جاري الحفظ...' : 'حفظ السداد'}
+                {actionLoading ? 'جاري الحفظ...' : '✔ حفظ السداد'}
               </button>
             </form>
           </div>
@@ -469,8 +469,8 @@ export default function CustomersPage() {
           <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800">إعفاء دين للعميل: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowWaiveModal(false)} className="text-gray-400">
-                <FiX size={20} />
+              <button onClick={() => setShowWaiveModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
               </button>
             </div>
             <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3 text-center">
@@ -500,7 +500,7 @@ export default function CustomersPage() {
                 disabled={actionLoading || !waiveAmount}
                 className="w-full py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-gray-900 disabled:opacity-50"
               >
-                {actionLoading ? 'جاري الحفظ...' : 'تأكيد الإعفاء'}
+                {actionLoading ? 'جاري الحفظ...' : '✔ تأكيد الإعفاء'}
               </button>
             </form>
           </div>

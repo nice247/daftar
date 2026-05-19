@@ -35,11 +35,17 @@ async def upload_receipt(
     verification = ocr_service.verify_payment(ocr_result)
 
     # Create subscription record
+    # Only store full image if OCR failed (for manual review)
+    # If OCR succeeded, we have the extracted data so we don't need the full image
+    receipt_data = None
+    if not ocr_result.success:
+        receipt_data = base64.b64encode(image_data).decode('utf-8')[:50000]  # Truncate for storage
+
     subscription = Subscription(
         user_id=current_user.id,
         plan=None,
         amount=ocr_result.amount,
-        receipt_image=base64.b64encode(image_data).decode('utf-8')[:50000],  # Truncate for storage
+        receipt_image=receipt_data,
         ocr_data={
             "amount": str(ocr_result.amount) if ocr_result.amount else None,
             "reference_number": ocr_result.reference_number,

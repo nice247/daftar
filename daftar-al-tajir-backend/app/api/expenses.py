@@ -17,24 +17,32 @@ async def get_expenses(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     category: Optional[str] = None,
+    limit: int = Query(50, ge=1, le=200, description="عدد النتائج"),
+    offset: int = Query(0, ge=0, description="بداية النتائج"),
     current_user: User = Depends(get_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get expenses with optional date range and category filters."""
+    """Get expenses with optional date range, category filters, and pagination."""
     expenses = await business_service.get_expenses(
         db, current_user.id, start_date, end_date, category
     )
-    return [
-        {
-            "id": str(exp.id),
-            "category": exp.category,
-            "amount": exp.amount,
-            "description": exp.description,
-            "starts_new_cycle": exp.starts_new_cycle,
-            "created_at": str(exp.created_at)
-        }
-        for exp in expenses
-    ]
+    # Apply pagination
+    total = len(expenses)
+    paginated = expenses[offset:offset + limit]
+    return {
+        "total": total,
+        "expenses": [
+            {
+                "id": str(exp.id),
+                "category": exp.category,
+                "amount": exp.amount,
+                "description": exp.description,
+                "starts_new_cycle": exp.starts_new_cycle,
+                "created_at": str(exp.created_at)
+            }
+            for exp in paginated
+        ]
+    }
 
 
 @router.post("/", summary="إضافة مصروف")

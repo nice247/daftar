@@ -75,6 +75,7 @@ export const eodAPI = {
   save: (data) => api.post('/eod/save', data),
   getLastRestock: () => api.get('/eod/last-restock'),
   getCycleStatus: () => api.get('/eod/cycle-status'),
+  getToday: () => api.get('/eod/today'),
 };
 
 // ============ Customer API ============
@@ -141,6 +142,17 @@ export const ocrAPI = {
   verify: (formData) => api.post('/ocr/verify', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
+};
+
+// ============ Merchant Debt API ============
+
+export const merchantDebtAPI = {
+  list: (params) => api.get('/merchant-debts/', { params }),
+  create: (data) => api.post('/merchant-debts/', data),
+  pay: (data) => api.post('/merchant-debts/pay', data),
+  getPayments: (debtId) => api.get(`/merchant-debts/${debtId}/payments`),
+  delete: (debtId) => api.delete(`/merchant-debts/${debtId}`),
+  summary: () => api.get('/merchant-debts/summary'),
 };
 
 export default api;
