@@ -31,25 +31,49 @@ class BusinessService:
 
         # 1. Save cash sales invoice
         if eod.sales.cash_sales > 0:
-            cash_invoice = Invoice(
-                user_id=user_id,
-                invoice_type="EOD_CASH",
-                total_amount=eod.sales.cash_sales,
-                paid_amount=eod.sales.cash_sales,
-                created_at=eod.eod_date
+            result = await db.execute(
+                select(Invoice).where(
+                    Invoice.user_id == user_id,
+                    Invoice.invoice_type == "EOD_CASH",
+                    func.date(Invoice.created_at) == eod.eod_date
+                )
             )
-            db.add(cash_invoice)
+            cash_invoice = result.scalar_one_or_none()
+            if cash_invoice:
+                cash_invoice.total_amount += eod.sales.cash_sales
+                cash_invoice.paid_amount += eod.sales.cash_sales
+            else:
+                cash_invoice = Invoice(
+                    user_id=user_id,
+                    invoice_type="EOD_CASH",
+                    total_amount=eod.sales.cash_sales,
+                    paid_amount=eod.sales.cash_sales,
+                    created_at=eod.eod_date
+                )
+                db.add(cash_invoice)
 
         # 2. Save bankak sales invoice
         if eod.sales.bankak_sales > 0:
-            bankak_invoice = Invoice(
-                user_id=user_id,
-                invoice_type="EOD_BANKAK",
-                total_amount=eod.sales.bankak_sales,
-                paid_amount=eod.sales.bankak_sales,
-                created_at=eod.eod_date
+            result = await db.execute(
+                select(Invoice).where(
+                    Invoice.user_id == user_id,
+                    Invoice.invoice_type == "EOD_BANKAK",
+                    func.date(Invoice.created_at) == eod.eod_date
+                )
             )
-            db.add(bankak_invoice)
+            bankak_invoice = result.scalar_one_or_none()
+            if bankak_invoice:
+                bankak_invoice.total_amount += eod.sales.bankak_sales
+                bankak_invoice.paid_amount += eod.sales.bankak_sales
+            else:
+                bankak_invoice = Invoice(
+                    user_id=user_id,
+                    invoice_type="EOD_BANKAK",
+                    total_amount=eod.sales.bankak_sales,
+                    paid_amount=eod.sales.bankak_sales,
+                    created_at=eod.eod_date
+                )
+                db.add(bankak_invoice)
 
         # 3. Save expenses
         for exp in eod.expenses:
@@ -590,10 +614,11 @@ class BusinessService:
     # ============ Today's Summary ============
 
     @staticmethod
-    async def get_today_summary(db: AsyncSession, user_id: UUID) -> dict:
-        """Get all of today's transactions (persists until midnight)."""
-        today_start = datetime.combine(date.today(), datetime.min.time()).replace(tzinfo=timezone.utc)
-        today_end = datetime.combine(date.today(), datetime.max.time()).replace(tzinfo=timezone.utc)
+    async def get_today_summary(db: AsyncSession, user_id: UUID, target_date: Optional[date] = None) -> dict:
+        """Get all transactions for a specific date (defaults to today)."""
+        target = target_date or date.today()
+        today_start = datetime.combine(target, datetime.min.time()).replace(tzinfo=timezone.utc)
+        today_end = datetime.combine(target, datetime.max.time()).replace(tzinfo=timezone.utc)
 
         # Today's cash sales
         cash_result = await db.execute(

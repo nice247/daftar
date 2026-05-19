@@ -12,6 +12,7 @@ from app.models.models import User, OTPCode
 from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
 from app.schemas.schemas import TokenResponse
 from app.services.telegram_service import telegram_service
+from app.core.config import SUPPORT_PHONE
 
 
 class AuthService:
@@ -194,7 +195,8 @@ class AuthService:
                 "store_name": user.store_name,
                 "role": user.role,
                 "status": user.status,
-                "subscription_end_date": user.subscription_end_date.isoformat() if user.subscription_end_date else None
+                "subscription_end_date": user.subscription_end_date.isoformat() if user.subscription_end_date else None,
+                "support_phone": SUPPORT_PHONE
             }
         )
 

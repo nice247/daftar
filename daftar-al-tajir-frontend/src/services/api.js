@@ -76,6 +76,7 @@ export const eodAPI = {
   getLastRestock: () => api.get('/eod/last-restock'),
   getCycleStatus: () => api.get('/eod/cycle-status'),
   getToday: () => api.get('/eod/today'),
+  getYesterday: () => api.get('/eod/yesterday'),
 };
 
 // ============ Customer API ============

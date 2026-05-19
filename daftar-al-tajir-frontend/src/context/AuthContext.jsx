@@ -34,11 +34,24 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    try {
+      const { userAPI } = await import('../services/api');
+      const response = await userAPI.getProfile();
+      localStorage.setItem('user', JSON.stringify(response.data));
+      setUser(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to refresh user', error);
+    }
+  };
+
   const value = {
     user,
     setUser,
     login,
     logout,
+    refreshUser,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
     loading

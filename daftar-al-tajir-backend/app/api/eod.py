@@ -86,3 +86,15 @@ async def get_today_data(
     """
     result = await business_service.get_today_summary(db, current_user.id)
     return result
+
+
+@router.get("/yesterday", summary="بيانات أمس")
+async def get_yesterday_data(
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get yesterday's accumulated data."""
+    from datetime import timedelta
+    yesterday = date.today() - timedelta(days=1)
+    result = await business_service.get_today_summary(db, current_user.id, target_date=yesterday)
+    return result

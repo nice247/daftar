@@ -17,6 +17,7 @@ export default function EODPage() {
   const [cycleStatus, setCycleStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [todaySaved, setTodaySaved] = useState(false);
+  const [todayData, setTodayData] = useState(null);
 
   // View modals
   const [showExpensesModal, setShowExpensesModal] = useState(false);
@@ -26,6 +27,8 @@ export default function EODPage() {
   const [viewPurchases, setViewPurchases] = useState([]);
   const [viewMerchantDebts, setViewMerchantDebts] = useState([]);
   const [viewLoading, setViewLoading] = useState(false);
+  const [showYesterdayModal, setShowYesterdayModal] = useState(false);
+  const [yesterdayData, setYesterdayData] = useState(null);
 
   // Check if day changed (midnight reset)
   const checkDayReset = useCallback(() => {
@@ -64,8 +67,9 @@ export default function EODPage() {
       if (custRes.status === 'fulfilled') setCustomers(custRes.value.data);
       if (restockRes.status === 'fulfilled' && restockRes.value.data.date) setLastRestock(restockRes.value.data);
       if (cycleRes.status === 'fulfilled') setCycleStatus(cycleRes.value.data);
-      if (todayRes.status === 'fulfilled' && todayRes.value.data.has_data) {
-        setTodaySaved(true);
+      if (todayRes.status === 'fulfilled') {
+        if (todayRes.value.data.has_data) setTodaySaved(true);
+        setTodayData(todayRes.value.data);
       }
     } catch {}
   };
@@ -146,14 +150,25 @@ export default function EODPage() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Combine other incomes and merchant debts into the same API payload for simplicity
+      // 1. Create actual merchant debts in the DB
+      const validDebts = merchantDebts.filter(md => md.amount && parseFloat(md.amount) > 0);
+      for (const md of validDebts) {
+        await merchantDebtAPI.create({
+          supplier_name: md.description || 'مورد غير محدد',
+          debt_type: 'cash',
+          total_amount: parseFloat(md.amount),
+          description: 'دين تم تسجيله عبر إغلاق اليوم'
+        });
+      }
+
+      // Combine other incomes and merchant debts into the same API payload for cashflow balance
       const combinedOtherIncomes = [
         ...otherIncomes.filter(o => o.amount && parseFloat(o.amount) > 0).map(o => ({
           category: o.category,
           amount: parseFloat(o.amount),
           description: o.description || null,
         })),
-        ...merchantDebts.filter(md => md.amount && parseFloat(md.amount) > 0).map(md => ({
+        ...validDebts.map(md => ({
           category: 'merchant_debt',
           amount: parseFloat(md.amount),
           description: `دين مستلم: ${md.description || ''}`.trim(),
@@ -189,8 +204,7 @@ export default function EODPage() {
       localStorage.setItem('eod_date', new Date().toISOString().split('T')[0]);
       setTodaySaved(true);
 
-      // DON'T reset form - data stays visible until midnight
-      // Only clear the input fields so user can add more if needed
+      // Reset all inputs - data is sent as an incremental transaction
       setCashSales('');
       setBankakSales('');
       setExpenses([]);
@@ -251,6 +265,17 @@ export default function EODPage() {
     finally { setViewLoading(false); }
   };
 
+  // View Yesterday's Data
+  const handleViewYesterday = async () => {
+    setViewLoading(true);
+    setShowYesterdayModal(true);
+    try {
+      const res = await eodAPI.getYesterday();
+      setYesterdayData(res.data);
+    } catch { toast.error('فشل تحميل بيانات أمس'); }
+    finally { setViewLoading(false); }
+  };
+
   return (
     <div className="space-y-4 pb-8 animate-fade-in">
       {/* Cycle Status Card */}
@@ -279,6 +304,29 @@ export default function EODPage() {
         </div>
       )}
 
+      {/* Today's Summary Card */}
+      {todayData && todayData.has_data && (
+        <div className="bg-gradient-to-l from-indigo-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-bold">ملخص اليوم (حتى الآن)</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center mt-3">
+            <div className="bg-white/10 rounded-lg p-2">
+              <p className="text-[10px] opacity-90 mb-1">الإيرادات</p>
+              <p className="font-bold text-sm">{formatCurrency((todayData.total_cash_sales || 0) + (todayData.total_bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
+            </div>
+            <div className="bg-white/10 rounded-lg p-2">
+              <p className="text-[10px] opacity-90 mb-1">المصروفات</p>
+              <p className="font-bold text-sm">{formatCurrency(todayData.total_expenses || 0)}</p>
+            </div>
+            <div className="bg-white/20 rounded-lg p-2 border border-white/30">
+              <p className="text-[10px] font-bold mb-1">الصافي</p>
+              <p className="font-bold text-sm">{formatCurrency(todayData.net_cashflow || 0)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* View Buttons */}
       <div className="flex flex-wrap gap-2">
         <button onClick={handleViewExpenses} className="flex items-center gap-1 text-sm text-red-600 font-bold bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
@@ -292,6 +340,10 @@ export default function EODPage() {
         <button onClick={handleViewMerchantDebts} className="flex items-center gap-1 text-sm text-blue-600 font-bold bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors">
           <FiEye size={14} />
           ديون التاجر
+        </button>
+        <button onClick={handleViewYesterday} className="flex items-center gap-1 text-sm text-purple-600 font-bold bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition-colors">
+          <FiEye size={14} />
+          معاملات أمس
         </button>
       </div>
 
@@ -370,10 +422,10 @@ export default function EODPage() {
             />
             <input
               type="text"
+              placeholder="اسم المورد / الجهة"
               value={md.description}
               onChange={(e) => updateMerchantDebt(i, 'description', e.target.value)}
-              placeholder="وصف (ممن؟)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
+              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button onClick={() => removeMerchantDebt(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
           </div>
@@ -649,6 +701,69 @@ export default function EODPage() {
                     <p className="text-[10px] text-gray-400 mt-1">{d.created_at}</p>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Yesterday's Data Modal ===== */}
+      {showYesterdayModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center">
+          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-800">ملخص معاملات أمس</h3>
+              <button onClick={() => setShowYesterdayModal(false)} className="text-gray-400 hover:text-red-500">
+                <span className="text-xl">✖</span>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-4">
+              {viewLoading ? (
+                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+              ) : !yesterdayData || !yesterdayData.has_data ? (
+                <p className="text-center text-gray-400 py-8">لا توجد أي معاملات مسجلة لأمس</p>
+              ) : (
+                <div className="space-y-4">
+                  {/* Sales Summary */}
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <h4 className="font-bold text-blue-800 mb-2">المبيعات</h4>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>نقدي (كاش):</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.total_cash_sales)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>بنكك:</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.total_bankak_sales)}</span>
+                    </div>
+                  </div>
+
+                  {/* Expenses Summary */}
+                  <div className="bg-red-50 rounded-xl p-4">
+                    <h4 className="font-bold text-red-800 mb-2">المصروفات والمشتريات</h4>
+                    <div className="flex justify-between text-sm">
+                      <span>الإجمالي:</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.total_expenses)}</span>
+                    </div>
+                  </div>
+
+                  {/* Other Income Summary */}
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <h4 className="font-bold text-green-800 mb-2">إيرادات أخرى</h4>
+                    <div className="flex justify-between text-sm">
+                      <span>الإجمالي:</span>
+                      <span className="font-bold">{formatCurrency(yesterdayData.total_other_income)}</span>
+                    </div>
+                  </div>
+
+                  {/* Net Summary */}
+                  <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+                    <h4 className="font-bold text-gray-800 mb-2">الصافي</h4>
+                    <div className="flex justify-between text-sm">
+                      <span>صافي الدخل:</span>
+                      <span className="font-bold text-primary-600">{formatCurrency(yesterdayData.net_cashflow)}</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
