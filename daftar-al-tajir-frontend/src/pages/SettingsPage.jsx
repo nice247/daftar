@@ -52,8 +52,8 @@ export default function SettingsPage() {
       if (user?.role === 'admin' && adminSettings) {
         await adminAPI.updateSettings({
           monthly_price: parseFloat(adminSettings.monthly_price),
-          quarterly_price: parseFloat(adminSettings.quarterly_price),
-          semi_annual_price: parseFloat(adminSettings.semi_annual_price),
+          quarterly_price: parseFloat(adminSettings.quarterly_price || adminSettings.monthly_price),
+          semi_annual_price: parseFloat(adminSettings.semi_annual_price || adminSettings.monthly_price),
         });
       }
       

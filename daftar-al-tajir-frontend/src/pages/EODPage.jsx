@@ -6,11 +6,11 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function EODPage() {
-  const [sales, setSales] = useState([{ type: 'cash', amount: '' }]);
   const [cashSales, setCashSales] = useState('');
   const [bankakSales, setBankakSales] = useState('');
   const [expenses, setExpenses] = useState([]);
-  const [merchantDebts, setMerchantDebts] = useState([]); // ديون على التاجر (إيراد)
+  const [merchantDebts, setMerchantDebts] = useState([]); // ديون على التاجر
+  const [merchantDebtPayments, setMerchantDebtPayments] = useState([]); // سداد ديون التاجر
   const [otherIncomes, setOtherIncomes] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [lastRestock, setLastRestock] = useState(null);
@@ -59,19 +59,27 @@ export default function EODPage() {
 
   const loadData = async () => {
     try {
-      const [custRes, restockRes, cycleRes, todayRes] = await Promise.allSettled([
+      const [custRes, restockRes, cycleRes, todayRes, debtsRes] = await Promise.allSettled([
         customerAPI.list(),
         eodAPI.getLastRestock(),
         eodAPI.getCycleStatus(),
         eodAPI.getToday(),
+        merchantDebtAPI.list(),
       ]);
       if (custRes.status === 'fulfilled') setCustomers(custRes.value.data);
       if (restockRes.status === 'fulfilled' && restockRes.value.data.date) setLastRestock(restockRes.value.data);
       if (cycleRes.status === 'fulfilled') setCycleStatus(cycleRes.value.data);
       if (todayRes.status === 'fulfilled') {
-        if (todayRes.value.data.has_data) setTodaySaved(true);
-        setTodayData(todayRes.value.data);
+        const td = todayRes.value.data;
+        if (td.has_data) {
+          setTodaySaved(true);
+          // Populate sales fields from server so they persist all day
+          if (td.total_cash_sales > 0) setCashSales(String(td.total_cash_sales));
+          if (td.total_bankak_sales > 0) setBankakSales(String(td.total_bankak_sales));
+        }
+        setTodayData(td);
       }
+      if (debtsRes.status === 'fulfilled') setViewMerchantDebts(debtsRes.value.data || []);
     } catch {}
   };
 
@@ -120,30 +128,17 @@ export default function EODPage() {
     setOtherIncomes(otherIncomes.filter((_, i) => i !== index));
   };
 
-  // Save EOD
-  // Add & Remove Sales
-  const addCashSale = () => setCashSales([...cashSales, { amount: '', description: '' }]);
-  const updateCashSale = (index, field, value) => {
-    const newList = [...cashSales];
-    newList[index][field] = value;
-    setCashSales(newList);
+  // Merchant debt payment handling (سداد ديون التاجر)
+  const addMerchantDebtPayment = () => {
+    setMerchantDebtPayments([...merchantDebtPayments, { debt_id: '', amount: '' }]);
   };
-  const removeCashSale = (index) => {
-    const newList = [...cashSales];
-    newList.splice(index, 1);
-    setCashSales(newList);
+  const updateMerchantDebtPayment = (index, field, value) => {
+    const updated = [...merchantDebtPayments];
+    updated[index][field] = value;
+    setMerchantDebtPayments(updated);
   };
-
-  const addBankakSale = () => setBankakSales([...bankakSales, { amount: '', description: '' }]);
-  const updateBankakSale = (index, field, value) => {
-    const newList = [...bankakSales];
-    newList[index][field] = value;
-    setBankakSales(newList);
-  };
-  const removeBankakSale = (index) => {
-    const newList = [...bankakSales];
-    newList.splice(index, 1);
-    setBankakSales(newList);
+  const removeMerchantDebtPayment = (index) => {
+    setMerchantDebtPayments(merchantDebtPayments.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -156,7 +151,18 @@ export default function EODPage() {
           supplier_name: md.description || 'مورد غير محدد',
           debt_type: 'cash',
           total_amount: parseFloat(md.amount),
-          description: 'دين تم تسجيله عبر إغلاق اليوم'
+          description: 'دين تم تسجيله عبر المعاملات'
+        });
+      }
+
+      // 2. Pay merchant debts (سداد ديون التاجر - يسجل كمصروف)
+      const validDebtPayments = merchantDebtPayments.filter(dp => dp.debt_id && dp.amount && parseFloat(dp.amount) > 0);
+      for (const dp of validDebtPayments) {
+        await merchantDebtAPI.pay({
+          merchant_debt_id: dp.debt_id,
+          amount: parseFloat(dp.amount),
+          payment_method: 'cash',
+          description: 'سداد عبر المعاملات'
         });
       }
 
@@ -174,22 +180,27 @@ export default function EODPage() {
         }))
       ];
 
+      // Combine normal expenses and merchant debt payments (which are recorded as expenses)
+      const combinedExpenses = [
+        ...expenses.filter(e => e.amount && parseFloat(e.amount) > 0).map(e => ({
+          category: e.category,
+          amount: parseFloat(e.amount),
+          description: e.description || null,
+        })),
+        ...validDebtPayments.map(dp => {
+          const debtInfo = viewMerchantDebts.find(d => String(d.id) === String(dp.debt_id));
+          return {
+            category: 'OTHER', // Defaulting to OTHER or BILL for debt payment
+            amount: parseFloat(dp.amount),
+            description: `سداد دين مورد: ${debtInfo ? debtInfo.supplier_name : ''}`.trim(),
+          };
+        })
+      ];
+
       await eodAPI.save({
         eod_date: new Date().toISOString().split('T')[0],
         sales: { cash_sales: parseFloat(cashSales) || 0, bankak_sales: parseFloat(bankakSales) || 0 },
-        expenses: expenses
-          .filter(e => e.amount && parseFloat(e.amount) > 0)
-          .map(e => ({
-            category: e.category,
-            amount: parseFloat(e.amount),
-            description: e.description || null,
-          })),
-        debt_payments: debtPayments
-          .filter(d => d.customer_id && d.amount && parseFloat(d.amount) > 0)
-          .map(d => ({
-            customer_id: d.customer_id,
-            amount: parseFloat(d.amount),
-          })),
+        expenses: combinedExpenses,
         other_incomes: combinedOtherIncomes,
       });
 
@@ -203,6 +214,7 @@ export default function EODPage() {
       // Sales stay visible per user request
       setExpenses([]);
       setMerchantDebts([]);
+      setMerchantDebtPayments([]);
       setOtherIncomes([]);
       loadData();
     } catch (error) {
@@ -320,7 +332,7 @@ export default function EODPage() {
           <div className="grid grid-cols-3 gap-2 text-center mt-3">
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">الإيرادات</p>
-              <p className="font-bold text-sm">{formatCurrency((todayData.cash_sales || 0) + (todayData.bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
+              <p className="font-bold text-sm">{formatCurrency((todayData.total_cash_sales || 0) + (todayData.total_bankak_sales || 0) + (todayData.total_other_income || 0))}</p>
             </div>
             <div className="bg-white/10 rounded-lg p-2">
               <p className="text-[10px] opacity-90 mb-1">المصروفات</p>
@@ -328,7 +340,7 @@ export default function EODPage() {
             </div>
             <div className="bg-white/20 rounded-lg p-2 border border-white/30">
               <p className="text-[10px] font-bold mb-1">الصافي</p>
-              <p className="font-bold text-sm">{formatCurrency(todayData.net || 0)}</p>
+              <p className="font-bold text-sm">{formatCurrency(todayData.net_cashflow || 0)}</p>
             </div>
           </div>
         </div>
@@ -416,11 +428,18 @@ export default function EODPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <FiTrendingUp className="text-blue-500" size={20} />
-            <h3 className="font-bold text-gray-800">ديون مستلمة (ديون على التاجر)</h3>
+            <h3 className="font-bold text-gray-800">ديون على التاجر</h3>
           </div>
-          <button onClick={addMerchantDebt} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة دين</button>
+          <div className="flex gap-1">
+            <button onClick={addMerchantDebt} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-bold hover:bg-blue-100">+ إضافة دين</button>
+            <button onClick={addMerchantDebtPayment} className="text-xs bg-orange-50 text-orange-700 px-2 py-1 rounded-md font-bold hover:bg-orange-100">+ سداد</button>
+          </div>
         </div>
-        <p className="text-[10px] text-gray-500 mb-3">مبالغ استدنتها اليوم وتعتبر إيراد (دخلت الخزينة/الحساب).</p>
+
+        {/* إضافة دين جديد */}
+        {merchantDebts.length > 0 && (
+          <p className="text-[10px] text-gray-500 mb-2">تسجيل دين جديد على التاجر:</p>
+        )}
         {merchantDebts.map((md, i) => (
           <div key={i} className="flex items-center gap-2 mb-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
             <input
@@ -436,9 +455,37 @@ export default function EODPage() {
               placeholder="اسم المورد / الجهة"
               value={md.description}
               onChange={(e) => updateMerchantDebt(i, 'description', e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none"
             />
             <button onClick={() => removeMerchantDebt(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
+          </div>
+        ))}
+
+        {/* سداد دين قائم */}
+        {merchantDebtPayments.length > 0 && (
+          <p className="text-[10px] text-orange-600 font-bold mb-2 mt-3 border-t border-gray-100 pt-2">سداد دين قائم (يسجل كمصروف):</p>
+        )}
+        {merchantDebtPayments.map((dp, i) => (
+          <div key={`dp-${i}`} className="flex items-center gap-2 mb-2 bg-orange-50 p-2 rounded-lg border border-orange-100">
+            <select
+              value={dp.debt_id}
+              onChange={(e) => updateMerchantDebtPayment(i, 'debt_id', e.target.value)}
+              className="flex-1 px-2 py-2 border border-gray-300 rounded-lg text-xs outline-none bg-white"
+            >
+              <option value="">اختر الدين</option>
+              {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
+                <option key={d.id} value={d.id}>{d.supplier_name} ({formatCurrency(d.remaining)})</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={dp.amount}
+              onChange={(e) => updateMerchantDebtPayment(i, 'amount', e.target.value)}
+              placeholder="المبلغ"
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
+              dir="ltr"
+            />
+            <button onClick={() => removeMerchantDebtPayment(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
           </div>
         ))}
       </div>
@@ -488,7 +535,7 @@ export default function EODPage() {
         {expenses.length > 0 && (
           <div className="bg-red-50 rounded-lg p-2 text-center mt-2 border border-red-100">
             <span className="text-xs font-bold text-red-800">إجمالي المصروفات والمشتريات لليوم: </span>
-            <span className="font-bold text-red-700 text-lg">{formatCurrency(totalExpenses)}</span>
+            <span className="font-bold text-red-700 text-lg">{formatCurrency(expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))}</span>
           </div>
         )}
       </div>
@@ -521,9 +568,7 @@ export default function EODPage() {
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none text-left font-mono"
               dir="ltr"
             />
-            {otherIncomes.length > 1 && (
-              <button onClick={() => removeOtherIncome(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
-            )}
+            <button onClick={() => removeOtherIncome(i)} className="p-2 text-red-500 hover:bg-red-50 rounded-md">✕</button>
           </div>
         ))}
       </div>

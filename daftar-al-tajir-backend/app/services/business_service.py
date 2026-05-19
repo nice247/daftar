@@ -659,8 +659,7 @@ class BusinessService:
         debt_pay_result = await db.execute(
             select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
                 DebtPayment.user_id == user_id,
-                DebtPayment.payment_date >= today_start,
-                DebtPayment.payment_date <= today_end,
+                func.date(DebtPayment.payment_date) == target,
             )
         )
         total_debt_payments = debt_pay_result.scalar() or Decimal(0)
@@ -669,8 +668,7 @@ class BusinessService:
         other_result = await db.execute(
             select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
                 OtherIncome.user_id == user_id,
-                OtherIncome.income_date >= today_start.date(),
-                OtherIncome.income_date <= today_end.date(),
+                OtherIncome.income_date == target,
             )
         )
         total_other_income = other_result.scalar() or Decimal(0)

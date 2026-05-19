@@ -134,7 +134,7 @@ export const adminAPI = {
   addUser: (data) => api.post('/admin/add-user', data),
   getStats: () => api.get('/admin/stats'),
   getSettings: () => api.get('/admin/settings'),
-  updateSettings: (settings) => api.post('/admin/settings', { settings }),
+  updateSettings: (data) => api.put('/admin/settings', data),
 };
 
 // ============ OCR API ============
