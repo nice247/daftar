@@ -251,7 +251,7 @@ export default function EODPage() {
       {todayData && todayData.has_data && (
         <div className="bg-gradient-to-l from-indigo-600 to-purple-700 rounded-xl p-4 text-white shadow-lg">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold">ملخص معاملات اليوم (الخزينة)</span>
+            <span className="text-sm font-bold">ملخص معاملات اليوم</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center mt-3">
             <div className="bg-white/10 rounded-lg p-2 flex flex-col justify-between">
@@ -333,70 +333,91 @@ export default function EODPage() {
             <span>+</span> إضافة مصروف
           </button>
         </div>
-        
         <div className="space-y-3">
           {expenses.map((exp, i) => (
-            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-3 rounded-xl border border-slate-100 transition-all flex flex-col gap-2.5">
-              <div className="flex gap-2 items-center">
-                <select
-                  value={exp.category}
-                  onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                  className="px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 cursor-pointer shadow-sm text-gray-700 h-9"
-                >
-                  {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
-                    // Hide RESTOCK if cycle is still active
-                    if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
-                    return <option key={key} value={key}>{label}</option>;
-                  })}
-                </select>
-                
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={exp.amount}
-                  onChange={(e) => updateExpense(i, 'amount', e.target.value)}
-                  placeholder="المبلغ"
-                  className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-red-600 bg-red-50/30 focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
-                  dir="ltr"
-                />
-
-                {exp.category === 'MERCHANT_DEBT_PAY' ? (
-                  <select
-                    value={exp.merchant_debt_id || ''}
-                    onChange={(e) => updateExpense(i, 'merchant_debt_id', e.target.value)}
-                    className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none bg-white font-bold focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
-                  >
-                    <option value="">اختر المورد والدين...</option>
-                    {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
-                      <option key={d.id} value={d.id}>{d.supplier_name} ({formatCurrency(d.remaining)})</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={exp.description || ''}
-                    onChange={(e) => updateExpense(i, 'description', e.target.value)}
-                    placeholder="وصف المصروف (مثال: كهرباء، عمال)"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 h-9"
-                  />
-                )}
-                
+            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all space-y-3 relative">
+              {/* Header with Row Title and Delete button */}
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-2">
+                <span className="text-xs font-bold text-gray-500 font-mono">مصروف #{i + 1}</span>
                 <button 
                   onClick={() => removeExpense(i)} 
-                  className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-100/30 font-bold"
                 >
                   ✕
                 </button>
               </div>
+
+              {/* Stacked Inputs */}
+              <div className="grid grid-cols-1 gap-2.5">
+                {/* Category select */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">فئة المصروف</label>
+                  <select
+                    value={exp.category}
+                    onChange={(e) => updateExpense(i, 'category', e.target.value)}
+                    className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500 cursor-pointer shadow-sm text-gray-700 h-10"
+                  >
+                    {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
+                      // Hide RESTOCK if cycle is still active
+                      if (key === 'RESTOCK' && cycleStatus?.status === 'ACTIVE') return null;
+                      return <option key={key} value={key}>{label}</option>;
+                    })}
+                  </select>
+                </div>
+
+                {/* Amount input */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">المبلغ (ج.س)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={exp.amount}
+                    onChange={(e) => updateExpense(i, 'amount', e.target.value)}
+                    placeholder="المبلغ بالأرقام"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-red-600 bg-red-50/30 focus:border-red-500 focus:ring-1 focus:ring-red-500 h-10"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* Description or Merchant debt select */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">
+                    {exp.category === 'MERCHANT_DEBT_PAY' ? 'المورد والدين' : 'الوصف / ملاحظة'}
+                  </label>
+                  {exp.category === 'MERCHANT_DEBT_PAY' ? (
+                    <select
+                      value={exp.merchant_debt_id || ''}
+                      onChange={(e) => updateExpense(i, 'merchant_debt_id', e.target.value)}
+                      className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none bg-white font-bold focus:border-red-500 focus:ring-1 focus:ring-red-500 h-10"
+                    >
+                      <option value="">اختر المورد والدين...</option>
+                      {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
+                        <option key={d.id} value={d.id}>{d.supplier_name} ({formatCurrency(d.remaining)})</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={exp.description || ''}
+                      onChange={(e) => updateExpense(i, 'description', e.target.value)}
+                      placeholder="وصف المصروف (مثال: كهرباء، عمال)"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 h-10"
+                    />
+                  )}
+                </div>
+              </div>
               
               {exp.category === 'MERCHANT_DEBT_PAY' && (
-                <input
-                  type="text"
-                  value={exp.description || ''}
-                  onChange={(e) => updateExpense(i, 'description', e.target.value)}
-                  placeholder="ملاحظة حول السداد (اختياري)"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                />
+                <div className="flex flex-col gap-1 pt-1">
+                  <label className="text-[10px] font-bold text-gray-400">ملاحظة السداد (اختياري)</label>
+                  <input
+                    type="text"
+                    value={exp.description || ''}
+                    onChange={(e) => updateExpense(i, 'description', e.target.value)}
+                    placeholder="ملاحظات حول عملية الدفع"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 h-10"
+                  />
+                </div>
               )}
             </div>
           ))}
@@ -429,44 +450,61 @@ export default function EODPage() {
         
         <div className="space-y-3">
           {incomes.map((oi, i) => (
-            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-3 rounded-xl border border-slate-100 transition-all flex flex-col gap-2.5">
-              <div className="flex gap-2 items-center">
-                <select
-                  value={oi.category}
-                  onChange={(e) => updateIncome(i, 'category', e.target.value)}
-                  className="px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-sm text-gray-700 h-9"
-                >
-                  <option value="EOD_CASH">مبيعات كاش</option>
-                  <option value="EOD_BANKAK">مبيعات بنكك</option>
-                  <option value="bankak_commission">عمولة بنكك</option>
-                  <option value="balance_commission">عمولة رصيد</option>
-                  <option value="other">أخرى</option>
-                </select>
-                
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={oi.amount}
-                  onChange={(e) => updateIncome(i, 'amount', e.target.value)}
-                  placeholder="المبلغ"
-                  className="w-28 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-emerald-600 bg-emerald-50/30 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-9"
-                  dir="ltr"
-                />
-                
-                <input
-                  type="text"
-                  value={oi.description || ''}
-                  onChange={(e) => updateIncome(i, 'description', e.target.value)}
-                  placeholder="وصف الإيراد (اختياري)"
-                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-9"
-                />
-                
+            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all space-y-3 relative">
+              {/* Header with Row Title and Delete button */}
+              <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-2">
+                <span className="text-xs font-bold text-gray-500 font-mono">إيراد #{i + 1}</span>
                 <button 
                   onClick={() => removeIncome(i)} 
-                  className="w-9 h-9 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-100/30 font-bold"
                 >
                   ✕
                 </button>
+              </div>
+
+              {/* Stacked Inputs */}
+              <div className="grid grid-cols-1 gap-2.5">
+                {/* Category select */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">نوع الإيراد</label>
+                  <select
+                    value={oi.category}
+                    onChange={(e) => updateIncome(i, 'category', e.target.value)}
+                    className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-xs outline-none font-bold bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-sm text-gray-700 h-10"
+                  >
+                    <option value="EOD_CASH">مبيعات كاش</option>
+                    <option value="EOD_BANKAK">مبيعات بنكك</option>
+                    <option value="bankak_commission">عمولة بنكك</option>
+                    <option value="balance_commission">عمولة رصيد</option>
+                    <option value="other">أخرى</option>
+                  </select>
+                </div>
+
+                {/* Amount input */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">المبلغ (ج.س)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={oi.amount}
+                    onChange={(e) => updateIncome(i, 'amount', e.target.value)}
+                    placeholder="المبلغ بالأرقام"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none text-left font-mono font-bold text-emerald-600 bg-emerald-50/30 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-10"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* Description input */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-bold text-gray-400">الوصف / ملاحظة</label>
+                  <input
+                    type="text"
+                    value={oi.description || ''}
+                    onChange={(e) => updateIncome(i, 'description', e.target.value)}
+                    placeholder="وصف الإيراد (اختياري)"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 h-10"
+                  />
+                </div>
               </div>
             </div>
           ))}

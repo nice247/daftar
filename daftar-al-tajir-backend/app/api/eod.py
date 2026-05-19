@@ -84,7 +84,9 @@ async def get_today_data(
     Get today's accumulated data (invoices, expenses, payments).
     Data stays visible until midnight, then resets automatically.
     """
-    result = await business_service.get_today_summary(db, current_user.id)
+    from datetime import datetime, timezone, timedelta
+    local_today = (datetime.now(timezone.utc) + timedelta(hours=2)).date()
+    result = await business_service.get_today_summary(db, current_user.id, target_date=local_today)
     return result
 
 
@@ -94,7 +96,8 @@ async def get_yesterday_data(
     db: AsyncSession = Depends(get_db)
 ):
     """Get yesterday's accumulated data."""
-    from datetime import timedelta
-    yesterday = date.today() - timedelta(days=1)
+    from datetime import datetime, timezone, timedelta
+    local_today = (datetime.now(timezone.utc) + timedelta(hours=2)).date()
+    yesterday = local_today - timedelta(days=1)
     result = await business_service.get_today_summary(db, current_user.id, target_date=yesterday)
     return result

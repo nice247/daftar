@@ -639,15 +639,29 @@ class BusinessService:
 
     @staticmethod
     async def get_today_summary(db: AsyncSession, user_id: UUID, target_date: Optional[date] = None) -> dict:
-        """Get all transactions for a specific date (defaults to today)."""
-        target = target_date or date.today()
+        """Get all transactions for a specific date (defaults to today in local Sudan/Egypt UTC+2 time)."""
+        from datetime import datetime, time, timezone, timedelta
+        
+        if not target_date:
+            local_now = datetime.now(timezone.utc) + timedelta(hours=2)
+            target = local_now.date()
+        else:
+            target = target_date
+
+        # Calculate start and end bounds of this local day in UTC
+        local_start = datetime.combine(target, time.min)
+        local_end = datetime.combine(target, time.max)
+        
+        utc_start = local_start - timedelta(hours=2)
+        utc_end = local_end - timedelta(hours=2)
 
         # Today's cash sales
         cash_result = await db.execute(
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == user_id,
                 Invoice.invoice_type == "EOD_CASH",
-                func.date(Invoice.created_at) == target
+                Invoice.created_at >= utc_start,
+                Invoice.created_at <= utc_end
             )
         )
         cash_sales = cash_result.scalar() or Decimal(0)
@@ -657,7 +671,8 @@ class BusinessService:
             select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
                 Invoice.user_id == user_id,
                 Invoice.invoice_type == "EOD_BANKAK",
-                func.date(Invoice.created_at) == target
+                Invoice.created_at >= utc_start,
+                Invoice.created_at <= utc_end
             )
         )
         bankak_sales = bankak_result.scalar() or Decimal(0)
@@ -666,7 +681,8 @@ class BusinessService:
         expenses_result = await db.execute(
             select(Expense).where(
                 Expense.user_id == user_id,
-                func.date(Expense.created_at) == target
+                Expense.created_at >= utc_start,
+                Expense.created_at <= utc_end
             ).order_by(Expense.created_at)
         )
         expenses = [
@@ -683,7 +699,8 @@ class BusinessService:
         debt_pay_result = await db.execute(
             select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
                 DebtPayment.user_id == user_id,
-                func.date(DebtPayment.payment_date) == target,
+                DebtPayment.payment_date >= utc_start,
+                DebtPayment.payment_date <= utc_end
             )
         )
         total_debt_payments = debt_pay_result.scalar() or Decimal(0)
@@ -693,7 +710,8 @@ class BusinessService:
                 Customer, DebtPayment.customer_id == Customer.id
             ).where(
                 DebtPayment.user_id == user_id,
-                func.date(DebtPayment.payment_date) == target
+                DebtPayment.payment_date >= utc_start,
+                DebtPayment.payment_date <= utc_end
             ).order_by(DebtPayment.payment_date)
         )
         debt_payments = [
