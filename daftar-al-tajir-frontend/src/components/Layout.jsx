@@ -52,11 +52,13 @@ export default function Layout({ children }) {
       const currentIndex = navItems.findIndex((item) => isActive(item.path));
       if (currentIndex === -1) return;
 
-      if (isLeftSwipe && currentIndex < navItems.length - 1) {
-        // Swiped left, go to next tab
+      if (isRightSwipe && currentIndex < navItems.length - 1) {
+        // Swiped right (drag from left to right) -> Reveal what's on the left
+        // In RTL, items with higher indexes are on the left
         navigate(navItems[currentIndex + 1].path);
-      } else if (isRightSwipe && currentIndex > 0) {
-        // Swiped right, go to previous tab
+      } else if (isLeftSwipe && currentIndex > 0) {
+        // Swiped left (drag from right to left) -> Reveal what's on the right
+        // In RTL, items with lower indexes are on the right
         navigate(navItems[currentIndex - 1].path);
       }
     }
