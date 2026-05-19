@@ -196,7 +196,7 @@ async def root():
 
 @app.get("/health", tags=["الصحة"])
 async def health_check():
-    """Health check - pings DB to keep connection alive (used by cron job)."""
+    """Health check - pings DB to keep connection alive."""
     try:
         from sqlalchemy import text
         async with engine.begin() as conn:
@@ -204,6 +204,11 @@ async def health_check():
         return {"status": "healthy", "db": "connected"}
     except Exception as e:
         return {"status": "degraded", "db": str(e)}
+
+@app.get("/ping", tags=["الصحة"])
+async def ping():
+    """Simple ping to wake up the Render server without touching the DB."""
+    return {"status": "awake", "time": datetime.now(timezone.utc).isoformat()}
 
 # ============ Serve React Frontend ============
 # This must be at the very bottom to act as a catch-all route.
