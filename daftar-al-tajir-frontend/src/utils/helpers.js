@@ -52,6 +52,9 @@ export function normalizePhone(value) {
 export function phoneToWhatsApp(phone) {
   if (!phone) return '';
   let cleaned = phone.replace(/[\s+]/g, '');
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  }
   if (cleaned.startsWith('0')) {
     cleaned = '249' + cleaned.substring(1);
   }

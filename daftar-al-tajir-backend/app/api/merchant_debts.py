@@ -119,7 +119,8 @@ async def pay_merchant_debt(
         category="OTHER",
         amount=request.amount,
         description=f"سداد دين للمورد: {debt.supplier_name} - {request.description or ''}".strip(" -"),
-        starts_new_cycle=False
+        starts_new_cycle=False,
+        created_at=business_service._get_local_date()
     )
     db.add(expense)
     await db.flush()

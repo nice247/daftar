@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { customerAPI, merchantDebtAPI } from '../services/api';
-import { formatCurrency, normalizeArabicNumber } from '../utils/helpers';
+import { formatCurrency, normalizeArabicNumber, phoneToWhatsApp } from '../utils/helpers';
 import {
   FiUserPlus, FiSearch, FiX, FiEdit2, FiTrash2, FiGift, FiCheck,
   FiPlus, FiCreditCard, FiTruck, FiChevronDown, FiChevronUp, FiDollarSign
@@ -51,7 +51,7 @@ export default function CustomersPage() {
   // Supplier Form States
   const [supplierName, setSupplierName] = useState('');
   const [supplierDebtAmount, setSupplierDebtAmount] = useState('');
-  const [supplierDebtType, setSupplierDebtType] = useState('cash');
+  const [supplierDebtType, setSupplierDebtType] = useState('goods');
   const [supplierDebtDesc, setSupplierDebtDesc] = useState('');
   
   const [selectedSupplierName, setSelectedSupplierName] = useState('');
@@ -205,7 +205,7 @@ export default function CustomersPage() {
       await customerAPI.addDebt({
         customer_id: selectedCustomer.id,
         amount: parseFloat(debtAmount),
-        debt_type: debtType,
+        debt_type: 'DEBT',
         description: debtDesc || null,
       });
       toast.success('تم تسجيل الدين بنجاح');
@@ -269,10 +269,7 @@ export default function CustomersPage() {
     const shopName = user?.store_name || 'البقالة';
     const message = `السلام عليكم ${customer.name}، حبيت أذكرك بالمديونية لمحل ${shopName}، بمبلغ: ${customer.total_debt} جنيه.`;
 
-    let phone = customer.phone.replace(/[\s+]/g, '');
-    if (phone.startsWith('0')) {
-      phone = '249' + phone.substring(1);
-    }
+    const phone = phoneToWhatsApp(customer.phone);
 
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
@@ -781,25 +778,6 @@ export default function CustomersPage() {
             </div>
             <form onSubmit={handleAddDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">نوع الدين</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setDebtType('DEBT')}
-                    className={`flex-1 p-2.5 border rounded-xl text-xs font-bold transition-all ${debtType === 'DEBT' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    دين نقدي (كاش)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDebtType('CASH')}
-                    className={`flex-1 p-2.5 border rounded-xl text-xs font-bold transition-all ${debtType === 'CASH' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    دين تحويل (بنكك)
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500">المبلغ (ج.س)</label>
                 <input
                   type="text"
@@ -981,32 +959,7 @@ export default function CustomersPage() {
                   required
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">نوع الدين</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('cash')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'cash' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    كاش
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('bank')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'bank' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    بنكك
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('goods')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'goods' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    بضاعة آجلة
-                  </button>
-                </div>
-              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500">وصف / تفاصيل الفاتورة (اختياري)</label>
                 <input
@@ -1074,32 +1027,7 @@ export default function CustomersPage() {
                   required
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">نوع الدين</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('cash')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'cash' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    كاش
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('bank')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'bank' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    بنكك
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSupplierDebtType('goods')}
-                    className={`p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierDebtType === 'goods' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600'}`}
-                  >
-                    بضاعة
-                  </button>
-                </div>
-              </div>
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-500">وصف أو رقم الفاتورة (اختياري)</label>
                 <input

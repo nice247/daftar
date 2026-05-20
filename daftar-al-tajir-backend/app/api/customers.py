@@ -143,11 +143,13 @@ async def add_debt(
         db, current_user.id, request.customer_id,
         request.amount, request.debt_type, request.description
     )
+    await db.commit()
+    await db.refresh(customer)
 
     return {
         "message": "تم تسجيل الدين بنجاح",
         "invoice_id": str(invoice.id),
-        "customer_debt": customer.total_debt + request.amount
+        "customer_debt": customer.total_debt
     }
 
 
@@ -175,11 +177,13 @@ async def pay_debt(
         db, current_user.id, request.customer_id,
         request.amount, request.invoice_id
     )
+    await db.commit()
+    await db.refresh(customer)
 
     return {
         "message": "تم تسجيل السداد بنجاح",
         "payment_id": str(payment.id),
-        "remaining_debt": customer.total_debt - request.amount
+        "remaining_debt": customer.total_debt
     }
 
 
@@ -198,9 +202,11 @@ async def waive_debt(
         db, current_user.id, request.customer_id,
         request.amount, request.reason
     )
+    await db.commit()
+    await db.refresh(customer)
 
     return {
         "message": "تم الإعفاء من الدين",
         "expense_id": str(expense.id),
-        "remaining_debt": max(Decimal(0), customer.total_debt - request.amount)
+        "remaining_debt": customer.total_debt
     }
