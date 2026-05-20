@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
+import PWAInstallBanner from './components/PWAInstallBanner';
 import LoginPage from './pages/LoginPage';
 
 // Lazy-loaded pages (code splitting for performance)
@@ -116,6 +117,7 @@ export default function App() {
           }}
         />
         <AppRoutes />
+        <PWAInstallBanner />
       </AuthProvider>
     </BrowserRouter>
   );
