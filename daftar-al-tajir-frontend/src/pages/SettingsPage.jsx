@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, adminAPI } from '../services/api';
 import { formatCurrency, formatDate, getDaysRemaining, phoneToWhatsApp } from '../utils/helpers';
-import { FiUser, FiCalendar, FiRefreshCw, FiPackage, FiPhoneCall, FiDollarSign } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiRefreshCw, FiPackage, FiPhoneCall, FiDollarSign, FiInfo, FiShare2, FiFacebook } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -70,26 +70,6 @@ export default function SettingsPage() {
     <div className="space-y-4 animate-fade-in pb-8">
       <h2 className="text-lg font-bold text-gray-800">الإعدادات والدعم</h2>
 
-      {/* Support Section */}
-      {user?.role !== 'admin' && user?.support_phone && (
-        <div className="bg-white rounded-xl p-4 card-shadow border-2 border-green-200">
-          <div className="flex items-center gap-3">
-            <FiPhoneCall className="text-green-600" size={24} />
-            <div>
-              <h3 className="font-bold text-gray-800">الدعم الفني</h3>
-              <p className="text-sm text-gray-500">لأي استفسار أو مساعدة، تواصل معنا عبر واتساب</p>
-              <a 
-                href={`https://wa.me/${phoneToWhatsApp(user.support_phone)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-green-600 font-bold mt-1 inline-block"
-              >
-                اضغط هنا للتواصل
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Subscription Status - Only for Merchants */}
       {user?.role !== 'admin' && (
@@ -128,22 +108,6 @@ export default function SettingsPage() {
               dir="ltr"
             />
           </div>
-          {user?.role !== 'admin' && user?.support_phone && (
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">خدمة العملاء والدعم الفني</label>
-              <a
-                href={`https://wa.me/${phoneToWhatsApp(user.support_phone)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99] cursor-pointer"
-              >
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
-                </svg>
-                <span>مراسلة الدعم الفني عبر واتساب</span>
-              </a>
-            </div>
-          )}
           <div>
             <label className="block text-xs text-gray-600 mb-1">{user?.role === 'admin' ? 'اسم الأدمن' : 'اسم المتجر'}</label>
             <input
@@ -254,6 +218,76 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* About Section */}
+      <div className="bg-white rounded-xl p-4 card-shadow">
+        <div className="flex items-center gap-2 mb-4">
+          <FiInfo className="text-primary-600" size={20} />
+          <h3 className="font-bold text-gray-800">حول التطبيق</h3>
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-col items-center justify-center py-2 text-center">
+            <h4 className="font-black text-lg text-primary-700">دفتر التاجر</h4>
+            <p className="text-xs text-gray-500 mt-1 px-4 leading-relaxed">
+              نظام إدارة المبيعات والمصروفات والديون للتجار في السودان
+            </p>
+          </div>
+          <div className="border-t border-gray-100 pt-3 space-y-2 px-2">
+             <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">الإصدار</span>
+                <span className="font-bold text-gray-700 font-mono">1.0.0</span>
+             </div>
+             <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">المطور</span>
+                <span className="font-bold text-gray-700">بهاء الدين عثمان</span>
+             </div>
+          </div>
+          
+          <div className="pt-3 flex flex-col gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: 'دفتر التاجر',
+                    text: 'نظام إدارة المبيعات والمصروفات والديون للتجار في السودان',
+                    url: window.location.origin
+                  }).catch(console.error);
+                } else {
+                  navigator.clipboard.writeText(window.location.origin);
+                  toast.success('تم نسخ رابط التطبيق!');
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl text-sm font-bold transition-colors hover:bg-gray-100 active:scale-[0.99]"
+            >
+              <FiShare2 size={18} />
+              <span>نشر ومشاركة التطبيق</span>
+            </button>
+            
+            <a
+              href="https://www.facebook.com/profile.php?id=61590357776476"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
+            >
+              <FiFacebook size={18} />
+              <span>صفحتنا على فيسبوك</span>
+            </a>
+            
+            {user?.support_phone && (
+              <a
+                href={`https://wa.me/${phoneToWhatsApp(user.support_phone)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
+              >
+                <FiPhoneCall size={18} />
+                <span>خدمة العملاء والدعم الفني</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
 
       <button
         onClick={handleSave}
