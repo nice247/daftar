@@ -94,10 +94,27 @@ export default function ReportsPage() {
           </div>
 
           {report.comparison.previous_cycle && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-600">أرباح الفترة السابقة</span>
-                <span className="font-bold">{formatCurrency(report.comparison.previous_cycle.net_cashflow)}</span>
+            <div className="mb-4">
+              <p className="text-sm font-bold text-gray-700 mb-2">الفترة السابقة (الدورة المنتهية):</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-gray-50 p-2 rounded-lg text-center border border-gray-100">
+                  <p className="text-[10px] text-gray-500">الإيرادات</p>
+                  <p className="font-bold text-green-600">{formatCurrency(report.comparison.previous_cycle.total_sales)}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded-lg text-center border border-gray-100">
+                  <p className="text-[10px] text-gray-500">المصروفات والمشتريات</p>
+                  <p className="font-bold text-red-500">{formatCurrency(report.comparison.previous_cycle.total_expenses)}</p>
+                </div>
+                <div className="col-span-2 bg-blue-50 p-2 rounded-lg text-center border border-blue-100 flex items-center justify-between px-4">
+                  <p className="text-xs text-blue-800 font-bold">صافي الربح:</p>
+                  <p className={`font-black text-lg ${report.comparison.previous_cycle.net_cashflow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(report.comparison.previous_cycle.net_cashflow)} ج.س
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-400 mt-2 px-1">
+                <span>البداية: {report.comparison.previous_cycle.start_date || 'غير محدد'}</span>
+                <span>النهاية: {report.comparison.previous_cycle.end_date || 'غير محدد'}</span>
               </div>
             </div>
           )}

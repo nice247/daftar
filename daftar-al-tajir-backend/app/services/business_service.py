@@ -83,18 +83,19 @@ class BusinessService:
                 )
                 db.add(bankak_invoice)
 
-        # Check if an active cycle exists
-        active_cycle_result = await db.execute(
-            select(RestockCycle).where(
-                RestockCycle.user_id == user_id,
-                RestockCycle.status == "ACTIVE"
-            )
-        )
-        has_active_cycle = active_cycle_result.scalar_one_or_none() is not None
-
         # 3. Save expenses
         for exp in eod.expenses:
-            starts_new = (exp.category == "RESTOCK") and (not has_active_cycle)
+            starts_new = False
+            if exp.category == "RESTOCK":
+                active_cycle = await BusinessService.get_current_cycle(db, user_id)
+                if not active_cycle:
+                    await BusinessService._start_new_cycle(db, user_id, eod.eod_date)
+                    starts_new = True
+                else:
+                    reset_done = await BusinessService.check_and_reset_cycle_if_needed(db, user_id, eod.eod_date)
+                    if reset_done:
+                        starts_new = True
+
             expense = Expense(
                 user_id=user_id,
                 category="OTHER" if exp.category == "MERCHANT_DEBT_PAY" else exp.category,
@@ -105,11 +106,6 @@ class BusinessService:
                 created_at=eod.eod_date
             )
             db.add(expense)
-
-            # If restock and starts a new cycle, start it
-            if starts_new:
-                await BusinessService._start_new_cycle(db, user_id, eod.eod_date)
-                has_active_cycle = True
 
             # If merchant debt payment, update the debt
             if exp.category == "MERCHANT_DEBT_PAY" and exp.merchant_debt_id:
@@ -406,8 +402,31 @@ class BusinessService:
     # ============ Cycle Management ============
 
     @staticmethod
+    async def check_and_reset_cycle_if_needed(db: AsyncSession, user_id: UUID, target_date: date) -> bool:
+        """Check if active cycle is expiring/expired and start a new one if needed."""
+        from datetime import timedelta
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if not user:
+            return False
+
+        active_cycle = await BusinessService.get_current_cycle(db, user_id)
+        if not active_cycle:
+            return False
+
+        cycle_days = user.restock_cycle_days or 7
+        expected_end = active_cycle.start_date + timedelta(days=cycle_days)
+
+        if target_date >= (expected_end - timedelta(days=2)):
+            await BusinessService._start_new_cycle(db, user_id, target_date)
+            return True
+
+        return False
+
+    @staticmethod
     async def _start_new_cycle(db: AsyncSession, user_id: UUID, start_date: date):
         """Close current cycle and start a new one."""
+        from datetime import timedelta
         # Close current active cycle
         result = await db.execute(
             select(RestockCycle).where(
@@ -419,7 +438,10 @@ class BusinessService:
 
         if current_cycle:
             current_cycle.status = "CLOSED"
-            current_cycle.end_date = start_date
+            end = start_date - timedelta(days=1)
+            if end < current_cycle.start_date:
+                end = current_cycle.start_date
+            current_cycle.end_date = end
             # Update totals
             await BusinessService._calculate_cycle_totals(db, current_cycle)
 
