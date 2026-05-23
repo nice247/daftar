@@ -274,17 +274,16 @@ export default function SettingsPage() {
               <span>صفحتنا على فيسبوك</span>
             </a>
             
-            {user?.support_phone && (
-              <a
-                href={`https://wa.me/${phoneToWhatsApp(user.support_phone)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
-              >
-                <FiPhoneCall size={18} />
-                <span>خدمة العملاء والدعم الفني</span>
-              </a>
-            )}
+            {/* Customer Support Button using env variable or fallback */}
+            <a
+              href={`https://wa.me/${phoneToWhatsApp(import.meta.env.VITE_SUPPORT_PHONE || '201280920179')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
+            >
+              <FiPhoneCall size={18} />
+              <span>خدمة العملاء والدعم الفني</span>
+            </a>
           </div>
         </div>
       </div>
