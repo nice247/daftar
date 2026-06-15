@@ -19,7 +19,7 @@ const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
 function PageLoader() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-10 h-10 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" style={{ borderWidth: '3px' }} />
+      <div className="w-10 h-10 border-3 border-[#DEE2E6] border-t-[#2B8A3E] rounded-full animate-spin" style={{ borderWidth: '3px' }} />
     </div>
   );
 }
@@ -30,7 +30,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" style={{ borderWidth: '3px' }} />
+        <div className="w-10 h-10 border-3 border-[#DEE2E6] border-t-[#2B8A3E] rounded-full animate-spin" style={{ borderWidth: '3px' }} />
       </div>
     );
   }
@@ -110,8 +110,8 @@ export default function App() {
             duration: 3000,
             style: {
               borderRadius: '12px',
-              background: '#1e293b',
-              color: '#fff',
+              background: '#212529',
+              color: '#FFFFFF',
               fontSize: '14px',
             },
           }}

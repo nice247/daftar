@@ -3,7 +3,7 @@ import { customerAPI, merchantDebtAPI } from '../services/api';
 import { formatCurrency, normalizeArabicNumber, phoneToWhatsApp } from '../utils/helpers';
 import {
   FiUserPlus, FiSearch, FiX, FiEdit2, FiTrash2, FiGift, FiCheck,
-  FiPlus, FiCreditCard, FiTruck, FiChevronDown, FiChevronUp, FiDollarSign
+  FiPlus, FiCreditCard, FiTruck, FiChevronDown, FiChevronUp, FiDollarSign, FiMoreVertical
 } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,7 @@ export default function CustomersPage() {
   
   // Collapsed suppliers state (tracks which supplier names are expanded)
   const [expandedSuppliers, setExpandedSuppliers] = useState({});
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   // Modals visibility
   const [showAddModal, setShowAddModal] = useState(false);
@@ -362,8 +363,8 @@ export default function CustomersPage() {
           onClick={() => setActiveTab('customers')}
           className={`flex-1 py-3 text-center rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
             activeTab === 'customers'
-              ? 'bg-primary-600 text-white shadow-md transform scale-[1.01]'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              ? 'bg-[#2B8A3E] text-white shadow-md transform scale-[1.01]'
+              : 'text-[#6C757D] hover:text-[#212529] hover:bg-[#F8F9FA]'
           }`}
         >
           <FiUserPlus size={18} />
@@ -373,8 +374,8 @@ export default function CustomersPage() {
           onClick={() => setActiveTab('suppliers')}
           className={`flex-1 py-3 text-center rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
             activeTab === 'suppliers'
-              ? 'bg-blue-600 text-white shadow-md transform scale-[1.01]'
-              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              ? 'bg-[#1C7ED6] text-white shadow-md transform scale-[1.01]'
+              : 'text-[#6C757D] hover:text-[#212529] hover:bg-[#F8F9FA]'
           }`}
         >
           <FiTruck size={18} />
@@ -389,11 +390,11 @@ export default function CustomersPage() {
         <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
             <div>
-              <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
-                <FiTruck className="text-blue-600" size={22} />
+              <h2 className="text-lg font-black text-[#212529] flex items-center gap-2">
+                <FiTruck className="text-[#1C7ED6]" size={22} />
                 الموردون (ديون التاجر للموردين)
               </h2>
-              <p className="text-xs text-gray-500 mt-1">سجل التزاماتك المالية للموردين والجهات التجارية المختلفة</p>
+              <p className="text-xs text-[#6C757D] mt-1">سجل التزاماتك المالية للموردين والجهات التجارية المختلفة</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -403,7 +404,7 @@ export default function CustomersPage() {
                   setSupplierDebtDesc('');
                   setShowAddSupplierModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-xl text-xs font-bold transition-all shadow-sm"
               >
                 <FiUserPlus size={14} />
                 مورد جديد
@@ -415,7 +416,7 @@ export default function CustomersPage() {
                   setSupplierDebtDesc('');
                   setShowAddSupplierDebtModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition-all"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-xl text-xs font-bold transition-all"
               >
                 <FiPlus size={14} />
                 دين لمورد
@@ -427,7 +428,7 @@ export default function CustomersPage() {
                   setSupplierPayDesc('');
                   setShowPaySupplierModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-xs font-bold transition-all"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-xl text-xs font-bold transition-all"
               >
                 <FiDollarSign size={14} />
                 تسجيل سداد
@@ -445,7 +446,7 @@ export default function CustomersPage() {
               value={supplierSearchQuery}
               onChange={(e) => setSupplierSearchQuery(e.target.value)}
               placeholder="بحث عن مورد..."
-              className="block w-full pl-3 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-xl text-xs focus:ring-[#1C7ED6] focus:border-[#1C7ED6]"
             />
           </div>
 
@@ -551,11 +552,11 @@ export default function CustomersPage() {
         <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
             <div>
-              <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
-                <FiUserPlus className="text-primary-600" size={22} />
+              <h2 className="text-lg font-black text-[#212529] flex items-center gap-2">
+                <FiUserPlus className="text-[#2B8A3E]" size={22} />
                 العملاء (ديون العملاء للتاجر)
               </h2>
-              <p className="text-xs text-gray-500 mt-1">سجل ديون عملائك الأوفياء وقم بإرسال تذكيرات لهم عبر الواتساب مباشرة</p>
+              <p className="text-xs text-[#6C757D] mt-1">سجل ديون عملائك الأوفياء وقم بإرسال تذكيرات لهم عبر الواتساب مباشرة</p>
             </div>
             <button
               onClick={() => {
@@ -563,7 +564,7 @@ export default function CustomersPage() {
                 setNewPhone('');
                 setShowAddModal(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-xl text-xs font-bold transition-all shadow-sm"
             >
               <FiUserPlus size={16} />
               إضافة عميل جديد
@@ -580,7 +581,7 @@ export default function CustomersPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="بحث بالاسم أو رقم الهاتف..."
-              className="block w-full pl-3 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:ring-primary-500 focus:border-primary-500"
+              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-xl text-xs focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
             />
           </div>
 
@@ -599,20 +600,43 @@ export default function CustomersPage() {
             <div className="space-y-3">
               {filteredCustomers.map((customer) => (
                 <div key={customer.id} className="bg-white rounded-xl p-4 border border-gray-100 hover:border-gray-200 card-shadow transition-all">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 relative">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-gray-800 text-sm">{customer.name}</h4>
-                        <button onClick={() => openEditModal(customer)} className="text-gray-400 hover:text-primary-600 p-1" title="تعديل"><FiEdit2 size={13} /></button>
-                        {parseFloat(customer.total_debt || 0) === 0 && (
-                          <button onClick={() => handleDeleteCustomer(customer)} className="text-gray-400 hover:text-red-600 p-1" title="حذف"><FiTrash2 size={13} /></button>
-                        )}
+                        <h4 className="font-bold text-[#212529] text-sm">{customer.name}</h4>
+                        <div className="relative">
+                          <button onClick={() => setOpenMenuId(openMenuId === customer.id ? null : customer.id)} className="p-1.5 rounded-lg hover:bg-[#F8F9FA] text-[#6C757D]">
+                            <FiMoreVertical size={16} />
+                          </button>
+                          {openMenuId === customer.id && (
+                            <div className="absolute right-0 top-8 bg-white rounded-xl border border-[#DEE2E6] shadow-lg z-10 py-1 min-w-[140px]">
+                              <button onClick={() => { setOpenMenuId(null); openEditModal(customer); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F8F9FA] flex items-center gap-2 text-[#212529]"><FiEdit2 size={13} /> تعديل</button>
+                              <button onClick={() => { setOpenMenuId(null); setSelectedCustomer(customer); setWaiveAmount(''); setWaiveReason(''); setShowWaiveModal(true); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F8F9FA] flex items-center gap-2 text-[#212529]"><FiGift size={13} /> إعفاء</button>
+                              {parseFloat(customer.total_debt || 0) === 0 && (
+                                <button onClick={() => { setOpenMenuId(null); handleDeleteCustomer(customer); }} className="w-full text-right px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><FiTrash2 size={13} /> حذف</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      {customer.phone && <p className="text-xs text-gray-400 mt-0.5" dir="ltr">{customer.phone}</p>}
+                      {customer.phone && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <p className="text-xs text-[#6C757D]" dir="ltr">{customer.phone}</p>
+                          {customer.total_debt > 0 && (
+                            <button onClick={() => handleWhatsAppReminder(customer)}
+                              className="w-7 h-7 rounded-full bg-[#25D366] hover:bg-[#128C7E] flex items-center justify-center transition-colors shadow-sm"
+                              title="تذكير واتساب">
+                              <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-left bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                      <p className="text-[9px] text-gray-400">الدين القائم</p>
-                      <p className={`font-black text-sm ${customer.total_debt > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <div className="text-left bg-[#F8F9FA] px-3 py-1.5 rounded-lg border border-[#DEE2E6]">
+                      <p className="text-[9px] text-[#6C757D]">الدين القائم</p>
+                      <p className={`font-black text-sm ${customer.total_debt > 0 ? 'text-red-600' : 'text-[#2B8A3E]'}`}>
                         {formatCurrency(customer.total_debt)} ج.س
                       </p>
                     </div>
@@ -621,35 +645,18 @@ export default function CustomersPage() {
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => { setSelectedCustomer(customer); setDebtAmount(''); setDebtDesc(''); setShowDebtModal(true); }}
-                        className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-all"
-                      >
-                        + دين
-                      </button>
-                      <button
                         onClick={() => { setSelectedCustomer(customer); setPayAmount(''); setShowPayModal(true); }}
-                        className="flex-1 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg text-xs font-bold transition-all"
+                        className="flex-1 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-lg text-xs font-bold transition-all shadow-sm"
                       >
                         سداد
                       </button>
                       <button
-                        onClick={() => { setSelectedCustomer(customer); setWaiveAmount(''); setWaiveReason(''); setShowWaiveModal(true); }}
-                        className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1"
+                        onClick={() => { setSelectedCustomer(customer); setDebtAmount(''); setDebtDesc(''); setShowDebtModal(true); }}
+                        className="flex-1 py-2 bg-white border border-[#DEE2E6] hover:bg-[#F8F9FA] text-[#212529] rounded-lg text-xs font-bold transition-all"
                       >
-                        <FiGift size={12} /> إعفاء
+                        + دين
                       </button>
                     </div>
-                    {customer.total_debt > 0 && (
-                      <button
-                        onClick={() => handleWhatsAppReminder(customer)}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-xs font-bold transition-all shadow-xs"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
-                        </svg>
-                        إرسال تذكير عبر واتساب
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}

@@ -12,6 +12,16 @@ export function formatDate(dateStr) {
   });
 }
 
+export function formatDateArabic(dateStr) {
+  if (!dateStr) return 'غير محدد';
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو',
+                   'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const d = new Date(dateStr);
+  const dayArabic = d.getDate().toLocaleString('ar-EG-u-nu-arab');
+  const yearArabic = d.getFullYear().toLocaleString('ar-EG-u-nu-arab').replace(/,/g, '');
+  return `${dayArabic} ${months[d.getMonth()]} ${yearArabic}`;
+}
+
 export function formatPhone(phone) {
   if (!phone) return '';
   // Format local: 0902 642 768

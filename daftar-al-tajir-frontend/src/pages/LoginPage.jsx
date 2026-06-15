@@ -37,11 +37,11 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#2B8A3E] to-[#1a6b2d] flex flex-col items-center justify-center p-4">
       {/* Logo */}
       <div className="mb-8 text-center">
         <div className="bg-white p-4 rounded-full inline-block mb-4 shadow-lg">
-          <BookOpen className="w-12 h-12 text-primary-600" />
+          <BookOpen className="w-12 h-12 text-[#2B8A3E]" />
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">دفتر التاجر</h1>
         <p className="text-primary-100">إدارة مبيعاتك وحساباتك بسهولة</p>
@@ -65,7 +65,7 @@ function LoginPage() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  className="block w-full pl-3 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                   placeholder="0xxxxxxxxx"
                   dir="ltr"
                 />
@@ -85,7 +85,7 @@ function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-primary-500 focus:border-primary-500"
+                  className="block w-full pl-10 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                   placeholder="••••••••"
                   dir="ltr"
                 />
@@ -106,7 +106,7 @@ function LoginPage() {
             <div className="flex items-center justify-between">
               <Link 
                 to="/forgot-password" 
-                className="text-sm font-medium text-primary-600 hover:text-primary-500"
+                className="text-sm font-medium text-[#2B8A3E] hover:text-[#237032]"
               >
                 نسيت كلمة المرور؟
               </Link>
@@ -115,7 +115,7 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-[12px] shadow-sm text-sm font-bold text-white bg-[#2B8A3E] hover:bg-[#237032] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2B8A3E] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'جاري التحميل...' : 'دخول'}
             </button>
@@ -125,7 +125,7 @@ function LoginPage() {
         <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 text-center">
           <p className="text-sm text-gray-600">
             ليس لديك حساب؟{' '}
-            <Link to="/register" className="font-bold text-primary-600 hover:text-primary-500">
+            <Link to="/register" className="text-base font-black text-[#2B8A3E] underline underline-offset-2 hover:text-[#237032]">
               سجل متجرك الآن
             </Link>
           </p>
