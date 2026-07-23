@@ -23,6 +23,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _uploading = false;
   File? _selectedImage;
   Map<String, dynamic>? _pendingSub;
+  Map<String, dynamic>? _prices;
 
   final currencyFormat = NumberFormat('#,##0.##', 'ar');
 
@@ -46,6 +47,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         if (data != null && data['id'] != null) {
           setState(() => _pendingSub = data);
         }
+      }
+      
+      final priceRes = await _api.get('/subscriptions/prices');
+      if (priceRes.statusCode == 200) {
+        setState(() => _prices = jsonDecode(priceRes.body));
       }
     } catch (_) {}
   }
@@ -220,8 +226,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       ),
                       child: Column(
                         children: [
-                          const Text(
-                            "الرسوم الأساسية: 10,000 ج.س للشهر الواحد",
+                          Text(
+                            "الرسوم الأساسية: ${formatCurrency(_prices?['monthly_price'] ?? 10000)} ج.س للشهر الواحد",
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
                             textAlign: TextAlign.center,
                           ),

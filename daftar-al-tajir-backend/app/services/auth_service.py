@@ -176,7 +176,8 @@ class AuthService:
             raise ValueError("حسابك محظور. يرجى التواصل مع الإدارة")
 
         # Generate token
-        access_token_expires = timedelta(days=7)
+        from app.core.config import JWT_EXPIRATION_DAYS
+        access_token_expires = timedelta(days=JWT_EXPIRATION_DAYS)
         access_token = create_access_token(
             data={"sub": str(user.id), "role": user.role},
             expires_delta=access_token_expires

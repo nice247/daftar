@@ -21,7 +21,7 @@ class AuthProvider extends ChangeNotifier {
     checkSavedSession();
   }
 
-  // Persistent Login Once Check (Facebook style)
+  // Persistent Login Once Check
   Future<void> checkSavedSession() async {
     _isLoading = true;
     notifyListeners();
@@ -38,7 +38,11 @@ class AuthProvider extends ChangeNotifier {
         }
 
         // Silent refresh profile from backend if online
-        fetchProfile();
+        final success = await fetchProfile();
+        // If fetchProfile failed due to 401 (handled implicitly if we add interceptor, or explicitly here)
+        // Actually, if it fails, we keep them logged in (offline mode).
+        // If it explicitly returns 401, we should probably try refreshing token or logging out.
+        // For now, backend token life is 90 days, so we just continue.
       } else {
         _isLoggedIn = false;
         _user = null;
@@ -63,6 +67,31 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setString('user_profile', jsonEncode(data));
         notifyListeners();
         return true;
+      } else if (response.statusCode == 401) {
+        // Try to refresh token
+        final refreshRes = await _api.post('/users/refresh-token', {});
+        if (refreshRes.statusCode == 200) {
+          final data = jsonDecode(refreshRes.body);
+          if (data['access_token'] != null) {
+            _token = data['access_token'];
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('access_token', _token!);
+            
+            // Retry fetch profile
+            final retryRes = await _api.get('/users/me');
+            if (retryRes.statusCode == 200) {
+              final rData = jsonDecode(retryRes.body);
+              _user = UserModel.fromJson(rData);
+              _isLoggedIn = true;
+              await prefs.setString('user_profile', jsonEncode(rData));
+              notifyListeners();
+              return true;
+            }
+          }
+        }
+        // If refresh fails, log out
+        await logout();
+        return false;
       }
     } catch (e) {
       debugPrint("Profile fetch error (offline fallback): $e");

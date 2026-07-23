@@ -19,10 +19,18 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    
+    // Wait for the auth provider to finish checking the saved session
+    while (auth.isLoading) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    
+    // Minimal splash screen delay
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
     if (!mounted) return;
 
-    final auth = Provider.of<AuthProvider>(context, listen: false);
     if (auth.isLoggedIn) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),

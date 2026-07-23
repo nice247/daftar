@@ -60,3 +60,33 @@ async def update_my_profile(
     user_dict = UserResponse.model_validate(current_user).model_dump()
     user_dict["support_phone"] = SUPPORT_PHONE
     return user_dict
+
+
+@router.post("/refresh-token", summary="تجديد التوكن")
+async def refresh_token(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Issue a new JWT token for the current user to extend the session."""
+    from datetime import timedelta
+    from app.core.security import create_access_token
+    from app.core.config import JWT_EXPIRATION_DAYS
+
+    access_token = create_access_token(
+        data={"sub": str(current_user.id), "role": current_user.role},
+        expires_delta=timedelta(days=JWT_EXPIRATION_DAYS)
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": current_user.id,
+            "phone": current_user.phone,
+            "store_name": current_user.store_name,
+            "role": current_user.role,
+            "status": current_user.status,
+            "subscription_end_date": current_user.subscription_end_date.isoformat() if current_user.subscription_end_date else None,
+            "support_phone": SUPPORT_PHONE
+        }
+    }

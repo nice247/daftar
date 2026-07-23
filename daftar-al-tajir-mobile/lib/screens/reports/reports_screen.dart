@@ -252,6 +252,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         Text("البداية: ${prevCycle['start_date'] ?? 'غير محدد'}", style: const TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
                       ],
                     ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFDEE2E6))),
+                      child: const Center(
+                        child: Text(
+                          "لا توجد دورات سابقة مسجلة للمقارنة حالياً.\nستظهر البيانات هنا بعد إغلاق دورتك الحالية.",
+                          style: TextStyle(fontSize: 11, color: Color(0xFF6C757D)),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 14),
 

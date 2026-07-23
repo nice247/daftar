@@ -26,8 +26,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only redirect to login if the 401 is NOT from the login endpoint itself
-    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
+    // Only redirect to login if the 401 is NOT from the login or refresh-token endpoints
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/refresh-token');
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
@@ -67,6 +69,7 @@ export const authAPI = {
 export const userAPI = {
   getProfile: () => api.get('/users/me'),
   updateProfile: (data) => api.put('/users/me', data),
+  refreshToken: () => api.post('/users/refresh-token'),
 };
 
 // ============ EOD API ============

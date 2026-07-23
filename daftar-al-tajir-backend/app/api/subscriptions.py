@@ -39,7 +39,7 @@ async def upload_receipt(
     # If OCR succeeded, we have the extracted data so we don't need the full image
     receipt_data = None
     if not ocr_result.success:
-        receipt_data = base64.b64encode(image_data).decode('utf-8')[:50000]  # Truncate for storage
+        receipt_data = base64.b64encode(image_data).decode('utf-8')
 
     subscription = Subscription(
         user_id=current_user.id,
@@ -128,7 +128,7 @@ async def review_subscription(
             from app.models.models import SystemSettings
             settings_result = await db.execute(select(SystemSettings).order_by(SystemSettings.id.desc()).limit(1))
             settings = settings_result.scalar_one_or_none()
-            monthly_price = float(settings.monthly_price) if settings and settings.monthly_price else 10000.0
+            monthly_price = float(settings.monthly_price) if settings and settings.monthly_price else 3000.0
 
             amount = float(subscription.amount) if subscription.amount else monthly_price
             months = max(1, int(amount // monthly_price))
@@ -182,9 +182,9 @@ async def get_subscription_prices(
     if not settings:
         # Default settings if none exist
         settings = SystemSettings(
-            monthly_price=10000,
-            quarterly_price=30000,
-            semi_annual_price=60000
+            monthly_price=3000,
+            quarterly_price=8000,
+            semi_annual_price=15000
         )
         db.add(settings)
         await db.commit()

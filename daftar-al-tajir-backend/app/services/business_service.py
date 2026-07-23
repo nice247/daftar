@@ -291,6 +291,7 @@ class BusinessService:
             outstanding = list(result.scalars().all())
 
             remaining = amount
+            first_invoice_id = None
             for inv in outstanding:
                 owed = inv.total_amount - inv.paid_amount
                 if remaining <= 0:
@@ -298,9 +299,9 @@ class BusinessService:
                 payment_amount = min(remaining, owed)
                 inv.paid_amount += payment_amount
                 remaining -= payment_amount
-                if remaining <= 0:
-                    invoice_id = inv.id
-                    break
+                if first_invoice_id is None:
+                    first_invoice_id = inv.id
+            invoice_id = first_invoice_id
 
         payment = DebtPayment(
             user_id=user_id,
@@ -346,6 +347,27 @@ class BusinessService:
             created_at=BusinessService._get_local_date()
         )
         db.add(expense)
+
+        # FIFO: distribute waiver across outstanding invoices
+        result = await db.execute(
+            select(Invoice).where(
+                Invoice.user_id == user_id,
+                Invoice.customer_id == customer_id,
+                Invoice.invoice_type.in_(["DEBT", "CASH"]),
+                Invoice.is_cancelled == False,
+                Invoice.paid_amount < Invoice.total_amount
+            ).order_by(Invoice.created_at)
+        )
+        outstanding = list(result.scalars().all())
+
+        remaining = amount
+        for inv in outstanding:
+            if remaining <= 0:
+                break
+            owed = inv.total_amount - inv.paid_amount
+            waive_amount = min(remaining, owed)
+            inv.paid_amount += waive_amount
+            remaining -= waive_amount
 
         # Update customer total debt
         result = await db.execute(
@@ -573,9 +595,9 @@ class BusinessService:
         has_recent_restock = await BusinessService.has_restock_since(db, user_id, min_date=two_days_before_end)
         is_expired_without_restock = (date.today() >= expected_end) and not has_recent_restock
 
-        c_sales = Decimal(0) if is_expired_without_restock else current.total_sales
-        c_expenses = Decimal(0) if is_expired_without_restock else current.total_expenses
-        c_net = Decimal(0) if is_expired_without_restock else current.net_cashflow
+        c_sales = current.total_sales
+        c_expenses = current.total_expenses
+        c_net = current.net_cashflow
 
         current_summary = CycleSummary(
             cycle_id=current.id,

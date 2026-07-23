@@ -47,7 +47,18 @@ class OCRService:
                 }
             ]
 
-            gemini_response = model.generate_content([prompt, image_parts[0]])
+            gemini_response = model.generate_content(
+                [prompt, image_parts[0]],
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=1000,
+                )
+            )
+            
+            if not gemini_response.text:
+                logger.error("Gemini returned empty response")
+                return OCRResult(success=False, error="لم يتم التعرف على محتوى الصورة")
+            
             gemini_text = gemini_response.text.strip()
 
         except Exception as e:

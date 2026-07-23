@@ -18,6 +18,7 @@ body {
   color: #212529;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  text-align: right;
 }
 
 /* Custom scrollbar */
@@ -45,6 +46,11 @@ body {
 /* Input styles */
 input, select, textarea {
   direction: rtl;
+}
+
+select option {
+  direction: rtl;
+  text-align: right;
 }
 
 /* Card shadow utility */

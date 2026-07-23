@@ -135,7 +135,7 @@ else:
 # ============ JWT ============
 JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "daftar-tajir-super-secret-key-change-in-production-2024")
 JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-JWT_EXPIRATION_DAYS: int = int(os.getenv("JWT_EXPIRATION_DAYS", "7"))
+JWT_EXPIRATION_DAYS: int = int(os.getenv("JWT_EXPIRATION_DAYS", "90"))
 
 # ============ Telegram Bot ============
 TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")

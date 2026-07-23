@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { eodAPI, customerAPI, expenseAPI, merchantDebtAPI } from '../services/api';
 import { formatCurrency, EXPENSE_CATEGORIES, normalizeArabicNumber } from '../utils/helpers';
-import { FiShoppingCart, FiCreditCard, FiTrendingUp, FiPackage, FiDollarSign, FiSave, FiList, FiEye, FiX } from 'react-icons/fi';
+import { FiShoppingCart, FiCreditCard, FiTrendingUp, FiPackage, FiDollarSign, FiSave, FiList, FiClock, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 export default function EODPage() {
   const [incomes, setIncomes] = useState([]);
   const [expenses, setExpenses] = useState([]);
-  const [otherIncomes, setOtherIncomes] = useState([]);
+
   const [customers, setCustomers] = useState([]);
   const [lastRestock, setLastRestock] = useState(null);
   const [cycleStatus, setCycleStatus] = useState(null);
@@ -289,23 +289,23 @@ export default function EODPage() {
       {/* View Buttons */}
       <div className="flex flex-wrap gap-2">
         <button onClick={handleViewExpenses} className="flex items-center gap-1 text-sm text-[#6C757D] font-bold bg-[#F8F9FA] border border-[#DEE2E6] px-3 py-1.5 rounded-lg hover:bg-white transition-colors">
-          <FiEye size={14} />
+          <FiList size={14} />
           المصروفات
         </button>
         <button onClick={handleViewPurchases} className="flex items-center gap-1 text-sm text-[#6C757D] font-bold bg-[#F8F9FA] border border-[#DEE2E6] px-3 py-1.5 rounded-lg hover:bg-white transition-colors">
-          <FiEye size={14} />
+          <FiPackage size={14} />
           المشتريات
         </button>
         <button onClick={handleViewMerchantDebts} className="flex items-center gap-1 text-sm text-[#6C757D] font-bold bg-[#F8F9FA] border border-[#DEE2E6] px-3 py-1.5 rounded-lg hover:bg-white transition-colors">
-          <FiEye size={14} />
+          <FiDollarSign size={14} />
           ديون التاجر
         </button>
         <button onClick={handleViewOtherIncomes} className="flex items-center gap-1 text-sm text-[#6C757D] font-bold bg-[#F8F9FA] border border-[#DEE2E6] px-3 py-1.5 rounded-lg hover:bg-white transition-colors">
-          <FiEye size={14} />
+          <FiTrendingUp size={14} />
           الإيرادات
         </button>
         <button onClick={handleViewYesterday} className="flex items-center gap-1 text-sm text-[#6C757D] font-bold bg-[#F8F9FA] border border-[#DEE2E6] px-3 py-1.5 rounded-lg hover:bg-white transition-colors">
-          <FiEye size={14} />
+          <FiClock size={14} />
           معاملات أمس
         </button>
       </div>

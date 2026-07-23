@@ -121,6 +121,23 @@ class _EodScreenState extends State<EodScreen> {
         };
       }).toList();
 
+      // Map unassigned customer/merchant debts to other_incomes to keep drawer balanced
+      final List<Map<String, dynamic>> allOtherIncomes = [...formattedOtherIncomes];
+      
+      for (var d in _customerDebtPayments) {
+        final amt = double.tryParse(d['amount'].toString()) ?? 0;
+        if (amt > 0) {
+          allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'سداد دين عميل'});
+        }
+      }
+      
+      for (var d in _merchantDebtsReceived) {
+        final amt = double.tryParse(d['amount'].toString()) ?? 0;
+        if (amt > 0) {
+          allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'دين مستلم (على التاجر)'});
+        }
+      }
+
       final eodPayload = {
         'eod_date': DateTime.now().toIso8601String().split('T')[0],
         'sales': {
@@ -129,7 +146,7 @@ class _EodScreenState extends State<EodScreen> {
         },
         'expenses': formattedExpenses,
         'debt_payments': [],
-        'other_incomes': formattedOtherIncomes,
+        'other_incomes': allOtherIncomes,
       };
 
       final res = await _api.post('/eod/save', eodPayload);
@@ -456,6 +473,70 @@ class _EodScreenState extends State<EodScreen> {
 
           const SizedBox(height: 14),
 
+          // Section 6: ملخص اليومية (Green Border Card)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFF2B8A3E), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2B8A3E).withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            child: Column(
+              children: [
+                const Text("ملخص اليومية", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("${formatCurrency(_totalIncomesAll)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text("الإيرادات الكلية (مبيعات + إيرادات أخرى + ديون مستلمة)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("(${formatCurrency(_totalExpenses)}) ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                    const Text("إجمالي المصروفات (والمشتريات)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(color: Color(0xFFDEE2E6)),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE6FCF5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("${formatCurrency(_netDailyProfit)} ج.س", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text("صافي الأرباح (اليوم)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E))),
+                          Text("(الإيرادات الكلية - المصروفات)", style: TextStyle(fontSize: 9, color: Color(0xFF6C757D))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
           // 3 Action Pills: المصروفات | المشتريات | ديون التاجر
           Row(
             children: [
@@ -468,7 +549,7 @@ class _EodScreenState extends State<EodScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFD8D8))),
                   ),
-                  icon: const Icon(Icons.remove_red_eye, size: 14),
+                  icon: const Icon(Icons.list_alt, size: 14),
                   label: const Text("المصروفات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -482,7 +563,7 @@ class _EodScreenState extends State<EodScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFEC99))),
                   ),
-                  icon: const Icon(Icons.remove_red_eye, size: 14),
+                  icon: const Icon(Icons.inventory_2, size: 14),
                   label: const Text("المشتريات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -496,7 +577,7 @@ class _EodScreenState extends State<EodScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFA5D8FF))),
                   ),
-                  icon: const Icon(Icons.remove_red_eye, size: 14),
+                  icon: const Icon(Icons.account_balance_wallet, size: 14),
                   label: const Text("ديون التاجر", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -798,70 +879,6 @@ class _EodScreenState extends State<EodScreen> {
                   }),
                 ],
               ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Section 6: ملخص اليومية (Green Border Card)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFF2B8A3E), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2B8A3E).withValues(alpha: 0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Column(
-              children: [
-                const Text("ملخص اليومية", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("${formatCurrency(_totalIncomesAll)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Text("الإيرادات الكلية (مبيعات + إيرادات أخرى + ديون مستلمة)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("(${formatCurrency(_totalExpenses)}) ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                    const Text("إجمالي المصروفات (والمشتريات)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
-                  ],
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Divider(color: Color(0xFFDEE2E6)),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE6FCF5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("${formatCurrency(_netDailyProfit)} ج.س", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text("صافي الأرباح (اليوم)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E))),
-                          Text("(الإيرادات الكلية - المصروفات)", style: TextStyle(fontSize: 9, color: Color(0xFF6C757D))),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ),
           ),
 

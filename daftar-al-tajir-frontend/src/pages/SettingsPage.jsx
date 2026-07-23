@@ -50,10 +50,11 @@ export default function SettingsPage() {
       await refreshUser();
       
       if (user?.role === 'admin' && adminSettings) {
+        const mp = parseFloat(adminSettings.monthly_price);
         await adminAPI.updateSettings({
-          monthly_price: parseFloat(adminSettings.monthly_price),
-          quarterly_price: parseFloat(adminSettings.quarterly_price || adminSettings.monthly_price),
-          semi_annual_price: parseFloat(adminSettings.semi_annual_price || adminSettings.monthly_price),
+          monthly_price: mp,
+          quarterly_price: mp * 3,
+          semi_annual_price: mp * 6,
         });
       }
       
@@ -265,7 +266,7 @@ export default function SettingsPage() {
             </button>
             
             <a
-              href="https://www.facebook.com/profile.php?id=61590357776476"
+              href="https://fb.me/61590357776476"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#1877F2] border border-[#DEE2E6] rounded-[12px] text-sm font-bold transition-colors"

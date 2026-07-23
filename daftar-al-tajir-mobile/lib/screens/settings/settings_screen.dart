@@ -97,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openFacebook() async {
-    final url = Uri.parse("https://www.facebook.com/profile.php?id=61590357776476");
+    final url = Uri.parse("https://fb.me/61590357776476");
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }

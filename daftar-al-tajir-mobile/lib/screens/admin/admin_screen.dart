@@ -551,13 +551,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                                 showDialog(
                                   context: context,
                                   builder: (iCtx) => Dialog(
-                                    child: Image.network(sub['receipt_image'], fit: BoxFit.contain),
+                                    child: Image.memory(base64Decode(sub['receipt_image'].replaceAll(RegExp(r'\s+'), '')), fit: BoxFit.contain),
                                   ),
                                 );
                               },
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Image.network(sub['receipt_image'], height: 120, width: double.infinity, fit: BoxFit.cover),
+                                child: Image.memory(base64Decode(sub['receipt_image'].replaceAll(RegExp(r'\s+'), '')), height: 120, width: double.infinity, fit: BoxFit.cover),
                               ),
                             ),
                           const SizedBox(height: 10),

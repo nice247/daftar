@@ -146,6 +146,13 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
+
+      {!report.comparison && (
+        <div className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-xl p-4 shadow-sm text-center">
+          <p className="text-sm text-[#6C757D] font-bold">لا توجد فترات سابقة للمقارنة بعد</p>
+          <p className="text-xs text-[#6C757D] mt-1">سيظهر تقرير المقارنة بعد إتمام دورة شراء كاملة.</p>
+        </div>
+      )}
     </div>
   );
 }

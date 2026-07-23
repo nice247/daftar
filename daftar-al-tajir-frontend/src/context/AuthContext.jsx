@@ -8,14 +8,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on mount
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('access_token');
-    
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Check if user is logged in on mount and verify token
+    const initAuth = async () => {
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('access_token');
+      
+      if (storedUser && token) {
+        // Set user immediately from cache for fast render
+        setUser(JSON.parse(storedUser));
+        
+        // Verify token is still valid by refreshing it in background
+        try {
+          const { userAPI } = await import('../services/api');
+          const response = await userAPI.refreshToken();
+          const { access_token, user: userData } = response.data;
+          // Update token and user data
+          localStorage.setItem('access_token', access_token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+        } catch (error) {
+          // Token expired or invalid - but don't log out immediately
+          // The 401 interceptor will handle it if needed
+          console.warn('Token refresh failed, using cached data');
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (phone, password) => {

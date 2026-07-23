@@ -198,6 +198,12 @@ async def waive_debt(
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="العميل غير موجود")
 
+    if request.amount > customer.total_debt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"مبلغ الإعفاء ({request.amount}) أكبر من الدين القائم ({customer.total_debt})"
+        )
+
     expense = await business_service.waive_debt(
         db, current_user.id, request.customer_id,
         request.amount, request.reason
