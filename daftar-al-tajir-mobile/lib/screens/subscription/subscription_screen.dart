@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
@@ -22,6 +23,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   bool _uploading = false;
   File? _selectedImage;
   Map<String, dynamic>? _pendingSub;
+
+  final currencyFormat = NumberFormat('#,##0.##', 'ar');
+
+  String formatCurrency(dynamic val) {
+    if (val == null) return '0';
+    final numVal = double.tryParse(val.toString()) ?? 0.0;
+    return currencyFormat.format(numVal);
+  }
 
   @override
   void initState() {
@@ -44,7 +53,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   void _copyAccountNumber() {
     Clipboard.setData(const ClipboardData(text: "7712964"));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("تم نسخ رقم حساب بنكك (7712964)"), backgroundColor: Color(0xFF2B8A3E)),
+      const SnackBar(content: Text("تم نسخ الرقم"), backgroundColor: Color(0xFF2B8A3E)),
     );
   }
 
@@ -65,7 +74,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         messenger.showSnackBar(
-          const SnackBar(content: Text("تم إرسال إشعار الدفع بنجاح وهو قيد المراجعة"), backgroundColor: Color(0xFF2B8A3E)),
+          const SnackBar(content: Text("تم رفع الإشعار بنجاح. سيتم مراجعته وتفعيل الاشتراك."), backgroundColor: Color(0xFF2B8A3E)),
         );
         _checkPendingSubscription();
       } else {
@@ -83,6 +92,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
 
+    bool isSubscriptionActive = false;
+    int diffDays = 0;
+    if (user?.subscriptionEndDate != null) {
+      try {
+        final endDate = DateTime.parse(user!.subscriptionEndDate!);
+        isSubscriptionActive = endDate.isAfter(DateTime.now());
+        diffDays = endDate.difference(DateTime.now()).inDays.abs();
+      } catch (_) {}
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -93,41 +112,48 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text("حالة الاشتراك", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
                   const SizedBox(height: 10),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        user?.isFrozen == true ? Icons.cancel : Icons.check_circle,
-                        color: user?.isFrozen == true ? Colors.red : const Color(0xFF2B8A3E),
+                        isSubscriptionActive ? Icons.check_circle : Icons.warning_amber_rounded,
+                        color: isSubscriptionActive ? const Color(0xFF2B8A3E) : Colors.red,
                         size: 24,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        user?.isFrozen == true ? "الاشتراك مجمّد" : "الاشتراك مفعل",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: user?.isFrozen == true ? Colors.red : const Color(0xFF2B8A3E),
-                        ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isSubscriptionActive ? "الاشتراك مفعل" : "الاشتراك غير مفعل",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: isSubscriptionActive ? const Color(0xFF2B8A3E) : Colors.red,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            user?.subscriptionEndDate != null
+                                ? (isSubscriptionActive
+                                    ? "ينتهي بعد $diffDays يوم (${user!.subscriptionEndDate})"
+                                    : "انتهى منذ $diffDays يوم (${user!.subscriptionEndDate})")
+                                : "لا يوجد اشتراك حالي",
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    user?.subscriptionEndDate != null
-                        ? "ينتهي الاشتراك بتاريخ: ${user!.subscriptionEndDate}"
-                        : "اشتراكك نشط",
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
                   ),
                 ],
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Pending Notice
           if (_pendingSub != null) ...[
@@ -145,147 +171,160 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     children: [
                       Icon(Icons.hourglass_top, color: Color(0xFFD97706), size: 20),
                       SizedBox(width: 6),
-                      Text("لديك طلب اشتراك قيد المراجعة", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
+                      Text("لديك طلب تجديد قيد المراجعة.", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF212529), fontSize: 13)),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
+                  const Text("سيتم إشعارك عند تفعيله من قبل الإدارة.", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
                   if (_pendingSub!['ocr_data'] != null) ...[
-                    Text("المبلغ: ${_pendingSub!['ocr_data']['amount'] ?? ''} ج.س", style: const TextStyle(fontSize: 12, color: Color(0xFF212529))),
-                    Text("رقم العملية: ${_pendingSub!['ocr_data']['reference_number'] ?? ''}", style: const TextStyle(fontSize: 12, color: Color(0xFF212529))),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFDEE2E6))),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("البيانات المستخرجة (للتأكيد):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                          const SizedBox(height: 4),
+                          Text("المبلغ: ${formatCurrency(_pendingSub!['ocr_data']['amount'])} ج.س", style: const TextStyle(fontSize: 11)),
+                          Text("رقم العملية: ${_pendingSub!['ocr_data']['reference_number'] ?? 'غير متوفر'}", style: const TextStyle(fontSize: 11)),
+                          Text("التاريخ: ${_pendingSub!['ocr_data']['date'] ?? 'غير متوفر'}", style: const TextStyle(fontSize: 11)),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
 
           // Card 2: تجديد الاشتراك
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text("تجديد الاشتراك", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
-                  ),
-                  const SizedBox(height: 14),
+          if (_pendingSub == null)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("تجديد الاشتراك", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                    const SizedBox(height: 14),
 
-                  // Light green box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE6FCF5),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF96F2D7)),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "الرسوم الأساسية: 10,000 ج.س للشهر الواحد",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E)),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          "(يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)",
-                          style: TextStyle(fontSize: 10, color: Color(0xFF2B8A3E)),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text("قم بالتحويل إلى حساب بنكك التالي:", style: TextStyle(fontSize: 12, color: Color(0xFF212529))),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: _copyAccountNumber,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.copy_outlined, color: Color(0xFF2B8A3E), size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "7712964",
-                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E), letterSpacing: 2),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "باسم بهاء الدين عثمان اسحق محمد",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-                  const Text("إرفاق إشعار الدفع", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6C757D))),
-                  const SizedBox(height: 8),
-
-                  // Upload options buttons / Dashed box
-                  InkWell(
-                    onTap: _uploading ? null : () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (ctx) => SafeArea(
-                          child: Wrap(
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.photo_library, color: Color(0xFF2B8A3E)),
-                                title: const Text("اختيار من المعرض"),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  _pickAndUploadReceipt(ImageSource.gallery);
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.camera_alt, color: Color(0xFF2B8A3E)),
-                                title: const Text("التقاط صورة بالكاميرا"),
-                                onTap: () {
-                                  Navigator.pop(ctx);
-                                  _pickAndUploadReceipt(ImageSource.camera);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    // Instructions box
+                    Container(
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8F9FA),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFDEE2E6), width: 1.5),
+                        border: Border.all(color: const Color(0xFFDEE2E6)),
                       ),
                       child: Column(
                         children: [
-                          _uploading
-                              ? const CircularProgressIndicator(color: Color(0xFF2B8A3E))
-                              : _selectedImage != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.file(_selectedImage!, height: 100, width: 100, fit: BoxFit.cover),
-                                    )
-                                  : const Icon(Icons.cloud_upload_outlined, color: Color(0xFF6C757D), size: 40),
-                          const SizedBox(height: 8),
-                          Text(
-                            _uploading
-                                ? "جاري قراءة واستخراج بيانات الإشعار..."
-                                : "اختر ملف أو قم بسحبه وإفلاته هنا",
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E)),
+                          const Text(
+                            "الرسوم الأساسية: 10,000 ج.س للشهر الواحد",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 4),
-                          const Text("PNG, JPG, GIF up to 10MB", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                          const Text(
+                            "يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)",
+                            style: TextStyle(fontSize: 10, color: Color(0xFF6C757D)),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("قم بالتحويل إلى حساب بنكك التالي:", style: TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: _copyAccountNumber,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.copy_outlined, color: Color(0xFF2B8A3E), size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  "7712964",
+                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E), letterSpacing: 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "بإسم بهاء الدين عثمان اسحق محمد",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(height: 16),
+                    const Text("إرفاق إشعار الدفع", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6C757D))),
+                    const SizedBox(height: 8),
+
+                    // Dashed file upload box
+                    InkWell(
+                      onTap: _uploading ? null : () {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (ctx) => SafeArea(
+                            child: Wrap(
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.photo_library, color: Color(0xFF2B8A3E)),
+                                  title: const Text("اختيار ملف / المعرض"),
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    _pickAndUploadReceipt(ImageSource.gallery);
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.camera_alt, color: Color(0xFF2B8A3E)),
+                                  title: const Text("التقاط صورة بالكاميرا"),
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    _pickAndUploadReceipt(ImageSource.camera);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFDEE2E6), width: 1.5),
+                        ),
+                        child: Column(
+                          children: [
+                            _uploading
+                                ? const CircularProgressIndicator(color: Color(0xFF2B8A3E))
+                                : _selectedImage != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.file(_selectedImage!, height: 120, width: double.infinity, fit: BoxFit.cover),
+                                      )
+                                    : const Icon(Icons.cloud_upload_outlined, color: Color(0xFF6C757D), size: 40),
+                            const SizedBox(height: 8),
+                            Text(
+                              _uploading
+                                  ? "جاري قراءة بيانات الإشعار..."
+                                  : "اختر ملف أو قم بسحبه وإفلاته هنا",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E)),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text("PNG, JPG, GIF up to 10MB", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

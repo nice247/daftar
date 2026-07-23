@@ -158,7 +158,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.home_outlined),
                   activeIcon: Icon(Icons.home),
-                  label: "إغلاق اليوم",
+                  label: "الملخص",
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.people_outline),

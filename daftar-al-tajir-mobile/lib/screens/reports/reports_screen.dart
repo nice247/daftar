@@ -195,12 +195,61 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                   if (prevCycle != null) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
+                    const Text("الفترة السابقة (الدورة المنتهية):", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFDEE2E6))),
+                            child: Column(
+                              children: [
+                                const Text("المصروفات والمشتريات", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                                const SizedBox(height: 2),
+                                Text(formatCurrency(prevCycle['total_expenses']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFDEE2E6))),
+                            child: Column(
+                              children: [
+                                const Text("الإيرادات", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                                const SizedBox(height: 2),
+                                Text(formatCurrency(prevCycle['total_sales']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529))),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFDEE2E6))),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "${formatCurrency(prevCycle['net_cashflow'])} ج.س",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: (prevCycle['net_cashflow'] ?? 0) >= 0 ? const Color(0xFF2B8A3E) : Colors.red),
+                          ),
+                          const Text("صافي الربح:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("${formatCurrency(prevCycle['net_cashflow'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                        const Text("أرباح الفترة السابقة", style: TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+                        Text("النهاية: ${prevCycle['end_date'] ?? 'غير محدد'}", style: const TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                        Text("البداية: ${prevCycle['start_date'] ?? 'غير محدد'}", style: const TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
                       ],
                     ),
                   ],

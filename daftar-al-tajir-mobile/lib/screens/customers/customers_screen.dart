@@ -63,7 +63,13 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
     }
   }
 
-  // --- Customer Dialogs ---
+  double get _totalCustomerDebts =>
+      _customers.fold(0.0, (sum, c) => sum + c.totalDebt);
+
+  double get _totalSupplierDebts =>
+      _merchantDebts.fold(0.0, (sum, d) => sum + (d.remainingAmount));
+
+  // --- Customer Handlers ---
   void _showAddCustomerDialog() {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
@@ -83,6 +89,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
@@ -117,6 +124,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
@@ -151,6 +159,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount <= 0) return;
@@ -185,6 +194,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount <= 0) return;
@@ -238,6 +248,14 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
   }
 
   void _deleteCustomer(CustomerModel customer) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (customer.totalDebt > 0) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text("لا يمكن حذف عميل لديه ديون قائمة")),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -274,83 +292,146 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
     }
   }
 
-  // --- Supplier Dialogs ---
+  // --- Supplier Handlers ---
   void _showAddSupplierDebtDialog() {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final amountCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    String debtType = 'goods';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("إضافة مستحق مورد جديد", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "اسم المورد / الشركة")),
-            const SizedBox(height: 12),
-            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم هاتف المورد")),
-            const SizedBox(height: 12),
-            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المستحق (جنيه)")),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDState) => AlertDialog(
+          title: const Text("إضافة مستحق مورد جديد", style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "اسم المورد / الشركة")),
+                const SizedBox(height: 12),
+                TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم هاتف المورد")),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("بضاعة"),
+                        selected: debtType == 'goods',
+                        onSelected: (val) => setDState(() => debtType = 'goods'),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("كاش"),
+                        selected: debtType == 'cash',
+                        onSelected: (val) => setDState(() => debtType = 'cash'),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("بنكك"),
+                        selected: debtType == 'bank',
+                        onSelected: (val) => setDState(() => debtType = 'bank'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المستحق (جنيه)")),
+                const SizedBox(height: 12),
+                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "ملاحظات / وصف المستحق")),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
+              onPressed: () async {
+                final amount = double.tryParse(amountCtrl.text) ?? 0;
+                if (nameCtrl.text.trim().isEmpty || amount <= 0) return;
+                Navigator.pop(ctx);
+                try {
+                  await _api.post('/merchant-debts/', {
+                    'supplier_name': nameCtrl.text.trim(),
+                    'supplier_phone': phoneCtrl.text.trim(),
+                    'debt_type': debtType,
+                    'total_amount': amount,
+                    'description': descCtrl.text.trim(),
+                  });
+                  _loadData();
+                } catch (_) {}
+              },
+              child: const Text("حفظ المستحق"),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (nameCtrl.text.trim().isEmpty || amount <= 0) return;
-              Navigator.pop(ctx);
-              try {
-                await _api.post('/merchant-debts/', {
-                  'supplier_name': nameCtrl.text.trim(),
-                  'supplier_phone': phoneCtrl.text.trim(),
-                  'total_amount': amount,
-                });
-                _loadData();
-              } catch (_) {}
-            },
-            child: const Text("حفظ المستحق"),
-          ),
-        ],
       ),
     );
   }
 
   void _showPaySupplierDebtDialog(MerchantDebtModel debt) {
     final amountCtrl = TextEditingController();
+    String paymentMethod = 'cash';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("سداد مستحق للمورد: ${debt.supplierName}", style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("المتبقي له حالياً: ${formatCurrency(debt.remainingAmount)} ج.س", style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
-            const SizedBox(height: 10),
-            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المدفوع (جنيه)")),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDState) => AlertDialog(
+          title: Text("سداد مستحق للمورد: ${debt.supplierName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("المتبقي له حالياً: ${formatCurrency(debt.remainingAmount)} ج.س", style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text("كاش"),
+                      selected: paymentMethod == 'cash',
+                      onSelected: (val) => setDState(() => paymentMethod = 'cash'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ChoiceChip(
+                      label: const Text("بنكك"),
+                      selected: paymentMethod == 'bankak',
+                      onSelected: (val) => setDState(() => paymentMethod = 'bankak'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المدفوع (جنيه)")),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
+              onPressed: () async {
+                final amount = double.tryParse(amountCtrl.text) ?? 0;
+                if (amount <= 0) return;
+                Navigator.pop(ctx);
+                try {
+                  await _api.post('/merchant-debts/pay', {
+                    'merchant_debt_id': debt.id,
+                    'amount': amount,
+                    'payment_method': paymentMethod,
+                  });
+                  _loadData();
+                } catch (_) {}
+              },
+              child: const Text("تأكيد السداد"),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
-          ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(amountCtrl.text) ?? 0;
-              if (amount <= 0) return;
-              Navigator.pop(ctx);
-              try {
-                await _api.post('/merchant-debts/pay', {
-                  'merchant_debt_id': debt.id,
-                  'amount': amount,
-                  'payment_method': 'cash',
-                });
-                _loadData();
-              } catch (_) {}
-            },
-            child: const Text("تأكيد السداد"),
-          ),
-        ],
       ),
     );
   }
@@ -417,8 +498,26 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                       ),
                       body: Column(
                         children: [
+                          // Total Summary Card
+                          Container(
+                            margin: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF0F0),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFFD8D8)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("${formatCurrency(_totalCustomerDebts)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red)),
+                                const Text("إجمالي الديون القائمة للعملاء", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529))),
+                              ],
+                            ),
+                          ),
+
                           Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: TextField(
                               decoration: const InputDecoration(
                                 hintText: "بحث عن عميل بالاسم أو الهاتف...",
@@ -427,6 +526,9 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                               onChanged: (val) => setState(() => _customerSearch = val),
                             ),
                           ),
+
+                          const SizedBox(height: 8),
+
                           Expanded(
                             child: filteredCustomers.isEmpty
                                 ? const Center(child: Text("لا يوجد عملاء مطابقون"))
@@ -486,7 +588,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                                                       },
                                                     ),
                                                     ListTile(
-                                                      leading: const Icon(Icons.chat, color: Color(0xFF2B8A3E)),
+                                                      leading: const Icon(Icons.chat, color: Color(0xFF25D366)),
                                                       title: const Text("إرسال تذكير بالواتساب"),
                                                       onTap: () {
                                                         Navigator.pop(bCtx);
@@ -533,16 +635,37 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                       ),
                       body: Column(
                         children: [
+                          // Total Supplier Summary Card
+                          Container(
+                            margin: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE7F5FF),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFA5D8FF)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("${formatCurrency(_totalSupplierDebts)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1C7ED6))),
+                                const Text("إجمالي ديون التاجر للموردين", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529))),
+                              ],
+                            ),
+                          ),
+
                           Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: TextField(
                               decoration: const InputDecoration(
-                                hintText: "بحث عن مورد...",
+                                hintText: "بحث عن مورد بالاسم...",
                                 prefixIcon: Icon(Icons.search),
                               ),
                               onChanged: (val) => setState(() => _supplierSearch = val),
                             ),
                           ),
+
+                          const SizedBox(height: 8),
+
                           Expanded(
                             child: filteredSuppliers.isEmpty
                                 ? const Center(child: Text("لا توجد ديون موردين مسجلة"))

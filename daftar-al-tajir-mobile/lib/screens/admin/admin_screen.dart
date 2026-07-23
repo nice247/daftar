@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -21,6 +22,14 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   bool _loading = true;
   bool _savingSettings = false;
   String _searchQuery = '';
+
+  final currencyFormat = NumberFormat('#,##0.##', 'ar');
+
+  String formatCurrency(dynamic val) {
+    if (val == null) return '0';
+    final numVal = double.tryParse(val.toString()) ?? 0.0;
+    return currencyFormat.format(numVal);
+  }
 
   @override
   void initState() {
@@ -233,6 +242,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       return name.contains(_searchQuery) || phone.contains(_searchQuery);
     }).toList();
 
+    final expiringCount = _stats?['expiring_soon'] ?? 0;
+
     return Column(
       children: [
         // Title Bar & Add User Button
@@ -355,6 +366,28 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                       ],
                     ),
 
+                    if (expiringCount > 0) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF9DB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFFEC99)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber, color: Color(0xFFD97706), size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              "$expiringCount اشتراكات تقترب من الانتهاء",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFD97706)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 14),
 
                     // Search bar
@@ -468,6 +501,8 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 itemCount: _pendingSubs.length,
                 itemBuilder: (ctx, i) {
                   final sub = _pendingSubs[i];
+                  final ocr = sub['ocr_data'] ?? {};
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Padding(
@@ -483,10 +518,33 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                                 decoration: BoxDecoration(color: const Color(0xFFFFF9DB), borderRadius: BorderRadius.circular(10)),
                                 child: const Text("قيد المراجعة", style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
                               ),
-                              const Text("طلب اشتراك جديد", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("طلب اشتراك جديد (${sub['created_at']?.toString().split('T')[0] ?? ''})", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
+
+                          // Extracted OCR Data Box
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8F9FA),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFDEE2E6)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("المبلغ المستخرج: ${ocr['amount'] != null ? '${formatCurrency(ocr['amount'])} ج.س' : 'غير متوفر'}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                Text("رقم العملية: ${ocr['reference_number'] ?? 'غير متوفر'}", style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                                const SizedBox(height: 4),
+                                Text("التاريخ المكتوب: ${ocr['date'] ?? 'غير متوفر'}", style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
                           if (sub['receipt_image'] != null)
                             InkWell(
                               onTap: () {

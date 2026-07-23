@@ -171,33 +171,50 @@ class _EodScreenState extends State<EodScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("سجل المصروفات"),
+        title: const Text("سجل المصروفات", style: TextStyle(fontWeight: FontWeight.bold)),
         content: FutureBuilder(
           future: _api.get('/expenses/'),
           builder: (fCtx, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2B8A3E)));
             final res = snapshot.data as dynamic;
             if (res.statusCode != 200) return const Text("فشل في التحميل");
             final List list = jsonDecode(res.body);
-            if (list.isEmpty) return const Text("لا توجد مصروفات مسجلة");
+            if (list.isEmpty) return const Text("لا توجد مصروفات مسجلة لليوم");
             return SizedBox(
               width: double.maxFinite,
-              height: 300,
+              height: 320,
               child: ListView.builder(
                 itemCount: list.length,
                 itemBuilder: (lCtx, i) {
                   final exp = list[i];
-                  return ListTile(
-                    title: Text("${formatCurrency(exp['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                    subtitle: Text("${exp['category']} - ${exp['description'] ?? ''}"),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () async {
-                        await _api.delete('/expenses/${exp['id']}');
-                        Navigator.pop(ctx);
-                        _openExpensesModal();
-                        _loadData();
-                      },
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFD8D8)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("${formatCurrency(exp['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 14)),
+                            Text("${exp['category']} ${exp['description'] != null ? '- ${exp['description']}' : ''}", style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          onPressed: () async {
+                            await _api.delete('/expenses/${exp['id']}');
+                            Navigator.pop(ctx);
+                            _openExpensesModal();
+                            _loadData();
+                          },
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -213,11 +230,11 @@ class _EodScreenState extends State<EodScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("المشتريات السابقة (تجديد مخزون)"),
+        title: const Text("المشتريات السابقة (تجديد مخزون)", style: TextStyle(fontWeight: FontWeight.bold)),
         content: FutureBuilder(
           future: _api.get('/expenses/', queryParams: {'category': 'RESTOCK'}),
           builder: (fCtx, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2B8A3E)));
             final res = snapshot.data as dynamic;
             if (res.statusCode != 200) return const Text("فشل في التحميل");
             final List list = jsonDecode(res.body);
@@ -229,9 +246,21 @@ class _EodScreenState extends State<EodScreen> {
                 itemCount: list.length,
                 itemBuilder: (lCtx, i) {
                   final p = list[i];
-                  return ListTile(
-                    title: Text("${formatCurrency(p['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("بتاريخ: ${p['created_at'] ?? ''}"),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF9DB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFEC99)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("تجديد مخزون: ${p['created_at'] ?? ''}", style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                        Text("${formatCurrency(p['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFD97706))),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -246,11 +275,11 @@ class _EodScreenState extends State<EodScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("ديون التاجر للموردين"),
+        title: const Text("ديون التاجر للموردين", style: TextStyle(fontWeight: FontWeight.bold)),
         content: FutureBuilder(
           future: _api.get('/merchant-debts/'),
           builder: (fCtx, snapshot) {
-            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2B8A3E)));
             final res = snapshot.data as dynamic;
             if (res.statusCode != 200) return const Text("فشل في التحميل");
             final List list = jsonDecode(res.body);
@@ -262,9 +291,31 @@ class _EodScreenState extends State<EodScreen> {
                 itemCount: list.length,
                 itemBuilder: (lCtx, i) {
                   final d = list[i];
-                  return ListTile(
-                    title: Text(d['supplier_name'] ?? 'مورد', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text("المتبقي: ${formatCurrency(d['remaining'] ?? d['total_amount'])} ج.س"),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F5FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFA5D8FF)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(d['supplier_name'] ?? 'مورد', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text("المتبقي: ${formatCurrency(d['remaining'] ?? d['total_amount'])} ج.س", style: const TextStyle(fontSize: 11, color: Color(0xFF1C7ED6))),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                          child: Text(d['status'] == 'paid' ? 'مسدد' : 'غير مسدد', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -294,12 +345,23 @@ class _EodScreenState extends State<EodScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Green Hero Card: ملخص الدورة الحالية
+          // Green Hero Card: ملخص الدورة الحالية مع Gradient فاخر
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFF2B8A3E),
-              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E602B), Color(0xFF2B8A3E), Color(0xFF34A84B)],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2B8A3E).withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ],
             ),
             child: Column(
               children: [
@@ -307,71 +369,81 @@ class _EodScreenState extends State<EodScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         "متبقي $remainingDays يوم",
                         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const Text(
-                      "ملخص الدورة الحالية (فترة الشراء)",
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                    const Row(
+                      children: [
+                        Text(
+                          "ملخص الدورة الحالية (فترة الشراء)",
+                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(width: 6),
+                        Icon(Icons.stars_outlined, color: Colors.white70, size: 18),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
                           children: [
                             const Text("صافي الأرباح", style: TextStyle(color: Colors.white70, fontSize: 10)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displayNet), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(formatCurrency(displayNet), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
                           children: [
                             const Text("المصروفات/مشتريات", style: TextStyle(color: Colors.white70, fontSize: 10)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displayExpenses), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(formatCurrency(displayExpenses), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
                           children: [
                             const Text("المبيعات الكلية", style: TextStyle(color: Colors.white70, fontSize: 10)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displaySales), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            Text(formatCurrency(displaySales), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                           ],
                         ),
                       ),
@@ -394,7 +466,7 @@ class _EodScreenState extends State<EodScreen> {
                     backgroundColor: const Color(0xFFFFF0F0),
                     foregroundColor: const Color(0xFFC92A2A),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFD8D8))),
                   ),
                   icon: const Icon(Icons.remove_red_eye, size: 14),
                   label: const Text("المصروفات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
@@ -408,7 +480,7 @@ class _EodScreenState extends State<EodScreen> {
                     backgroundColor: const Color(0xFFFFF9DB),
                     foregroundColor: const Color(0xFFD97706),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFEC99))),
                   ),
                   icon: const Icon(Icons.remove_red_eye, size: 14),
                   label: const Text("المشتريات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
@@ -422,7 +494,7 @@ class _EodScreenState extends State<EodScreen> {
                     backgroundColor: const Color(0xFFE7F5FF),
                     foregroundColor: const Color(0xFF1C7ED6),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFA5D8FF))),
                   ),
                   icon: const Icon(Icons.remove_red_eye, size: 14),
                   label: const Text("ديون التاجر", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
@@ -438,25 +510,25 @@ class _EodScreenState extends State<EodScreen> {
             Card(
               color: const Color(0xFFFFF9DB),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 side: const BorderSide(color: Color(0xFFFFEC99)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: const BoxDecoration(color: Color(0xFFFFE066), shape: BoxShape.circle),
-                      child: const Icon(Icons.card_giftcard, color: Color(0xFFD97706), size: 20),
+                      child: const Icon(Icons.card_giftcard, color: Color(0xFFD97706), size: 22),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         const Text("آخر عملية شراء (تجديد مخزون)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD97706))),
                         const SizedBox(height: 2),
-                        Text("${formatCurrency(_lastRestock!['amount'])} ج.س", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                        Text("${formatCurrency(_lastRestock!['amount'])} ج.س", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
                         Text("بتاريخ: ${_lastRestock!['date'] ?? ''}", style: const TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
                       ],
                     ),
@@ -736,8 +808,15 @@ class _EodScreenState extends State<EodScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: const Color(0xFF2B8A3E), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2B8A3E).withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
             ),
             child: Column(
               children: [
@@ -763,15 +842,15 @@ class _EodScreenState extends State<EodScreen> {
                   child: Divider(color: Color(0xFFDEE2E6)),
                 ),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE6FCF5),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${formatCurrency(_netDailyProfit)} ج.س", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+                      Text("${formatCurrency(_netDailyProfit)} ج.س", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
                       const Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -793,7 +872,7 @@ class _EodScreenState extends State<EodScreen> {
             onPressed: _saving ? null : _handleSave,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B8A3E),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             icon: const Icon(Icons.save, size: 22),
             label: _saving
