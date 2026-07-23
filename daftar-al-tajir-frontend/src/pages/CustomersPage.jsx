@@ -336,34 +336,16 @@ export default function CustomersPage() {
       toast.success('تم تسجيل سداد المورد كمصروف بنجاح');
       setShowPaySupplierModal(false);
       setSupplierPayAmount('');
-      setSupplierPayDesc('');
-      setSelectedSupplierName('');
-      setSelectedSupplierDebtId('');
-      loadData();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'فشل في تسجيل السداد');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const openPaySupplierModalDirectly = (debt) => {
-    setSelectedSupplierName(debt.supplier_name);
-    setSelectedSupplierDebtId(debt.id);
-    setSupplierPayAmount(debt.remaining.toString());
-    setShowPaySupplierModal(true);
-  };
-
-  return (
+       return (
     <div className="space-y-6 animate-fade-in pb-12">
       
       {/* Segmented Tab Control Switcher */}
-      <div className="bg-white rounded-2xl p-2 card-shadow border border-gray-100 flex shadow-sm">
+      <div className="bg-white rounded-[12px] p-2 card-shadow border border-[#DEE2E6] flex shadow-sm">
         <button
           onClick={() => setActiveTab('customers')}
-          className={`flex-1 py-3 text-center rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 text-center rounded-[12px] text-sm font-black transition-all flex items-center justify-center gap-2 ${
             activeTab === 'customers'
-              ? 'bg-[#2B8A3E] text-white shadow-md transform scale-[1.01]'
+              ? 'bg-[#2B8A3E] text-white shadow-md'
               : 'text-[#6C757D] hover:text-[#212529] hover:bg-[#F8F9FA]'
           }`}
         >
@@ -372,9 +354,9 @@ export default function CustomersPage() {
         </button>
         <button
           onClick={() => setActiveTab('suppliers')}
-          className={`flex-1 py-3 text-center rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 py-3 text-center rounded-[12px] text-sm font-black transition-all flex items-center justify-center gap-2 ${
             activeTab === 'suppliers'
-              ? 'bg-[#1C7ED6] text-white shadow-md transform scale-[1.01]'
+              ? 'bg-[#1C7ED6] text-white shadow-md'
               : 'text-[#6C757D] hover:text-[#212529] hover:bg-[#F8F9FA]'
           }`}
         >
@@ -387,8 +369,8 @@ export default function CustomersPage() {
       {/* 1. Suppliers Tab Panel */}
       {/* ========================================================================= */}
       {activeTab === 'suppliers' && (
-        <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
+        <div className="bg-white rounded-[12px] p-5 card-shadow border border-[#DEE2E6] space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#DEE2E6] pb-4">
             <div>
               <h2 className="text-lg font-black text-[#212529] flex items-center gap-2">
                 <FiTruck className="text-[#1C7ED6]" size={22} />
@@ -404,7 +386,7 @@ export default function CustomersPage() {
                   setSupplierDebtDesc('');
                   setShowAddSupplierModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-xs font-bold transition-all shadow-sm"
               >
                 <FiUserPlus size={14} />
                 مورد جديد
@@ -416,7 +398,7 @@ export default function CustomersPage() {
                   setSupplierDebtDesc('');
                   setShowAddSupplierDebtModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-xl text-xs font-bold transition-all"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-[12px] text-xs font-bold transition-all"
               >
                 <FiPlus size={14} />
                 دين لمورد
@@ -428,7 +410,7 @@ export default function CustomersPage() {
                   setSupplierPayDesc('');
                   setShowPaySupplierModal(true);
                 }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-xl text-xs font-bold transition-all"
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-[#1C7ED6] text-[#1C7ED6] hover:bg-[#F8F9FA] rounded-[12px] text-xs font-bold transition-all"
               >
                 <FiDollarSign size={14} />
                 تسجيل سداد
@@ -439,56 +421,56 @@ export default function CustomersPage() {
           {/* Supplier Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <FiSearch className="h-4 w-4 text-gray-400" />
+              <FiSearch className="h-4 w-4 text-[#6C757D]" />
             </div>
             <input
               type="text"
               value={supplierSearchQuery}
               onChange={(e) => setSupplierSearchQuery(e.target.value)}
               placeholder="بحث عن مورد..."
-              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-xl text-xs focus:ring-[#1C7ED6] focus:border-[#1C7ED6]"
+              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-[12px] text-xs focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] outline-none"
             />
           </div>
 
           {/* Suppliers List */}
           {loading ? (
-            <p className="text-center text-gray-400 py-4 text-sm">جاري التحميل...</p>
+            <p className="text-center text-[#6C757D] py-4 text-sm">جاري التحميل...</p>
           ) : uniqueSuppliers.length === 0 ? (
-            <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <FiTruck size={36} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-gray-500 text-xs font-bold">لا يوجد موردون مسجلون حالياً</p>
-              <p className="text-[10px] text-gray-400 mt-1">اضغط على "مورد جديد" لبدء التسجيل</p>
+            <div className="text-center py-6 bg-[#F8F9FA] rounded-[12px] border border-dashed border-[#DEE2E6]">
+              <FiTruck size={36} className="mx-auto text-[#6C757D] mb-2" />
+              <p className="text-[#212529] text-xs font-bold">لا يوجد موردون مسجلون حالياً</p>
+              <p className="text-[10px] text-[#6C757D] mt-1">اضغط على "مورد جديد" لبدء التسجيل</p>
             </div>
           ) : filteredSuppliers.length === 0 ? (
-            <p className="text-center text-gray-400 py-2 text-xs">لا توجد نتائج مطابقة للبحث</p>
+            <p className="text-center text-[#6C757D] py-2 text-xs">لا توجد نتائج مطابقة للبحث</p>
           ) : (
             <div className="space-y-2">
               {filteredSuppliers.map((supplier) => {
                 const isExpanded = !!expandedSuppliers[supplier.name];
                 return (
-                  <div key={supplier.name} className="border border-gray-100 rounded-xl overflow-hidden shadow-xs hover:border-gray-200 transition-all">
+                  <div key={supplier.name} className="border border-[#DEE2E6] rounded-[12px] overflow-hidden shadow-xs hover:border-[#DEE2E6] transition-all">
                     {/* Supplier Header Row */}
                     <div
                       onClick={() => toggleSupplierExpand(supplier.name)}
-                      className="flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 cursor-pointer transition-colors select-none"
+                      className="flex items-center justify-between p-4 bg-[#F8F9FA] hover:bg-[#F1F3F5] cursor-pointer transition-colors select-none"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                        <div className="w-8 h-8 rounded-lg border border-[#DEE2E6] bg-white flex items-center justify-center text-[#1C7ED6] font-bold">
                           {supplier.name.charAt(0)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-800 text-sm">{supplier.name}</h4>
-                          <p className="text-[10px] text-gray-400 mt-0.5">{supplier.debts.length} فواتير/ديون مسجلة</p>
+                          <h4 className="font-bold text-[#212529] text-sm">{supplier.name}</h4>
+                          <p className="text-[10px] text-[#6C757D] mt-0.5">{supplier.debts.length} فواتير/ديون مسجلة</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-left">
-                          <p className="text-[10px] text-gray-400">الدين القائم للمورد</p>
-                          <p className={`font-black text-sm ${supplier.total_remaining > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          <p className="text-[10px] text-[#6C757D]">الدين القائم للمورد</p>
+                          <p className={`font-black text-sm ${supplier.total_remaining > 0 ? 'text-red-600' : 'text-[#2B8A3E]'}`}>
                             {formatCurrency(supplier.total_remaining)} ج.س
                           </p>
                         </div>
-                        <span className="text-gray-400">
+                        <span className="text-[#6C757D]">
                           {isExpanded ? <FiChevronUp size={18} /> : <FiChevronDown size={18} />}
                         </span>
                       </div>
@@ -496,38 +478,38 @@ export default function CustomersPage() {
 
                     {/* Supplier Debt Records Detail */}
                     {isExpanded && (
-                      <div className="border-t border-gray-100 bg-white p-3 space-y-2">
-                        <p className="text-[10px] font-bold text-gray-400 px-1 border-b border-gray-50 pb-1.5">تفاصيل الديون والفواتير:</p>
+                      <div className="border-t border-[#DEE2E6] bg-white p-3 space-y-2">
+                        <p className="text-[10px] font-bold text-[#6C757D] px-1 border-b border-[#DEE2E6] pb-1.5">تفاصيل الديون والفواتير:</p>
                         {supplier.debts.map((debt) => (
-                          <div key={debt.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 rounded-lg bg-gray-50/50 hover:bg-gray-50 border border-gray-100/50 gap-2 transition-all">
+                          <div key={debt.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-2 rounded-[12px] bg-[#F8F9FA] hover:bg-[#F1F3F5] border border-[#DEE2E6] gap-2 transition-all">
                             <div className="flex-1 space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  debt.debt_type === 'cash' ? 'bg-emerald-50 text-emerald-700' :
-                                  debt.debt_type === 'bank' ? 'bg-indigo-50 text-indigo-700' : 'bg-amber-50 text-amber-700'
-                                }`}>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  debt.debt_type === 'cash' ? 'text-[#2B8A3E] border-[#2B8A3E]/30' :
+                                  debt.debt_type === 'bank' ? 'text-[#1C7ED6] border-[#1C7ED6]/30' : 'text-amber-600 border-amber-600/30'
+                                } bg-transparent`}>
                                   {debt.debt_type === 'cash' ? 'دين كاش' : debt.debt_type === 'bank' ? 'دين بنكك' : 'دين بضاعة'}
                                 </span>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
-                                  debt.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                  debt.status === 'partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                                }`}>
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                                  debt.status === 'paid' ? 'text-[#2B8A3E] border-[#2B8A3E]/30' :
+                                  debt.status === 'partial' ? 'text-amber-600 border-amber-600/30' : 'text-red-600 border-red-600/30'
+                                } bg-transparent`}>
                                   {debt.status === 'paid' ? 'مسدد بالكامل' : debt.status === 'partial' ? 'جزئي' : 'غير مسدد'}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-700 font-medium">{debt.description || 'بلا وصف تفصيلي'}</p>
-                              <p className="text-[9px] text-gray-400">التاريخ: {debt.created_at || 'غير متوفر'}</p>
+                              <p className="text-xs text-[#212529] font-medium">{debt.description || 'بلا وصف تفصيلي'}</p>
+                              <p className="text-[9px] text-[#6C757D]">التاريخ: {debt.created_at || 'غير متوفر'}</p>
                             </div>
                             
-                            <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
+                            <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-[#DEE2E6]">
                               <div className="text-left">
-                                <p className="text-[9px] text-gray-400">المبلغ: {formatCurrency(debt.total_amount)}</p>
-                                <p className="text-[10px] font-bold text-gray-700">المتبقي: {formatCurrency(debt.remaining)}</p>
+                                <p className="text-[9px] text-[#6C757D]">المبلغ: {formatCurrency(debt.total_amount)}</p>
+                                <p className="text-[10px] font-bold text-[#212529]">المتبقي: {formatCurrency(debt.remaining)}</p>
                               </div>
                               {debt.status !== 'paid' && (
                                 <button
                                   onClick={() => openPaySupplierModalDirectly(debt)}
-                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+                                  className="px-3 py-1.5 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-xs font-bold transition-all shadow-xs"
                                 >
                                   سداد
                                 </button>
@@ -549,8 +531,8 @@ export default function CustomersPage() {
       {/* 2. Customers Tab Panel */}
       {/* ========================================================================= */}
       {activeTab === 'customers' && (
-        <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 pb-4">
+        <div className="bg-white rounded-[12px] p-5 card-shadow border border-[#DEE2E6] space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#DEE2E6] pb-4">
             <div>
               <h2 className="text-lg font-black text-[#212529] flex items-center gap-2">
                 <FiUserPlus className="text-[#2B8A3E]" size={22} />
@@ -564,7 +546,7 @@ export default function CustomersPage() {
                 setNewPhone('');
                 setShowAddModal(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-xs font-bold transition-all shadow-sm"
             >
               <FiUserPlus size={16} />
               إضافة عميل جديد
@@ -574,46 +556,46 @@ export default function CustomersPage() {
           {/* Customer Search Bar */}
           <div className="relative">
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <FiSearch className="h-4 w-4 text-gray-400" />
+              <FiSearch className="h-4 w-4 text-[#6C757D]" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="بحث بالاسم أو رقم الهاتف..."
-              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-xl text-xs focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
+              className="block w-full pl-3 pr-9 py-2.5 bg-white border border-[#DEE2E6] rounded-[12px] text-xs focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none"
             />
           </div>
 
           {/* Customer List */}
           {loading ? (
-            <p className="text-center text-gray-400 py-4 text-sm">جاري التحميل...</p>
+            <p className="text-center text-[#6C757D] py-4 text-sm">جاري التحميل...</p>
           ) : customers.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              <FiUserPlus size={36} className="mx-auto text-gray-300 mb-2" />
-              <p className="text-gray-500 text-xs font-bold">لا يوجد عملاء بعد</p>
-              <p className="text-[10px] text-gray-400 mt-1">اضغط على "إضافة عميل جديد" للبدء</p>
+            <div className="text-center py-8 bg-[#F8F9FA] rounded-[12px] border border-dashed border-[#DEE2E6]">
+              <FiUserPlus size={36} className="mx-auto text-[#6C757D] mb-2" />
+              <p className="text-[#212529] text-xs font-bold">لا يوجد عملاء بعد</p>
+              <p className="text-[10px] text-[#6C757D] mt-1">اضغط على "إضافة عميل جديد" للبدء</p>
             </div>
           ) : filteredCustomers.length === 0 ? (
-            <p className="text-center text-gray-400 py-2 text-xs">لا توجد نتائج مطابقة للبحث</p>
+            <p className="text-center text-[#6C757D] py-2 text-xs">لا توجد نتائج مطابقة للبحث</p>
           ) : (
             <div className="space-y-3">
               {filteredCustomers.map((customer) => (
-                <div key={customer.id} className="bg-white rounded-xl p-4 border border-gray-100 hover:border-gray-200 card-shadow transition-all">
+                <div key={customer.id} className="bg-white rounded-[12px] p-4 border border-[#DEE2E6] hover:border-[#DEE2E6] card-shadow transition-all">
                   <div className="flex items-center justify-between mb-3 relative">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-[#212529] text-sm">{customer.name}</h4>
                         <div className="relative">
-                          <button onClick={() => setOpenMenuId(openMenuId === customer.id ? null : customer.id)} className="p-1.5 rounded-lg hover:bg-[#F8F9FA] text-[#6C757D]">
+                          <button onClick={() => setOpenMenuId(openMenuId === customer.id ? null : customer.id)} className="p-1.5 rounded-lg hover:bg-[#F1F3F5] text-[#6C757D]">
                             <FiMoreVertical size={16} />
                           </button>
                           {openMenuId === customer.id && (
-                            <div className="absolute right-0 top-8 bg-white rounded-xl border border-[#DEE2E6] shadow-lg z-10 py-1 min-w-[140px]">
-                              <button onClick={() => { setOpenMenuId(null); openEditModal(customer); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F8F9FA] flex items-center gap-2 text-[#212529]"><FiEdit2 size={13} /> تعديل</button>
-                              <button onClick={() => { setOpenMenuId(null); setSelectedCustomer(customer); setWaiveAmount(''); setWaiveReason(''); setShowWaiveModal(true); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F8F9FA] flex items-center gap-2 text-[#212529]"><FiGift size={13} /> إعفاء</button>
+                            <div className="absolute right-0 top-8 bg-white rounded-[12px] border border-[#DEE2E6] shadow-lg z-10 py-1 min-w-[140px]">
+                              <button onClick={() => { setOpenMenuId(null); openEditModal(customer); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F1F3F5] flex items-center gap-2 text-[#212529]"><FiEdit2 size={13} /> تعديل</button>
+                              <button onClick={() => { setOpenMenuId(null); setSelectedCustomer(customer); setWaiveAmount(''); setWaiveReason(''); setShowWaiveModal(true); }} className="w-full text-right px-3 py-2 text-xs hover:bg-[#F1F3F5] flex items-center gap-2 text-[#212529]"><FiGift size={13} /> إعفاء</button>
                               {parseFloat(customer.total_debt || 0) === 0 && (
-                                <button onClick={() => { setOpenMenuId(null); handleDeleteCustomer(customer); }} className="w-full text-right px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><FiTrash2 size={13} /> حذف</button>
+                                <button onClick={() => { setOpenMenuId(null); handleDeleteCustomer(customer); }} className="w-full text-right px-3 py-2 text-xs text-red-600 hover:bg-[#F1F3F5] flex items-center gap-2"><FiTrash2 size={13} /> حذف</button>
                               )}
                             </div>
                           )}
@@ -634,7 +616,7 @@ export default function CustomersPage() {
                         </div>
                       )}
                     </div>
-                    <div className="text-left bg-[#F8F9FA] px-3 py-1.5 rounded-lg border border-[#DEE2E6]">
+                    <div className="text-left bg-[#F8F9FA] px-3 py-1.5 rounded-[12px] border border-[#DEE2E6]">
                       <p className="text-[9px] text-[#6C757D]">الدين القائم</p>
                       <p className={`font-black text-sm ${customer.total_debt > 0 ? 'text-red-600' : 'text-[#2B8A3E]'}`}>
                         {formatCurrency(customer.total_debt)} ج.س
@@ -646,13 +628,13 @@ export default function CustomersPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setSelectedCustomer(customer); setPayAmount(''); setShowPayModal(true); }}
-                        className="flex-1 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+                        className="flex-1 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-xs font-bold transition-all shadow-sm"
                       >
                         سداد
                       </button>
                       <button
                         onClick={() => { setSelectedCustomer(customer); setDebtAmount(''); setDebtDesc(''); setShowDebtModal(true); }}
-                        className="flex-1 py-2 bg-white border border-[#DEE2E6] hover:bg-[#F8F9FA] text-[#212529] rounded-lg text-xs font-bold transition-all"
+                        className="flex-1 py-2 bg-white border border-[#DEE2E6] hover:bg-[#F8F9FA] text-[#212529] rounded-[12px] text-xs font-bold transition-all"
                       >
                         + دين
                       </button>
@@ -672,31 +654,31 @@ export default function CustomersPage() {
       {/* A. Add Customer Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">إضافة عميل جديد</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">إضافة عميل جديد</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleAddCustomer} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اسم العميل</label>
+                <label className="text-xs font-bold text-[#6C757D]">اسم العميل</label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="مثال: محمد أحمد علي"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">رقم الهاتف</label>
+                <label className="text-xs font-bold text-[#6C757D]">رقم الهاتف</label>
                 <input
                   type="tel"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="مثال: 0912345678"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                   dir="ltr"
                   required
                 />
@@ -705,14 +687,14 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !newName || !newPhone}
-                  className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ العميل'}
                 </button>
@@ -725,31 +707,31 @@ export default function CustomersPage() {
       {/* B. Edit Customer Modal */}
       {showEditModal && selectedCustomer && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">تعديل بيانات العميل</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">تعديل بيانات العميل</h3>
+              <button onClick={() => setShowEditModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleEditCustomer} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اسم العميل</label>
+                <label className="text-xs font-bold text-[#6C757D]">اسم العميل</label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="اسم العميل"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">رقم الهاتف</label>
+                <label className="text-xs font-bold text-[#6C757D]">رقم الهاتف</label>
                 <input
                   type="tel"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="رقم الهاتف"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                   dir="ltr"
                   required
                 />
@@ -758,14 +740,14 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !newName || !newPhone}
-                  className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ التعديلات'}
                 </button>
@@ -778,47 +760,47 @@ export default function CustomersPage() {
       {/* C. Add Customer Debt Modal */}
       {showDebtModal && selectedCustomer && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">تسجيل دين للعميل: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowDebtModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">تسجيل دين للعميل: {selectedCustomer.name}</h3>
+              <button onClick={() => setShowDebtModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleAddDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">المبلغ (ج.س)</label>
+                <label className="text-xs font-bold text-[#6C757D]">المبلغ (ج.س)</label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={debtAmount}
                   onChange={(e) => setDebtAmount(normalizeArabicNumber(e.target.value))}
                   placeholder="المبلغ بالأرقام"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left text-lg font-bold"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-left text-lg font-bold"
                   dir="ltr"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">وصف أو ملاحظة (اختياري)</label>
+                <label className="text-xs font-bold text-[#6C757D]">وصف أو ملاحظة (اختياري)</label>
                 <input
                   type="text"
                   value={debtDesc}
                   onChange={(e) => setDebtDesc(e.target.value)}
                   placeholder="مثال: شراء مواد تموينية"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowDebtModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !debtAmount}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ الدين'}
                 </button>
@@ -831,25 +813,25 @@ export default function CustomersPage() {
       {/* D. Pay Customer Debt Modal */}
       {showPayModal && selectedCustomer && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">سداد دين للعميل: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowPayModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">سداد دين للعميل: {selectedCustomer.name}</h3>
+              <button onClick={() => setShowPayModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
-              <p className="text-xs text-gray-400 mb-0.5">الدين القائم حالياً</p>
+            <div className="bg-[#F8F9FA] p-4 rounded-[12px] border border-[#DEE2E6] text-center">
+              <p className="text-xs text-[#6C757D] mb-0.5">الدين القائم حالياً</p>
               <p className="font-black text-red-600 text-2xl">{formatCurrency(selectedCustomer.total_debt)} ج.س</p>
             </div>
             <form onSubmit={handlePayDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">المبلغ المسدد (ج.س)</label>
+                <label className="text-xs font-bold text-[#6C757D]">المبلغ المسدد (ج.س)</label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={payAmount}
                   onChange={(e) => setPayAmount(normalizeArabicNumber(e.target.value))}
                   placeholder="المبلغ المسدد"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-left text-lg font-bold"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-left text-lg font-bold"
                   dir="ltr"
                   required
                 />
@@ -858,14 +840,14 @@ export default function CustomersPage() {
                 <button
                   type="button"
                   onClick={() => setShowPayModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !payAmount}
-                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ السداد'}
                 </button>
@@ -878,52 +860,52 @@ export default function CustomersPage() {
       {/* E. Waive Customer Debt Modal */}
       {showWaiveModal && selectedCustomer && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">إعفاء دين للعميل: {selectedCustomer.name}</h3>
-              <button onClick={() => setShowWaiveModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">إعفاء دين للعميل: {selectedCustomer.name}</h3>
+              <button onClick={() => setShowWaiveModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
-            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 text-center space-y-1">
-              <p className="text-xs text-amber-800 font-bold">إجمالي دين العميل القائم:</p>
+            <div className="bg-[#F8F9FA] p-4 rounded-[12px] border border-[#DEE2E6] text-center space-y-1">
+              <p className="text-xs text-[#212529] font-bold">إجمالي دين العميل القائم:</p>
               <p className="font-black text-red-600 text-xl">{formatCurrency(selectedCustomer.total_debt)} ج.س</p>
-              <p className="text-[10px] text-gray-500 leading-relaxed">ملاحظة: سيتم احتساب قيمة الإعفاء كمصروف إعفاء ديون (DEBT_WAIVER) وسيخصم مباشرة من حساب العميل.</p>
+              <p className="text-[10px] text-[#6C757D] leading-relaxed">ملاحظة: سيتم احتساب قيمة الإعفاء كمصروف إعفاء ديون (DEBT_WAIVER) وسيخصم مباشرة من حساب العميل.</p>
             </div>
             <form onSubmit={handleWaiveDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">مبلغ الإعفاء (ج.س)</label>
+                <label className="text-xs font-bold text-[#6C757D]">مبلغ الإعفاء (ج.س)</label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={waiveAmount}
                   onChange={(e) => setWaiveAmount(normalizeArabicNumber(e.target.value))}
                   placeholder="مبلغ الإعفاء"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gray-700 text-left text-lg font-bold"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 text-left text-lg font-bold"
                   dir="ltr"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">سبب الإعفاء (اختياري)</label>
+                <label className="text-xs font-bold text-[#6C757D]">سبب الإعفاء (اختياري)</label>
                 <input
                   type="text"
                   value={waiveReason}
                   onChange={(e) => setWaiveReason(e.target.value)}
                   placeholder="مثال: خصم إضافي أو مساعدة"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-gray-700 text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowWaiveModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !waiveAmount}
-                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ تأكيد الإعفاء'}
                 </button>
@@ -936,59 +918,59 @@ export default function CustomersPage() {
       {/* F. Add New Supplier Modal (تسجيل مورد جديد مع دين) */}
       {showAddSupplierModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">تسجيل مورد جديد مع دين</h3>
-              <button onClick={() => setShowAddSupplierModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">تسجيل مورد جديد مع دين</h3>
+              <button onClick={() => setShowAddSupplierModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleAddSupplier} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اسم المورد / الشركة التجارية</label>
+                <label className="text-xs font-bold text-[#6C757D]">اسم المورد / الشركة التجارية</label>
                 <input
                   type="text"
                   value={supplierName}
                   onChange={(e) => setSupplierName(e.target.value)}
                   placeholder="مثال: شركة الروابي للمواد الغذائية"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm"
                   required
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">قيمة الدين الأولي (ج.س)</label>
+                <label className="text-xs font-bold text-[#6C757D]">قيمة الدين الأولي (ج.س)</label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={supplierDebtAmount}
                   onChange={(e) => setSupplierDebtAmount(normalizeArabicNumber(e.target.value))}
                   placeholder="قيمة المديونية الأولى"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-left text-lg font-bold"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-left text-lg font-bold"
                   dir="ltr"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">وصف / تفاصيل الفاتورة (اختياري)</label>
+                <label className="text-xs font-bold text-[#6C757D]">وصف / تفاصيل الفاتورة (اختياري)</label>
                 <input
                   type="text"
                   value={supplierDebtDesc}
                   onChange={(e) => setSupplierDebtDesc(e.target.value)}
                   placeholder="مثال: بضاعة البسكويت والشوكولاتة"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddSupplierModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !supplierName || !supplierDebtAmount}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ المورد'}
                 </button>
@@ -1001,18 +983,18 @@ export default function CustomersPage() {
       {/* G. Add Supplier Debt Modal (تسجيل دين لمورد موجود) */}
       {showAddSupplierDebtModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">تسجيل دين إضافي لمورد موجود</h3>
-              <button onClick={() => setShowAddSupplierDebtModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">تسجيل دين إضافي لمورد موجود</h3>
+              <button onClick={() => setShowAddSupplierDebtModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handleAddSupplierDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اختر المورد</label>
+                <label className="text-xs font-bold text-[#6C757D]">اختر المورد</label>
                 <select
                   value={selectedSupplierName}
                   onChange={(e) => setSelectedSupplierName(e.target.value)}
-                  className="w-full px-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold"
+                  className="w-full px-3 py-2.5 bg-white border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm font-bold"
                   required
                 >
                   <option value="">اختر مورد من القائمة...</option>
@@ -1022,41 +1004,41 @@ export default function CustomersPage() {
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">قيمة الدين الجديد (ج.س)</label>
+                <label className="text-xs font-bold text-[#6C757D]">قيمة الدين الجديد (ج.س)</label>
                 <input
                   type="text"
                   inputMode="decimal"
                   value={supplierDebtAmount}
                   onChange={(e) => setSupplierDebtAmount(normalizeArabicNumber(e.target.value))}
                   placeholder="المبلغ"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-left text-lg font-bold"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-left text-lg font-bold"
                   dir="ltr"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">وصف أو رقم الفاتورة (اختياري)</label>
+                <label className="text-xs font-bold text-[#6C757D]">وصف أو رقم الفاتورة (اختياري)</label>
                 <input
                   type="text"
                   value={supplierDebtDesc}
                   onChange={(e) => setSupplierDebtDesc(e.target.value)}
                   placeholder="تفاصيل حول الدين الجديد"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm"
                 />
               </div>
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddSupplierDebtModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
                 >
                   ✖ إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={actionLoading || !selectedSupplierName || !supplierDebtAmount}
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
+                  className="flex-1 py-3 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ الدين'}
                 </button>
@@ -1069,20 +1051,20 @@ export default function CustomersPage() {
       {/* H. Pay Supplier Debt Modal (تسجيل سداد لمورد) */}
       {showPaySupplierModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="font-bold text-gray-800 text-lg">سداد دين للمورد (مصروف دورة)</h3>
-              <button onClick={() => setShowPaySupplierModal(false)} className="text-gray-400 hover:text-red-500"><FiX size={20} /></button>
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">سداد دين للمورد (مصروف دورة)</h3>
+              <button onClick={() => setShowPaySupplierModal(false)} className="text-[#6C757D] hover:text-[#212529]"><FiX size={20} /></button>
             </div>
             <form onSubmit={handlePaySupplierDebt} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">اختر المورد</label>
+                <label className="text-xs font-bold text-[#6C757D]">اختر المورد</label>
                 <select
                   value={selectedSupplierName}
                   onChange={(e) => {
                     setSelectedSupplierName(e.target.value);
                   }}
-                  className="w-full px-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm font-bold"
+                  className="w-full px-3 py-2.5 bg-white border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm font-bold"
                   required
                 >
                   <option value="">اختر المورد...</option>
@@ -1094,7 +1076,7 @@ export default function CustomersPage() {
 
               {selectedSupplierName && activeSupplierDebts.length > 0 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500">اختر الفاتورة/الدين المراد سداده</label>
+                  <label className="text-xs font-bold text-[#6C757D]">اختر الفاتورة/الدين المراد سداده</label>
                   <select
                     value={selectedSupplierDebtId}
                     onChange={(e) => {
@@ -1105,7 +1087,7 @@ export default function CustomersPage() {
                         setSupplierPayAmount(debt.remaining.toString());
                       }
                     }}
-                    className="w-full px-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-xs font-medium"
+                    className="w-full px-3 py-2.5 bg-white border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-xs font-medium"
                     required
                   >
                     {activeSupplierDebts.map(d => (
@@ -1120,21 +1102,81 @@ export default function CustomersPage() {
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">طريقة الدفع</label>
+                <label className="text-xs font-bold text-[#6C757D]">طريقة الدفع</label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setSupplierPayMethod('cash')}
-                    className={`flex-1 p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierPayMethod === 'cash' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'}`}
+                    className={`flex-1 py-2.5 border rounded-[12px] text-xs font-bold transition-all text-center bg-white ${
+                      supplierPayMethod === 'cash'
+                        ? 'border-[#2B8A3E] text-[#2B8A3E]'
+                        : 'border-[#DEE2E6] text-[#6C757D]'
+                    }`}
                   >
                     كاش
                   </button>
                   <button
                     type="button"
                     onClick={() => setSupplierPayMethod('bank')}
-                    className={`flex-1 p-2.5 border rounded-xl text-xs font-bold transition-all text-center ${supplierPayMethod === 'bank' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600'}`}
+                    className={`flex-1 py-2.5 border rounded-[12px] text-xs font-bold transition-all text-center bg-white ${
+                      supplierPayMethod === 'bank'
+                        ? 'border-[#2B8A3E] text-[#2B8A3E]'
+                        : 'border-[#DEE2E6] text-[#6C757D]'
+                    }`}
                   >
                     تحويل بنكك
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#6C757D]">المبلغ المسدد (ج.س)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={supplierPayAmount}
+                  onChange={(e) => setSupplierPayAmount(normalizeArabicNumber(e.target.value))}
+                  placeholder="المبلغ"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-left text-lg font-bold"
+                  dir="ltr"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-[#6C757D]">ملاحظة السداد (اختياري)</label>
+                <input
+                  type="text"
+                  value={supplierPayDesc}
+                  onChange={(e) => setSupplierPayDesc(e.target.value)}
+                  placeholder="ملاحظات حول عملية الدفع"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#1C7ED6] focus:border-[#1C7ED6] text-sm"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPaySupplierModal(false)}
+                  className="flex-1 py-3 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-[#212529] rounded-[12px] text-sm font-bold transition-colors"
+                >
+                  ✖ إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading || !selectedSupplierDebtId || !supplierPayAmount}
+                  className="flex-1 py-3 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
+                >
+                  {actionLoading ? 'جاري الحفظ...' : '✔ حفظ السداد'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );�ل بنكك
                   </button>
                 </div>
               </div>

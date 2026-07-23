@@ -68,63 +68,63 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4 animate-fade-in pb-8">
-      <h2 className="text-lg font-bold text-gray-800">الإعدادات والدعم</h2>
+      <h2 className="text-lg font-bold text-[#212529]">الإعدادات والدعم</h2>
 
 
       {/* Subscription Status - Only for Merchants */}
       {user?.role !== 'admin' && (
-        <div className={`rounded-xl p-4 ${daysRemaining > 3 ? 'bg-primary-50 border border-primary-200' : 'bg-red-50 border border-red-200'}`}>
+        <div className={`rounded-[12px] p-4 border ${daysRemaining > 3 ? 'bg-[#F8F9FA] border-[#DEE2E6]' : 'border-red-600/30 bg-[#F8F9FA]'}`}>
           <div className="flex items-center gap-2 mb-2">
-            <FiCalendar className={daysRemaining > 3 ? 'text-primary-600' : 'text-red-600'} size={20} />
-            <h3 className="font-bold">حالة الاشتراك</h3>
+            <FiCalendar className={daysRemaining > 3 ? 'text-[#2B8A3E]' : 'text-red-600'} size={20} />
+            <h3 className="font-bold text-[#212529]">حالة الاشتراك</h3>
           </div>
           <div className="space-y-1">
             <p className="text-sm">
-              <span className="text-gray-600">تاريخ الانتهاء: </span>
-              <span className="font-bold">{formatDate(user?.subscription_end_date)}</span>
+              <span className="text-[#6C757D]">تاريخ الانتهاء: </span>
+              <span className="font-bold text-[#212529]">{formatDate(user?.subscription_end_date)}</span>
             </p>
             <p className="text-sm">
-              <span className="text-gray-600">الأيام المتبقية: </span>
-              <span className={`font-bold ${daysRemaining > 3 ? 'text-primary-700' : 'text-red-700'}`}>{daysRemaining} يوم</span>
+              <span className="text-[#6C757D]">الأيام المتبقية: </span>
+              <span className={`font-bold ${daysRemaining > 3 ? 'text-[#2B8A3E]' : 'text-red-600'}`}>{daysRemaining} يوم</span>
             </p>
           </div>
         </div>
       )}
 
       {/* Profile Settings */}
-      <div className="bg-white rounded-xl p-4 card-shadow">
+      <div className="bg-white rounded-[12px] p-4 border border-[#DEE2E6] card-shadow">
         <div className="flex items-center gap-2 mb-4">
-          <FiUser className="text-gray-600" size={20} />
-          <h3 className="font-bold text-gray-800">بيانات الحساب</h3>
+          <FiUser className="text-[#6C757D]" size={20} />
+          <h3 className="font-bold text-[#212529]">بيانات الحساب</h3>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">رقم الواتساب (حسابك)</label>
+            <label className="block text-xs text-[#6C757D] mb-1">رقم الواتساب (حسابك)</label>
             <input
               type="tel"
               value={user?.phone || ''}
               disabled
-              className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500"
+              className="w-full px-3 py-2.5 bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px] text-sm text-[#6C757D]"
               dir="ltr"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">{user?.role === 'admin' ? 'اسم الأدمن' : 'اسم المتجر'}</label>
+            <label className="block text-xs text-[#6C757D] mb-1">{user?.role === 'admin' ? 'اسم الأدمن' : 'اسم المتجر'}</label>
             <input
               type="text"
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm text-[#212529] bg-white"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">البريد الإلكتروني</label>
+            <label className="block text-xs text-[#6C757D] mb-1">البريد الإلكتروني</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="اختياري"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm text-[#212529] bg-white"
               dir="ltr"
             />
           </div>
@@ -133,14 +133,14 @@ export default function SettingsPage() {
 
       {/* Restock Cycle - Only for Merchants */}
       {user?.role !== 'admin' && (
-        <div className="bg-white rounded-xl p-4 card-shadow">
+        <div className="bg-white rounded-[12px] p-4 border border-[#DEE2E6] card-shadow">
           <div className="flex items-center gap-2 mb-4">
             <FiPackage className="text-amber-600" size={20} />
-            <h3 className="font-bold text-gray-800">دورة الشراء (المدة بين إعادة التخزين)</h3>
+            <h3 className="font-bold text-[#212529]">دورة الشراء (المدة بين إعادة التخزين)</h3>
           </div>
           <div className="space-y-4">
             <div>
-              <p className="text-xs text-gray-500 mb-2">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
+              <p className="text-xs text-[#6C757D] mb-2">حدد المدة التي عادة تشتري فيها بضاعة جديدة، ستُستخدم لحساب أرباحك في هذه الفترة.</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 7, label: 'أسبوع' },
@@ -150,8 +150,8 @@ export default function SettingsPage() {
                 ].map((option) => (
                   <label
                     key={option.value}
-                    className={`p-3 border rounded-xl cursor-pointer text-center text-sm ${
-                      restockCycle == option.value ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'
+                    className={`p-3 border rounded-[12px] cursor-pointer text-center text-sm transition-all ${
+                      restockCycle == option.value ? 'border-[#2B8A3E] text-[#2B8A3E] font-bold bg-white' : 'border-[#DEE2E6] text-[#6C757D] bg-white'
                     }`}
                   >
                     <input
@@ -168,13 +168,13 @@ export default function SettingsPage() {
               </div>
               {restockCycle === 'custom' && (
                  <div className="mt-3">
-                   <label className="block text-xs text-gray-600 mb-1">أدخل عدد الأيام</label>
+                   <label className="block text-xs text-[#6C757D] mb-1">أدخل عدد الأيام</label>
                    <input
                      type="number"
                      min="1"
                      value={customCycle}
                      onChange={(e) => setCustomCycle(e.target.value)}
-                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm text-left"
+                     className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm text-left text-[#212529] bg-white"
                      dir="ltr"
                      placeholder="مثال: 10"
                    />
@@ -182,16 +182,16 @@ export default function SettingsPage() {
               )}
             </div>
 
-            <div className="pt-3 border-t border-gray-100">
-              <label className="block text-xs font-bold text-gray-700 mb-1">تعديل تاريخ بداية الدورة الحالية</label>
-              <p className="text-[10px] text-gray-500 mb-2">
+            <div className="pt-3 border-t border-[#DEE2E6]">
+              <label className="block text-xs font-bold text-[#212529] mb-1">تعديل تاريخ بداية الدورة الحالية</label>
+              <p className="text-[10px] text-[#6C757D] mb-2">
                 إذا كنت في منتصف الدورة بالفعل، يمكنك إدخال تاريخ بدايتها الفعلي لضبط حساباتك. (اتركه فارغاً لبقاء الدورة كما هي).
               </p>
               <input
                 type="date"
                 value={cycleStartDate}
                 onChange={(e) => setCycleStartDate(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+                className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm font-mono text-[#212529] bg-white"
               />
             </div>
           </div>
@@ -200,19 +200,19 @@ export default function SettingsPage() {
 
       {/* Admin Settings Section */}
       {user?.role === 'admin' && adminSettings && (
-        <div className="bg-white rounded-xl p-4 card-shadow border border-gray-100">
-          <div className="flex items-center gap-3 text-primary-600 font-bold mb-4">
+        <div className="bg-white rounded-[12px] p-4 card-shadow border border-[#DEE2E6]">
+          <div className="flex items-center gap-3 text-[#2B8A3E] font-bold mb-4">
             <FiDollarSign />
-            <h3>إعدادات الأسعار (خاص بالمدير)</h3>
+            <h3 className="text-[#212529]">إعدادات الأسعار (خاص بالمدير)</h3>
           </div>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">سعر الاشتراك (تجديد 30 يوم)</label>
+              <label className="block text-xs font-bold text-[#6C757D] mb-1">سعر الاشتراك (تجديد 30 يوم)</label>
               <input
                 type="number"
                 value={adminSettings.monthly_price}
                 onChange={(e) => setAdminSettings({...adminSettings, monthly_price: e.target.value})}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm font-mono"
+                className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm font-mono text-[#212529] bg-white"
               />
             </div>
           </div>
@@ -220,26 +220,26 @@ export default function SettingsPage() {
       )}
 
       {/* About Section */}
-      <div className="bg-white rounded-xl p-4 card-shadow">
+      <div className="bg-white rounded-[12px] p-4 border border-[#DEE2E6] card-shadow">
         <div className="flex items-center gap-2 mb-4">
-          <FiInfo className="text-primary-600" size={20} />
-          <h3 className="font-bold text-gray-800">حول التطبيق</h3>
+          <FiInfo className="text-[#2B8A3E]" size={20} />
+          <h3 className="font-bold text-[#212529]">حول التطبيق</h3>
         </div>
         <div className="space-y-3">
           <div className="flex flex-col items-center justify-center py-2 text-center">
-            <h4 className="font-black text-lg text-primary-700">دفتر التاجر</h4>
-            <p className="text-xs text-gray-500 mt-1 px-4 leading-relaxed">
+            <h4 className="font-black text-lg text-[#2B8A3E]">دفتر التاجر</h4>
+            <p className="text-xs text-[#6C757D] mt-1 px-4 leading-relaxed">
               نظام إدارة المبيعات والمصروفات والديون للتجار في السودان
             </p>
           </div>
-          <div className="border-t border-gray-100 pt-3 space-y-2 px-2">
+          <div className="border-t border-[#DEE2E6] pt-3 space-y-2 px-2">
              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">الإصدار</span>
-                <span className="font-bold text-gray-700 font-mono">1.0.0</span>
+                <span className="text-[#6C757D]">الإصدار</span>
+                <span className="font-bold text-[#212529] font-mono">1.0.0</span>
              </div>
              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">المطور</span>
-                <span className="font-bold text-gray-700">بهاء الدين عثمان</span>
+                <span className="text-[#6C757D]">المطور</span>
+                <span className="font-bold text-[#212529]">بهاء الدين عثمان</span>
              </div>
           </div>
           
@@ -258,9 +258,9 @@ export default function SettingsPage() {
                   toast.success('تم نسخ رابط التطبيق!');
                 }
               }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 text-gray-700 border border-gray-200 rounded-xl text-sm font-bold transition-colors hover:bg-gray-100 active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#212529] border border-[#DEE2E6] rounded-[12px] text-sm font-bold transition-colors"
             >
-              <FiShare2 size={18} />
+              <FiShare2 size={18} className="text-[#6C757D]" />
               <span>نشر ومشاركة التطبيق</span>
             </button>
             
@@ -268,7 +268,7 @@ export default function SettingsPage() {
               href="https://www.facebook.com/profile.php?id=61590357776476"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#1877F2] border border-[#DEE2E6] rounded-[12px] text-sm font-bold transition-colors"
             >
               <FiFacebook size={18} />
               <span>صفحتنا على فيسبوك</span>
@@ -279,7 +279,7 @@ export default function SettingsPage() {
               href={`https://wa.me/${phoneToWhatsApp(import.meta.env.VITE_SUPPORT_PHONE || '201280920179')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-sm font-black transition-all shadow-md active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#25D366] border border-[#DEE2E6] rounded-[12px] text-sm font-bold transition-colors"
             >
               <FiPhoneCall size={18} />
               <span>خدمة العملاء والدعم الفني</span>
@@ -291,7 +291,7 @@ export default function SettingsPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors"
+        className="w-full py-3.5 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] font-bold text-sm disabled:opacity-50 transition-colors"
       >
         {saving ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
       </button>

@@ -167,7 +167,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin" style={{ borderWidth: '3px' }} />
+        <div className="w-8 h-8 border-[3px] border-[#DEE2E6] border-t-[#2B8A3E] rounded-full animate-spin" />
       </div>
     );
   }
@@ -176,12 +176,12 @@ export default function AdminPage() {
     <div className="space-y-4 animate-fade-in pb-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FiShield className="text-primary-600" size={24} />
-          <h2 className="text-lg font-bold text-gray-800">لوحة تحكم الأدمن</h2>
+          <FiShield className="text-[#2B8A3E]" size={24} />
+          <h2 className="text-lg font-bold text-[#212529]">لوحة تحكم الأدمن</h2>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1 bg-primary-600 text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-primary-700"
+          className="flex items-center gap-1 bg-[#2B8A3E] text-white px-3 py-2 rounded-[12px] text-sm font-bold hover:bg-[#237032] transition-colors"
         >
           <FiUserPlus size={16} />
           إضافة مستخدم
@@ -189,11 +189,11 @@ export default function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-[#DEE2E6]">
         <button
           onClick={() => setActiveTab('users')}
           className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${
-            activeTab === 'users' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeTab === 'users' ? 'border-[#2B8A3E] text-[#2B8A3E]' : 'border-transparent text-[#6C757D] hover:text-[#212529]'
           }`}
         >
           المستخدمين
@@ -201,12 +201,12 @@ export default function AdminPage() {
         <button
           onClick={() => setActiveTab('subscriptions')}
           className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors relative ${
-            activeTab === 'subscriptions' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeTab === 'subscriptions' ? 'border-[#2B8A3E] text-[#2B8A3E]' : 'border-transparent text-[#6C757D] hover:text-[#212529]'
           }`}
         >
           طلبات الاشتراك
           {pendingSubscriptions.length > 0 && (
-            <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+            <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
               {pendingSubscriptions.length}
             </span>
           )}
@@ -214,7 +214,7 @@ export default function AdminPage() {
         <button
           onClick={() => setActiveTab('settings')}
           className={`flex-1 py-3 text-sm font-bold text-center border-b-2 transition-colors ${
-            activeTab === 'settings' ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            activeTab === 'settings' ? 'border-[#2B8A3E] text-[#2B8A3E]' : 'border-transparent text-[#6C757D] hover:text-[#212529]'
           }`}
         >
           إعدادات الأسعار
@@ -226,35 +226,35 @@ export default function AdminPage() {
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white rounded-xl p-3 card-shadow text-center">
-                <FiUsers className="mx-auto text-blue-500 mb-1" size={20} />
-                <p className="text-xl font-bold">{stats.total_users}</p>
-                <p className="text-xs text-gray-500">إجمالي التجار</p>
+              <div className="bg-white border border-[#DEE2E6] rounded-[12px] p-3 card-shadow text-center">
+                <FiUsers className="mx-auto text-[#1C7ED6] mb-1" size={20} />
+                <p className="text-xl font-bold text-[#212529]">{stats.total_users}</p>
+                <p className="text-xs text-[#6C757D]">إجمالي التجار</p>
               </div>
-              <div className="bg-white rounded-xl p-3 card-shadow text-center">
-                <FiUserCheck className="mx-auto text-green-500 mb-1" size={20} />
-                <p className="text-xl font-bold">{stats.active_users}</p>
-                <p className="text-xs text-gray-500">تاجر نشط</p>
+              <div className="bg-white border border-[#DEE2E6] rounded-[12px] p-3 card-shadow text-center">
+                <FiUserCheck className="mx-auto text-[#2B8A3E] mb-1" size={20} />
+                <p className="text-xl font-bold text-[#212529]">{stats.active_users}</p>
+                <p className="text-xs text-[#6C757D]">تاجر نشط</p>
               </div>
-              <div className="bg-white rounded-xl p-3 card-shadow text-center">
-                <FiUserX className="mx-auto text-red-500 mb-1" size={20} />
-                <p className="text-xl font-bold">{stats.frozen_users}</p>
-                <p className="text-xs text-gray-500">تاجر مجمد</p>
+              <div className="bg-white border border-[#DEE2E6] rounded-[12px] p-3 card-shadow text-center">
+                <FiUserX className="mx-auto text-red-600 mb-1" size={20} />
+                <p className="text-xl font-bold text-[#212529]">{stats.frozen_users}</p>
+                <p className="text-xs text-[#6C757D]">تاجر مجمد</p>
               </div>
-              <div className="bg-white rounded-xl p-3 card-shadow text-center">
-                <FiClock className="mx-auto text-amber-500 mb-1" size={20} />
-                <p className="text-xl font-bold">{stats.pending_verification}</p>
-                <p className="text-xs text-gray-500">معلق</p>
+              <div className="bg-white border border-[#DEE2E6] rounded-[12px] p-3 card-shadow text-center">
+                <FiClock className="mx-auto text-amber-600 mb-1" size={20} />
+                <p className="text-xl font-bold text-[#212529]">{stats.pending_verification}</p>
+                <p className="text-xs text-[#6C757D]">معلق</p>
               </div>
             </div>
           )}
 
           {/* Expiring Soon Alert */}
           {stats?.expiring_soon > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+            <div className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px] p-3 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <FiAlertTriangle className="text-amber-600" size={18} />
-                <span className="text-sm font-bold text-amber-800">{stats.expiring_soon} اشتراكات تقترب من الانتهاء</span>
+                <span className="text-sm font-bold text-[#212529]">{stats.expiring_soon} اشتراكات تقترب من الانتهاء</span>
               </div>
             </div>
           )}
@@ -266,12 +266,12 @@ export default function AdminPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث برقم الهاتف أو الاسم"
-              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              className="flex-1 px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-sm"
               dir="ltr"
             />
             <button
               onClick={handleSearch}
-              className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium"
+              className="px-4 py-2 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-sm font-medium transition-colors"
             >
               بحث
             </button>
@@ -282,25 +282,25 @@ export default function AdminPage() {
             {users.map((u) => {
               const isExpiring = u.role === 'merchant' && u.subscription_end_date && new Date(u.subscription_end_date) < new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
               return (
-                <div key={u.id} className={`bg-white rounded-xl p-4 card-shadow ${isExpiring ? 'border-2 border-amber-300' : ''}`}>
+                <div key={u.id} className={`bg-white rounded-[12px] p-4 border border-[#DEE2E6] card-shadow ${isExpiring ? 'border-2 border-amber-500' : ''}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h4 className="font-bold text-gray-800">
+                      <h4 className="font-bold text-[#212529]">
                         {u.store_name}
-                        {u.role === 'admin' && <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">أدمن</span>}
+                        {u.role === 'admin' && <span className="ml-2 text-[10px] border border-purple-300 text-purple-700 px-2 py-0.5 rounded-full">أدمن</span>}
                       </h4>
-                      <p className="text-xs text-gray-500" dir="ltr">{u.phone}</p>
+                      <p className="text-xs text-[#6C757D]" dir="ltr">{u.phone}</p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      u.status === 'ACTIVE' ? 'bg-green-100 text-green-700' :
-                      u.status === 'FROZEN' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full font-bold border ${
+                      u.status === 'ACTIVE' ? 'text-[#2B8A3E] border-[#2B8A3E]/30' :
+                      u.status === 'FROZEN' ? 'text-red-600 border-red-600/30' :
+                      'text-amber-600 border border-amber-600/30'
+                    } bg-transparent`}>
                       {u.status === 'ACTIVE' ? 'نشط' : u.status === 'FROZEN' ? 'مجمد' : 'معلق'}
                     </span>
                   </div>
                   {u.role === 'merchant' && u.subscription_end_date && (
-                    <p className={`text-xs mb-3 ${isExpiring ? 'text-amber-600 font-bold' : 'text-gray-500'}`}>
+                    <p className={`text-xs mb-3 ${isExpiring ? 'text-amber-600 font-bold' : 'text-[#6C757D]'}`}>
                       انتهاء الاشتراك: {formatDate(u.subscription_end_date)}
                     </p>
                   )}
@@ -308,7 +308,7 @@ export default function AdminPage() {
                     {u.role === 'merchant' && (
                       <button
                         onClick={() => handleExtend(u.id)}
-                        className="flex-1 min-w-[70px] py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100"
+                        className="flex-1 min-w-[70px] py-2 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#1C7ED6] border border-[#DEE2E6] rounded-[12px] font-bold transition-colors text-xs"
                       >
                         تمديد
                       </button>
@@ -317,7 +317,7 @@ export default function AdminPage() {
                       <button
                         onClick={() => handleToggleUser(u.id, 'freeze')}
                         disabled={actionLoading[u.id]}
-                        className="flex-1 min-w-[70px] py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100"
+                        className="flex-1 min-w-[70px] py-2 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-red-600 border border-[#DEE2E6] rounded-[12px] font-bold transition-colors text-xs"
                       >
                         تجميد
                       </button>
@@ -325,7 +325,7 @@ export default function AdminPage() {
                       <button
                         onClick={() => handleToggleUser(u.id, 'activate')}
                         disabled={actionLoading[u.id]}
-                        className="flex-1 min-w-[70px] py-2 bg-green-50 text-green-600 rounded-lg text-xs font-medium hover:bg-green-100"
+                        className="flex-1 min-w-[70px] py-2 bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#2B8A3E] border border-[#DEE2E6] rounded-[12px] font-bold transition-colors text-xs"
                       >
                         تنشيط
                       </button>
@@ -333,7 +333,7 @@ export default function AdminPage() {
                     {isExpiring && (
                       <button
                         onClick={() => sendRenewalReminder(u)}
-                        className="w-full mt-1 py-2 bg-[#25D366] text-white rounded-lg text-xs font-medium hover:bg-[#128C7E] flex items-center justify-center gap-1"
+                        className="w-full mt-1 py-2 bg-[#25D366] text-white rounded-[12px] text-xs font-medium hover:bg-[#128C7E] flex items-center justify-center gap-1 transition-colors"
                       >
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.126.554 4.195 1.602 6.014L.132 24l6.115-1.602c1.761.986 3.757 1.507 5.784 1.507 6.646 0 12.031-5.385 12.031-12.031C24 5.385 18.677 0 12.031 0zm0 21.91c-1.8 0-3.565-.483-5.118-1.402l-.367-.218-3.804.997 1.018-3.71-.24-.383C2.535 15.655 2.019 13.864 2.019 12.031c0-5.526 4.496-10.022 10.012-10.022 5.526 0 10.022 4.496 10.022 10.022 0 5.526-4.496 10.022-10.022 10.022zm5.498-7.508c-.302-.15-1.789-.882-2.066-.983-.277-.101-.48-.15-.682.15-.202.302-.782.983-.959 1.184-.177.202-.354.227-.656.076-1.428-.713-2.583-1.849-3.235-3.238-.151-.302.076-.465.226-.615.136-.136.302-.354.453-.531.151-.177.202-.302.302-.505.101-.202.05-.38-.025-.531-.076-.15-1.789-4.318-2.45-5.918-.636-1.537-1.282-1.328-1.765-1.353-.453-.024-.959-.024-1.465-.024-.505 0-1.314.19-2 .935C1.868 4.295.959 5.861.959 8.21c0 2.348 1.969 4.621 2.246 4.992.277.371 3.407 5.201 8.254 7.29 1.153.497 2.05.795 2.75 1.018 1.158.368 2.21.316 3.038.192 1.008-.15 3.104-1.267 3.543-2.492.439-1.225.439-2.273.308-2.492-.126-.219-.48-.344-.782-.494z"/>
                         </svg>
@@ -351,24 +351,24 @@ export default function AdminPage() {
       {activeTab === 'subscriptions' && (
         <div className="space-y-3">
           {pendingSubscriptions.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              <FiFileText size={40} className="mx-auto text-gray-300 mb-2" />
+            <div className="text-center py-10 text-[#6C757D]">
+              <FiFileText size={40} className="mx-auto text-[#DEE2E6] mb-2" />
               لا توجد طلبات اشتراك معلقة
             </div>
           ) : (
             pendingSubscriptions.map((sub) => (
-              <div key={sub.id} className="bg-white rounded-xl p-4 card-shadow">
+              <div key={sub.id} className="bg-white border border-[#DEE2E6] rounded-[12px] p-4 card-shadow">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-bold text-gray-800">طلب اشتراك جديد</h4>
-                    <p className="text-xs text-gray-500">تاريخ الطلب: {formatDate(sub.created_at)}</p>
+                    <h4 className="font-bold text-[#212529]">طلب اشتراك جديد</h4>
+                    <p className="text-xs text-[#6C757D]">تاريخ الطلب: {formatDate(sub.created_at)}</p>
                   </div>
-                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-bold">
+                  <span className="text-amber-600 border border-amber-600/30 bg-transparent text-xs px-2 py-1 rounded-full font-bold">
                     قيد المراجعة
                   </span>
                 </div>
                 
-                <div className="bg-gray-50 rounded-lg p-3 mb-3 text-sm space-y-1">
+                <div className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px] p-3 mb-3 text-sm space-y-1 text-[#212529]">
                   <p><strong>المبلغ المستخرج:</strong> {sub.ocr_data?.amount ? `${formatCurrency(sub.ocr_data.amount)} ج.س` : 'غير متوفر'}</p>
                   <p><strong>رقم العملية:</strong> {sub.ocr_data?.reference_number || 'غير متوفر'}</p>
                   <p><strong>التاريخ المكتوب:</strong> {sub.ocr_data?.date || 'غير متوفر'}</p>
@@ -376,9 +376,9 @@ export default function AdminPage() {
 
                 {sub.receipt_image && (
                   <div className="mb-3">
-                    <p className="text-xs font-bold text-gray-700 mb-1">صورة الإشعار:</p>
+                    <p className="text-xs font-bold text-[#212529] mb-1">صورة الإشعار:</p>
                     <a href={sub.receipt_image} target="_blank" rel="noreferrer">
-                       <img src={sub.receipt_image} alt="Receipt" className="w-full h-32 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90" />
+                       <img src={sub.receipt_image} alt="Receipt" className="w-full h-32 object-cover rounded-[12px] border border-[#DEE2E6] cursor-pointer hover:opacity-90" />
                     </a>
                   </div>
                 )}
@@ -387,14 +387,14 @@ export default function AdminPage() {
                   <button
                     onClick={() => handleReviewSubscription(sub.id, 'approve')}
                     disabled={actionLoading[sub.id]}
-                    className="flex-1 py-2.5 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                   >
                     قبول وتفعيل
                   </button>
                   <button
                     onClick={() => handleReviewSubscription(sub.id, 'reject')}
                     disabled={actionLoading[sub.id]}
-                    className="flex-1 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-bold hover:bg-red-100 disabled:opacity-50"
+                    className="flex-1 py-2.5 bg-[#F1F3F5] hover:bg-[#E9ECEF] text-red-600 border border-[#DEE2E6] rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
                   >
                     رفض
                   </button>
@@ -406,47 +406,47 @@ export default function AdminPage() {
       )}
 
       {activeTab === 'settings' && (
-        <div className="bg-white rounded-xl p-5 card-shadow space-y-4">
-          <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-3">
-            <FiShield className="text-primary-600" size={20} />
-            <h3 className="font-bold text-gray-800 text-base">إعدادات أسعار الاشتراكات</h3>
+        <div className="bg-white border border-[#DEE2E6] rounded-[12px] p-5 card-shadow space-y-4">
+          <div className="flex items-center gap-2 mb-2 border-b border-[#DEE2E6] pb-3">
+            <FiShield className="text-[#2B8A3E]" size={20} />
+            <h3 className="font-bold text-[#212529] text-base">إعدادات أسعار الاشتراكات</h3>
           </div>
           <form onSubmit={handleSaveSettings} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">سعر الاشتراك الشهري (ج.س)</label>
+              <label className="text-xs font-bold text-[#6C757D]">سعر الاشتراك الشهري (ج.س)</label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={settings.monthly_price}
                 onChange={(e) => setSettings(prev => ({ ...prev, monthly_price: normalizeArabicNumber(e.target.value) }))}
                 placeholder="مثال: 10000"
-                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-left font-bold font-mono text-lg text-[#2B8A3E] bg-white"
                 dir="ltr"
                 required
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">سعر الاشتراك الربع سنوي - 3 أشهر (ج.س)</label>
+              <label className="text-xs font-bold text-[#6C757D]">سعر الاشتراك الربع سنوي - 3 أشهر (ج.س)</label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={settings.quarterly_price}
                 onChange={(e) => setSettings(prev => ({ ...prev, quarterly_price: normalizeArabicNumber(e.target.value) }))}
                 placeholder="مثال: 27000"
-                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-left font-bold font-mono text-lg text-[#2B8A3E] bg-white"
                 dir="ltr"
                 required
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500">سعر الاشتراك النصف سنوي - 6 أشهر (ج.س)</label>
+              <label className="text-xs font-bold text-[#6C757D]">سعر الاشتراك النصف سنوي - 6 أشهر (ج.س)</label>
               <input
                 type="text"
                 inputMode="decimal"
                 value={settings.semi_annual_price}
                 onChange={(e) => setSettings(prev => ({ ...prev, semi_annual_price: normalizeArabicNumber(e.target.value) }))}
                 placeholder="مثال: 50000"
-                className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-left font-bold font-mono text-lg text-primary-700 bg-primary-50/10"
+                className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] text-left font-bold font-mono text-lg text-[#2B8A3E] bg-white"
                 dir="ltr"
                 required
               />
@@ -455,7 +455,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={savingSettings}
-              className="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors shadow-lg shadow-primary-500/20"
+              className="w-full py-3.5 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] font-bold text-sm disabled:opacity-50 transition-colors"
             >
               {savingSettings ? 'جاري الحفظ...' : '✔ حفظ الأسعار الجديدة'}
             </button>
@@ -465,53 +465,53 @@ export default function AdminPage() {
 
       {/* Add User Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
-          <div className="bg-white rounded-t-2xl p-6 w-full max-w-lg animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">إضافة مستخدم جديد</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-start pt-10 px-4 justify-center overflow-y-auto">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up my-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#DEE2E6] pb-3">
+              <h3 className="font-bold text-[#212529] text-lg">إضافة مستخدم جديد</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-[#6C757D] hover:text-[#212529]">
                 <FiX size={20} />
               </button>
             </div>
             <form onSubmit={handleAddUser} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">نوع المستخدم</label>
+                <label className="block text-xs text-[#6C757D] mb-1">نوع المستخدم</label>
                 <div className="flex gap-2">
-                  <label className={`flex-1 p-2 border rounded-xl cursor-pointer text-center text-sm ${newRole === 'merchant' ? 'border-primary-500 bg-primary-50 text-primary-700 font-bold' : 'border-gray-200 text-gray-700'}`}>
+                  <label className={`flex-1 p-2 border rounded-[12px] cursor-pointer text-center text-sm ${newRole === 'merchant' ? 'border-[#2B8A3E] text-[#2B8A3E] font-bold bg-white' : 'border-[#DEE2E6] text-[#6C757D] bg-white'}`}>
                     <input type="radio" name="role" value="merchant" checked={newRole === 'merchant'} onChange={(e) => setNewRole(e.target.value)} className="hidden" />
                     تاجر
                   </label>
-                  <label className={`flex-1 p-2 border rounded-xl cursor-pointer text-center text-sm ${newRole === 'admin' ? 'border-purple-500 bg-purple-50 text-purple-700 font-bold' : 'border-gray-200 text-gray-700'}`}>
+                  <label className={`flex-1 p-2 border rounded-[12px] cursor-pointer text-center text-sm ${newRole === 'admin' ? 'border-purple-500 text-purple-700 font-bold bg-white' : 'border-[#DEE2E6] text-[#6C757D] bg-white'}`}>
                     <input type="radio" name="role" value="admin" checked={newRole === 'admin'} onChange={(e) => setNewRole(e.target.value)} className="hidden" />
                     أدمن
                   </label>
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">رقم الهاتف</label>
+                <label className="block text-xs text-[#6C757D] mb-1">رقم الهاتف</label>
                 <input
                   type="tel"
                   required
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   placeholder="0xxxxxxxxx"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                   dir="ltr"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">الاسم / المتجر</label>
+                <label className="block text-xs text-[#6C757D] mb-1">الاسم / المتجر</label>
                 <input
                   type="text"
                   required
                   value={newStoreName}
                   onChange={(e) => setNewStoreName(e.target.value)}
                   placeholder={newRole === 'admin' ? "اسم الأدمن" : "اسم المتجر"}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">كلمة المرور</label>
+                <label className="block text-xs text-[#6C757D] mb-1">كلمة المرور</label>
                 <input
                   type="text"
                   required
@@ -519,20 +519,20 @@ export default function AdminPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="كلمة المرور المؤقتة"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                   dir="ltr"
                 />
               </div>
               
               {newRole === 'merchant' && (
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">صلاحية الاشتراك (بالأيام)</label>
+                  <label className="block text-xs text-[#6C757D] mb-1">صلاحية الاشتراك (بالأيام)</label>
                   <input
                     type="number"
                     value={newSubDays}
                     onChange={(e) => setNewSubDays(e.target.value)}
                     placeholder="30"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
                     dir="ltr"
                   />
                 </div>
@@ -541,7 +541,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={addingUser}
-                className="w-full py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 disabled:opacity-50 mt-2"
+                className="w-full py-3 bg-[#2B8A3E] text-white rounded-[12px] font-bold hover:bg-[#237032] disabled:opacity-50 mt-2 transition-colors"
               >
                 {addingUser ? 'جاري الإضافة...' : 'حفظ وإضافة'}
               </button>

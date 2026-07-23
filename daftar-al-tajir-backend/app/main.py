@@ -205,6 +205,17 @@ async def health_check():
     except Exception as e:
         return {"status": "degraded", "db": str(e)}
 
+@app.get("/api/v1/app/version", tags=["التحديثات"])
+async def get_app_version():
+    """Public version check endpoint for auto-update mechanism."""
+    return {
+        "versionCode": 2,
+        "versionName": "1.0.1",
+        "downloadUrl": "https://daftar-str8.onrender.com/static/app-arm64-v8a-release.apk",
+        "forceUpdate": False,
+        "releaseNotes": "تحديث جديد يتضمن تحسينات الأداء واستقرار التحديث التلقائي لدفتر التاجر"
+    }
+
 @app.get("/ping", tags=["الصحة"])
 async def ping():
     """Simple ping to wake up the Render server without touching the DB."""
@@ -213,7 +224,7 @@ async def ping():
 # ============ Serve React Frontend ============
 # This must be at the very bottom to act as a catch-all route.
 
-
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "daftar-al-tajir-frontend", "dist"))
 
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_frontend(full_path: str):

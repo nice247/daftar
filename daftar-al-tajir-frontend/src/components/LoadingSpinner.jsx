@@ -7,10 +7,8 @@ export default function LoadingSpinner({ size = 'md', text = 'جاري التح�
 
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-8">
-      <div className={`${sizes[size]} border-3 border-gray-200 border-t-primary-600 rounded-full animate-spin`}
-        style={{ borderWidth: '3px' }}
-      />
-      {text && <p className="text-sm text-gray-500">{text}</p>}
+      <div className={`${sizes[size]} border-[3px] border-[#DEE2E6] border-t-[#2B8A3E] rounded-full animate-spin`} />
+      {text && <p className="text-sm text-[#6C757D]">{text}</p>}
     </div>
   );
 }

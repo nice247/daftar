@@ -39,33 +39,33 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#2B8A3E] to-[#1a6b2d] flex flex-col items-center justify-center p-4">
       {/* Logo */}
-      <div className="mb-8 text-center">
+      <div className="mb-8 text-center animate-fade-in">
         <div className="bg-white p-4 rounded-full inline-block mb-4 shadow-lg">
           <BookOpen className="w-12 h-12 text-[#2B8A3E]" />
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">دفتر التاجر</h1>
-        <p className="text-primary-100">إدارة مبيعاتك وحساباتك بسهولة</p>
+        <p className="text-white/80">إدارة مبيعاتك وحساباتك بسهولة</p>
       </div>
 
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-[12px] card-shadow-lg overflow-hidden animate-fade-in">
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">تسجيل الدخول</h2>
+          <h2 className="text-2xl font-bold text-[#212529] mb-6 text-center">تسجيل الدخول</h2>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#212529] mb-2">
                 رقم الهاتف
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
+                  <Phone className="h-5 w-5 text-[#6C757D]" />
                 </div>
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="block w-full pl-3 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
+                  className="block w-full pl-3 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none"
                   placeholder="0xxxxxxxxx"
                   dir="ltr"
                 />
@@ -73,26 +73,26 @@ function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#212529] mb-2">
                 كلمة المرور
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-[#6C757D]" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-[#2B8A3E] focus:border-[#2B8A3E]"
+                  className="block w-full pl-10 pr-10 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none"
                   placeholder="••••••••"
                   dir="ltr"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-[#6C757D] hover:text-[#212529]"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -115,15 +115,15 @@ function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-[12px] shadow-sm text-sm font-bold text-white bg-[#2B8A3E] hover:bg-[#237032] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2B8A3E] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-[12px] text-sm font-bold text-white bg-[#2B8A3E] hover:bg-[#237032] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'جاري التحميل...' : 'دخول'}
             </button>
           </form>
         </div>
 
-        <div className="px-8 py-6 bg-gray-50 border-t border-gray-100 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="px-8 py-6 bg-[#F8F9FA] border-t border-[#DEE2E6] text-center">
+          <p className="text-sm text-[#6C757D]">
             ليس لديك حساب؟{' '}
             <Link to="/register" className="text-base font-black text-[#2B8A3E] underline underline-offset-2 hover:text-[#237032]">
               سجل متجرك الآن

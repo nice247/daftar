@@ -329,7 +329,7 @@ export default function EODPage() {
 
 
       {/* Expenses Section */}
-      <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100">
+      <div className="bg-white rounded-[12px] p-5 card-shadow border border-[#DEE2E6]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#F8F9FA] border border-[#DEE2E6] flex items-center justify-center">
@@ -339,20 +339,20 @@ export default function EODPage() {
           </div>
           <button 
             onClick={addExpense} 
-            className="text-xs bg-red-50 hover:bg-red-100 text-red-700 px-3 py-1.5 rounded-lg font-bold transition-all border border-red-100 flex items-center gap-1"
+            className="text-xs bg-[#F8F9FA] hover:bg-[#F1F3F5] text-red-600 px-3 py-1.5 rounded-[12px] font-bold transition-all border border-[#DEE2E6] flex items-center gap-1"
           >
             <span>+</span> إضافة مصروف
           </button>
         </div>
         <div className="space-y-3">
           {expenses.map((exp, i) => (
-            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all space-y-3 relative">
+            <div key={i} className="bg-[#F8F9FA] hover:bg-[#F1F3F5] p-4 rounded-[12px] border border-[#DEE2E6] transition-all space-y-3 relative">
               {/* Header with Row Title and Delete button */}
-              <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-2">
-                <span className="text-xs font-bold text-gray-500 font-mono">مصروف #{i + 1}</span>
+              <div className="flex items-center justify-between border-b border-dashed border-[#DEE2E6] pb-2">
+                <span className="text-xs font-bold text-[#6C757D] font-mono">مصروف #{i + 1}</span>
                 <button 
                   onClick={() => removeExpense(i)} 
-                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-100/30 font-bold"
+                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-[#E9ECEF] rounded-lg transition-colors border border-[#DEE2E6] font-bold"
                 >
                   ✕
                 </button>
@@ -362,11 +362,11 @@ export default function EODPage() {
               <div className="grid grid-cols-1 gap-2.5">
                 {/* Category select */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">فئة المصروف</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">فئة المصروف</label>
                   <select
                     value={exp.category}
                     onChange={(e) => updateExpense(i, 'category', e.target.value)}
-                    className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none font-bold bg-white focus:border-[#6C757D] focus:ring-1 focus:ring-[#6C757D] cursor-pointer shadow-sm text-[#212529] h-9"
+                    className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none font-bold bg-white focus:ring-2 focus:ring-[#6C757D] focus:border-[#6C757D] cursor-pointer shadow-sm text-[#212529] h-9"
                   >
                     {Object.entries(EXPENSE_CATEGORIES).map(([key, label]) => {
                       // Hide RESTOCK if cycle is still active
@@ -378,28 +378,28 @@ export default function EODPage() {
 
                 {/* Amount input */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">المبلغ (ج.س)</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">المبلغ (ج.س)</label>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={exp.amount}
                     onChange={(e) => updateExpense(i, 'amount', e.target.value)}
                     placeholder="المبلغ بالأرقام"
-                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-sm outline-none text-left font-mono font-bold text-[#212529] focus:border-[#6C757D] focus:ring-1 focus:ring-[#6C757D] h-9"
+                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-sm outline-none text-left font-mono font-bold text-[#212529] focus:ring-2 focus:ring-[#6C757D] focus:border-[#6C757D] h-9"
                     dir="ltr"
                   />
                 </div>
 
                 {/* Description or Merchant debt select */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">
+                  <label className="text-[10px] font-bold text-[#6C757D]">
                     {exp.category === 'MERCHANT_DEBT_PAY' ? 'المورد والدين' : 'الوصف / ملاحظة'}
                   </label>
                   {exp.category === 'MERCHANT_DEBT_PAY' ? (
                     <select
                       value={exp.merchant_debt_id || ''}
                       onChange={(e) => updateExpense(i, 'merchant_debt_id', e.target.value)}
-                      className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none bg-white font-bold focus:border-[#6C757D] focus:ring-1 focus:ring-[#6C757D] h-9"
+                      className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none bg-white font-bold focus:ring-2 focus:ring-[#6C757D] focus:border-[#6C757D] h-9"
                     >
                       <option value="">اختر المورد والدين...</option>
                       {viewMerchantDebts.filter(d => d.status !== 'paid').map(d => (
@@ -412,7 +412,7 @@ export default function EODPage() {
                       value={exp.description || ''}
                       onChange={(e) => updateExpense(i, 'description', e.target.value)}
                       placeholder="وصف المصروف (مثال: كهرباء، عمال)"
-                      className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:border-[#6C757D] focus:ring-1 focus:ring-[#6C757D] h-9"
+                      className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:ring-2 focus:ring-[#6C757D] focus:border-[#6C757D] h-9"
                     />
                   )}
                 </div>
@@ -420,13 +420,13 @@ export default function EODPage() {
               
               {exp.category === 'MERCHANT_DEBT_PAY' && (
                 <div className="flex flex-col gap-1 pt-1">
-                  <label className="text-[10px] font-bold text-gray-400">ملاحظة السداد (اختياري)</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">ملاحظة السداد (اختياري)</label>
                   <input
                     type="text"
                     value={exp.description || ''}
                     onChange={(e) => updateExpense(i, 'description', e.target.value)}
                     placeholder="ملاحظات حول عملية الدفع"
-                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:border-[#6C757D] focus:ring-1 focus:ring-[#6C757D] h-9"
+                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:ring-2 focus:ring-[#6C757D] focus:border-[#6C757D] h-9"
                   />
                 </div>
               )}
@@ -435,15 +435,15 @@ export default function EODPage() {
         </div>
 
         {expenses.length > 0 && (
-          <div className="bg-red-50/50 rounded-xl p-3 text-center mt-3 border border-red-100/60 flex justify-between items-center px-4">
-            <span className="text-xs font-bold text-red-800">إجمالي المصروفات لليوم:</span>
-            <span className="font-extrabold text-red-700 text-base font-mono">{formatCurrency(expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))} ج.س</span>
+          <div className="bg-[#F8F9FA] rounded-[12px] p-3 text-center mt-3 border border-[#DEE2E6] flex justify-between items-center px-4">
+            <span className="text-xs font-bold text-[#212529]">إجمالي المصروفات لليوم:</span>
+            <span className="font-extrabold text-red-600 text-base font-mono">{formatCurrency(expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0))} ج.س</span>
           </div>
         )}
       </div>
 
       {/* Incomes Section */}
-      <div className="bg-white rounded-2xl p-5 card-shadow border border-gray-100">
+      <div className="bg-white rounded-[12px] p-5 card-shadow border border-[#DEE2E6]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#F8F9FA] border border-[#DEE2E6] flex items-center justify-center">
@@ -453,7 +453,7 @@ export default function EODPage() {
           </div>
           <button 
             onClick={addIncome} 
-            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg font-bold transition-all border border-emerald-100 flex items-center gap-1"
+            className="text-xs bg-[#F8F9FA] hover:bg-[#F1F3F5] text-[#2B8A3E] px-3 py-1.5 rounded-[12px] font-bold transition-all border border-[#DEE2E6] flex items-center gap-1"
           >
             <span>+</span> إضافة إيراد
           </button>
@@ -461,13 +461,13 @@ export default function EODPage() {
         
         <div className="space-y-3">
           {incomes.map((oi, i) => (
-            <div key={i} className="bg-slate-50/50 hover:bg-slate-50 p-4 rounded-xl border border-slate-100 transition-all space-y-3 relative">
+            <div key={i} className="bg-[#F8F9FA] hover:bg-[#F1F3F5] p-4 rounded-[12px] border border-[#DEE2E6] transition-all space-y-3 relative">
               {/* Header with Row Title and Delete button */}
-              <div className="flex items-center justify-between border-b border-dashed border-gray-200 pb-2">
-                <span className="text-xs font-bold text-gray-500 font-mono">إيراد #{i + 1}</span>
+              <div className="flex items-center justify-between border-b border-dashed border-[#DEE2E6] pb-2">
+                <span className="text-xs font-bold text-[#6C757D] font-mono">إيراد #{i + 1}</span>
                 <button 
                   onClick={() => removeIncome(i)} 
-                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-100/30 font-bold"
+                  className="w-7 h-7 flex items-center justify-center text-red-500 hover:bg-[#E9ECEF] rounded-lg transition-colors border border-[#DEE2E6] font-bold"
                 >
                   ✕
                 </button>
@@ -477,11 +477,11 @@ export default function EODPage() {
               <div className="grid grid-cols-1 gap-2.5">
                 {/* Category select */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">نوع الإيراد</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">نوع الإيراد</label>
                   <select
                     value={oi.category}
                     onChange={(e) => updateIncome(i, 'category', e.target.value)}
-                    className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none font-bold bg-white focus:border-[#2B8A3E] focus:ring-1 focus:ring-[#2B8A3E] cursor-pointer shadow-sm text-[#212529] h-9"
+                    className="w-full px-2.5 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none font-bold bg-white focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] cursor-pointer shadow-sm text-[#212529] h-9"
                   >
                     <option value="EOD_CASH">مبيعات كاش</option>
                     <option value="EOD_BANKAK">مبيعات بنكك</option>
@@ -493,27 +493,27 @@ export default function EODPage() {
 
                 {/* Amount input */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">المبلغ (ج.س)</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">المبلغ (ج.س)</label>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={oi.amount}
                     onChange={(e) => updateIncome(i, 'amount', e.target.value)}
                     placeholder="المبلغ بالأرقام"
-                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-sm outline-none text-left font-mono font-bold text-[#2B8A3E] bg-[#f0fdf4] focus:border-[#2B8A3E] focus:ring-1 focus:ring-[#2B8A3E] h-9"
+                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-sm outline-none text-left font-mono font-bold text-[#2B8A3E] bg-white focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] h-9"
                     dir="ltr"
                   />
                 </div>
 
                 {/* Description input */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-gray-400">الوصف / ملاحظة</label>
+                  <label className="text-[10px] font-bold text-[#6C757D]">الوصف / ملاحظة</label>
                   <input
                     type="text"
                     value={oi.description || ''}
                     onChange={(e) => updateIncome(i, 'description', e.target.value)}
                     placeholder="وصف الإيراد (اختياري)"
-                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:border-[#2B8A3E] focus:ring-1 focus:ring-[#2B8A3E] h-9"
+                    className="w-full px-3 py-2 border border-[#DEE2E6] rounded-[12px] text-xs outline-none focus:ring-2 focus:ring-[#2B8A3E] focus:ring-[#2B8A3E] h-9"
                   />
                 </div>
               </div>
@@ -522,9 +522,9 @@ export default function EODPage() {
         </div>
 
         {incomes.length > 0 && (
-          <div className="bg-emerald-50/50 rounded-xl p-3 text-center mt-3 border border-emerald-100/60 flex justify-between items-center px-4">
-            <span className="text-xs font-bold text-emerald-800">إجمالي الإيرادات المدخلة لليوم:</span>
-            <span className="font-extrabold text-emerald-700 text-base font-mono">{formatCurrency(incomes.reduce((sum, oi) => sum + (parseFloat(oi.amount) || 0), 0))} ج.س</span>
+          <div className="bg-[#F8F9FA] rounded-[12px] p-3 text-center mt-3 border border-[#DEE2E6] flex justify-between items-center px-4">
+            <span className="text-xs font-bold text-[#212529]">إجمالي الإيرادات المدخلة لليوم:</span>
+            <span className="font-extrabold text-[#2B8A3E] text-base font-mono">{formatCurrency(incomes.reduce((sum, oi) => sum + (parseFloat(oi.amount) || 0), 0))} ج.س</span>
           </div>
         )}
       </div>
@@ -540,38 +540,38 @@ export default function EODPage() {
       </button>
 
       {todaySaved && (
-        <p className="text-center text-xs text-green-600 font-bold">✔ تم حفظ المعاملات بنجاح — يمكنك إكمال إضافة معاملات أخرى لليوم.</p>
+        <p className="text-center text-xs text-[#2B8A3E] font-bold">✔ تم حفظ المعاملات بنجاح — يمكنك إكمال إضافة معاملات أخرى لليوم.</p>
       )}
 
       {/* ===== Expenses View Modal ===== */}
       {showExpensesModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">سجل المصروفات</h3>
-              <button onClick={() => setShowExpensesModal(false)} className="text-gray-400 hover:text-red-500">
+              <h3 className="font-bold text-[#212529]">سجل المصروفات</h3>
+              <button onClick={() => setShowExpensesModal(false)} className="text-[#6C757D] hover:text-[#212529]">
                 <span className="text-xl">✖</span>
               </button>
             </div>
             <div className="overflow-y-auto flex-1 space-y-2">
               {viewLoading ? (
-                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+                <p className="text-center text-[#6C757D] py-8">جاري التحميل...</p>
               ) : viewExpenses.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">لا توجد مصروفات مسجلة</p>
+                <p className="text-center text-[#6C757D] py-8">لا توجد مصروفات مسجلة</p>
               ) : (
                 viewExpenses.map((exp, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex justify-between items-center">
+                  <div key={i} className="bg-[#F8F9FA] rounded-[12px] p-3 border border-[#DEE2E6] flex justify-between items-center">
                     <div className="flex-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-gray-600">{EXPENSE_CATEGORIES[exp.category] || exp.category}</span>
+                        <span className="text-xs font-bold text-[#212529]">{EXPENSE_CATEGORIES[exp.category] || exp.category}</span>
                         <span className="font-bold text-red-600">{formatCurrency(exp.amount)} ج.س</span>
                       </div>
-                      {exp.description && <p className="text-xs text-gray-500 mt-1">{exp.description}</p>}
-                      <p className="text-[10px] text-gray-400 mt-1">{exp.created_at}</p>
+                      {exp.description && <p className="text-xs text-[#6C757D] mt-1">{exp.description}</p>}
+                      <p className="text-[10px] text-[#6C757D] mt-1">{exp.created_at}</p>
                     </div>
                     <button 
                       onClick={() => handleDeleteExpense(exp.id)}
-                      className="mr-3 text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      className="mr-3 text-[#6C757D] hover:text-red-600 p-2 hover:bg-[#F1F3F5] rounded-lg transition-colors"
                       title="حذف"
                     >
                       ✖
@@ -587,27 +587,27 @@ export default function EODPage() {
       {/* ===== Purchases View Modal ===== */}
       {showPurchasesModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">المشتريات السابقة (تجديد مخزون)</h3>
-              <button onClick={() => setShowPurchasesModal(false)} className="text-gray-400 hover:text-red-500">
+              <h3 className="font-bold text-[#212529]">المشتريات السابقة (تجديد مخزون)</h3>
+              <button onClick={() => setShowPurchasesModal(false)} className="text-[#6C757D] hover:text-[#212529]">
                 <span className="text-xl">✖</span>
               </button>
             </div>
             <div className="overflow-y-auto flex-1 space-y-2">
               {viewLoading ? (
-                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+                <p className="text-center text-[#6C757D] py-8">جاري التحميل...</p>
               ) : viewPurchases.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">لا توجد مشتريات مسجلة</p>
+                <p className="text-center text-[#6C757D] py-8">لا توجد مشتريات مسجلة</p>
               ) : (
                 viewPurchases.map((p, i) => (
-                  <div key={i} className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                  <div key={i} className="bg-[#F8F9FA] rounded-[12px] p-3 border border-[#DEE2E6]">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-amber-700">تجديد مخزون</span>
-                      <span className="font-bold text-amber-800">{formatCurrency(p.amount)} ج.س</span>
+                      <span className="text-xs font-bold text-[#6C757D]">تجديد مخزون</span>
+                      <span className="font-bold text-[#212529]">{formatCurrency(p.amount)} ج.س</span>
                     </div>
-                    {p.description && <p className="text-xs text-gray-600 mt-1">{p.description}</p>}
-                    <p className="text-[10px] text-gray-400 mt-1">{p.created_at}</p>
+                    {p.description && <p className="text-xs text-[#6C757D] mt-1">{p.description}</p>}
+                    <p className="text-[10px] text-[#6C757D] mt-1">{p.created_at}</p>
                   </div>
                 ))
               )}
@@ -619,38 +619,38 @@ export default function EODPage() {
       {/* ===== Merchant Debts View Modal ===== */}
       {showMerchantDebtsModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">ديون التاجر على الموردين</h3>
-              <button onClick={() => setShowMerchantDebtsModal(false)} className="text-gray-400 hover:text-red-500">
+              <h3 className="font-bold text-[#212529]">ديون التاجر على الموردين</h3>
+              <button onClick={() => setShowMerchantDebtsModal(false)} className="text-[#6C757D] hover:text-[#212529]">
                 <span className="text-xl">✖</span>
               </button>
             </div>
             <div className="overflow-y-auto flex-1 space-y-2">
               {viewLoading ? (
-                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+                <p className="text-center text-[#6C757D] py-8">جاري التحميل...</p>
               ) : viewMerchantDebts.length === 0 ? (
-                <p className="text-center text-gray-400 py-8">لا توجد ديون مسجلة</p>
+                <p className="text-center text-[#6C757D] py-8">لا توجد ديون مسجلة</p>
               ) : (
                 viewMerchantDebts.map((d, i) => (
-                  <div key={i} className={`rounded-lg p-3 border ${d.status === 'paid' ? 'bg-green-50 border-green-100' : d.status === 'partial' ? 'bg-yellow-50 border-yellow-100' : 'bg-red-50 border-red-100'}`}>
+                  <div key={i} className="bg-[#F8F9FA] rounded-[12px] p-3 border border-[#DEE2E6]">
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-bold text-gray-800">{d.supplier_name}</span>
-                        <span className={`text-[10px] mr-2 px-1.5 py-0.5 rounded-full ${d.debt_type === 'cash' ? 'bg-green-100 text-green-700' : d.debt_type === 'bank' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                        <span className="font-bold text-[#212529]">{d.supplier_name}</span>
+                        <span className="text-[10px] mr-2 px-1.5 py-0.5 border border-[#DEE2E6] text-[#6C757D] rounded">
                           {d.debt_type === 'cash' ? 'كاش' : d.debt_type === 'bank' ? 'بنكك' : 'بضاعة'}
                         </span>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d.status === 'paid' ? 'bg-green-100 text-green-700' : d.status === 'partial' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${d.status === 'paid' ? 'text-[#2B8A3E] border border-[#2B8A3E]/30' : d.status === 'partial' ? 'text-amber-600 border border-amber-600/30' : 'text-red-600 border border-red-600/30'} bg-transparent`}>
                         {d.status === 'paid' ? 'مسدد' : d.status === 'partial' ? 'جزئي' : 'غير مسدد'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mt-2">
-                      <span className="text-xs text-gray-500">المبلغ: {formatCurrency(d.total_amount)}</span>
-                      <span className="text-xs text-gray-500">المتبقي: {formatCurrency(d.remaining)}</span>
+                      <span className="text-xs text-[#6C757D]">المبلغ: {formatCurrency(d.total_amount)}</span>
+                      <span className="text-xs text-[#6C757D]">المتبقي: {formatCurrency(d.remaining)}</span>
                     </div>
-                    {d.description && <p className="text-xs text-gray-500 mt-1">{d.description}</p>}
-                    <p className="text-[10px] text-gray-400 mt-1">{d.created_at}</p>
+                    {d.description && <p className="text-xs text-[#6C757D] mt-1">{d.description}</p>}
+                    <p className="text-[10px] text-[#6C757D] mt-1">{d.created_at}</p>
                   </div>
                 ))
               )}
@@ -658,32 +658,34 @@ export default function EODPage() {
           </div>
         </div>
       )}
+
+      {/* ===== Yesterday's Data Modal ===== */}
       {showYesterdayModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 border-b border-[#DEE2E6] pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                <div className="w-8 h-8 rounded-lg bg-[#F8F9FA] border border-[#DEE2E6] flex items-center justify-center text-[#6C757D]">
                   <FiList size={18} />
                 </div>
-                <h3 className="font-black text-gray-800 text-base">ملخص معاملات أمس</h3>
+                <h3 className="font-black text-[#212529] text-base">ملخص معاملات أمس</h3>
               </div>
-              <button onClick={() => setShowYesterdayModal(false)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">
+              <button onClick={() => setShowYesterdayModal(false)} className="text-[#6C757D] hover:text-[#212529] font-bold transition-colors">
                 <span className="text-lg">✖</span>
               </button>
             </div>
             
             <div className="overflow-y-auto flex-1 space-y-3.5 pr-1">
               {viewLoading ? (
-                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+                <p className="text-center text-[#6C757D] py-8">جاري التحميل...</p>
               ) : !yesterdayData || !yesterdayData.has_data ? (
-                <p className="text-center text-gray-400 py-8">لا توجد أي معاملات مسجلة لأمس</p>
+                <p className="text-center text-[#6C757D] py-8">لا توجد أي معاملات مسجلة لأمس</p>
               ) : (
                 <div className="space-y-3">
                   {/* Inflows summary */}
-                  <div className="bg-blue-50/50 rounded-xl p-3.5 border border-blue-100/50">
-                    <h4 className="font-bold text-blue-900 mb-2.5 text-xs">المقبوضات والمبيعات</h4>
-                    <div className="space-y-1.5 text-xs text-gray-600">
+                  <div className="bg-[#F8F9FA] rounded-[12px] p-3.5 border border-[#DEE2E6]">
+                    <h4 className="font-bold text-[#212529] mb-2.5 text-xs">المقبوضات والمبيعات</h4>
+                    <div className="space-y-1.5 text-xs text-[#6C757D]">
                       <div className="flex justify-between">
                         <span>مبيعات نقدي (كاش):</span>
                         <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_cash_sales)}</span>
@@ -693,20 +695,20 @@ export default function EODPage() {
                         <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_bankak_sales)}</span>
                       </div>
                       {parseFloat(yesterdayData.total_other_income || 0) > 0 && (
-                        <div className="flex justify-between text-green-700 font-medium">
+                        <div className="flex justify-between text-[#2B8A3E] font-medium">
                           <span>عمولات وإيرادات إضافية:</span>
                           <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_other_income)}</span>
                         </div>
                       )}
                       {parseFloat(yesterdayData.total_debt_payments || 0) > 0 && (
-                        <div className="flex justify-between text-emerald-700 font-medium border-t border-blue-100/50 pt-1.5 mt-1.5">
+                        <div className="flex justify-between text-[#2B8A3E] font-medium border-t border-[#DEE2E6] pt-1.5 mt-1.5">
                           <span>سدادات ديون العملاء:</span>
                           <span className="font-bold font-mono">{formatCurrency(yesterdayData.total_debt_payments)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-gray-800 font-black border-t border-blue-200/50 pt-1.5 mt-1.5 text-sm">
+                      <div className="flex justify-between text-[#212529] font-black border-t border-[#DEE2E6] pt-1.5 mt-1.5 text-sm">
                         <span>إجمالي المقبوضات:</span>
-                        <span className="font-mono text-blue-700">
+                        <span className="font-mono text-[#2B8A3E]">
                           {formatCurrency(
                             (yesterdayData.total_cash_sales || 0) + 
                             (yesterdayData.total_bankak_sales || 0) + 
@@ -719,19 +721,19 @@ export default function EODPage() {
                   </div>
 
                   {/* Expenses Summary */}
-                  <div className="bg-red-50/50 rounded-xl p-3.5 border border-red-100/50">
-                    <h4 className="font-bold text-red-900 mb-2 text-xs">المصروفات والمشتريات</h4>
+                  <div className="bg-[#F8F9FA] rounded-[12px] p-3.5 border border-[#DEE2E6]">
+                    <h4 className="font-bold text-[#212529] mb-2 text-xs">المصروفات والمشتريات</h4>
                     <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">إجمالي المدفوعات:</span>
-                      <span className="font-bold text-red-700 font-mono">{formatCurrency(yesterdayData.total_expenses)}</span>
+                      <span className="text-[#6C757D]">إجمالي المدفوعات:</span>
+                      <span className="font-bold text-red-600 font-mono">{formatCurrency(yesterdayData.total_expenses)}</span>
                     </div>
                   </div>
 
                   {/* Net Summary */}
-                  <div className="bg-slate-100/80 rounded-xl p-3.5 border border-slate-200/60 mt-4">
+                  <div className="bg-[#F8F9FA] rounded-[12px] p-3.5 border border-[#DEE2E6] mt-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-black text-gray-700">صافي الدخل لليوم:</span>
-                      <span className={`font-black text-base font-mono ${yesterdayData.net_cashflow >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <span className="text-xs font-black text-[#212529]">صافي الدخل لليوم:</span>
+                      <span className={`font-black text-base font-mono ${yesterdayData.net_cashflow >= 0 ? 'text-[#2B8A3E]' : 'text-red-600'}`}>
                         {formatCurrency(yesterdayData.net_cashflow)}
                       </span>
                     </div>
@@ -746,58 +748,58 @@ export default function EODPage() {
       {/* ===== Incomes View Modal ===== */}
       {showOtherIncomesModal && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-start pt-10 px-4 justify-center">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+          <div className="bg-white rounded-[12px] p-6 w-full max-w-lg animate-slide-up max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4 border-b border-[#DEE2E6] pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                <div className="w-8 h-8 rounded-lg bg-[#F8F9FA] border border-[#DEE2E6] flex items-center justify-center text-[#2B8A3E]">
                   <FiTrendingUp size={18} />
                 </div>
-                <h3 className="font-black text-gray-800 text-base">سجل الإيرادات والمقبوضات لليوم</h3>
+                <h3 className="font-black text-[#212529] text-base">سجل الإيرادات والمقبوضات لليوم</h3>
               </div>
-              <button onClick={() => setShowOtherIncomesModal(false)} className="text-gray-400 hover:text-red-500 font-bold transition-colors">
+              <button onClick={() => setShowOtherIncomesModal(false)} className="text-[#6C757D] hover:text-[#212529] font-bold transition-colors">
                 <span className="text-lg">✖</span>
               </button>
             </div>
 
             <div className="overflow-y-auto flex-1 space-y-4 pr-1">
               {viewLoading ? (
-                <p className="text-center text-gray-500 py-8">جاري التحميل...</p>
+                <p className="text-center text-[#6C757D] py-8">جاري التحميل...</p>
               ) : !viewIncomesData ? (
-                <p className="text-center text-gray-400 py-8">لا توجد إيرادات مسجلة لليوم</p>
+                <p className="text-center text-[#6C757D] py-8">لا توجد إيرادات مسجلة لليوم</p>
               ) : (
                 <div className="space-y-4">
                   {/* Daily In-Store Sales */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-2">
-                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-200/50 pb-1.5">مبيعات المحل (اليومية)</h4>
+                  <div className="bg-[#F8F9FA] p-3 rounded-[12px] border border-[#DEE2E6] space-y-2">
+                    <h4 className="text-xs font-bold text-[#6C757D] border-b border-[#DEE2E6] pb-1.5">مبيعات المحل (اليومية)</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-100 text-center">
-                        <span className="text-[10px] text-gray-500 block mb-0.5">نقدي (كاش)</span>
-                        <span className="font-bold text-gray-800 text-sm font-mono">{formatCurrency(viewIncomesData.total_cash_sales || 0)}</span>
+                      <div className="bg-white p-2.5 rounded-[12px] border border-[#DEE2E6] text-center">
+                        <span className="text-[10px] text-[#6C757D] block mb-0.5">نقدي (كاش)</span>
+                        <span className="font-bold text-[#212529] text-sm font-mono">{formatCurrency(viewIncomesData.total_cash_sales || 0)}</span>
                       </div>
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-100 text-center">
-                        <span className="text-[10px] text-gray-500 block mb-0.5">بنكك</span>
-                        <span className="font-bold text-gray-800 text-sm font-mono">{formatCurrency(viewIncomesData.total_bankak_sales || 0)}</span>
+                      <div className="bg-white p-2.5 rounded-[12px] border border-[#DEE2E6] text-center">
+                        <span className="text-[10px] text-[#6C757D] block mb-0.5">بنكك</span>
+                        <span className="font-bold text-[#212529] text-sm font-mono">{formatCurrency(viewIncomesData.total_bankak_sales || 0)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Customer Debt Payments */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-100 pb-1 flex justify-between">
+                    <h4 className="text-xs font-bold text-[#6C757D] border-b border-[#DEE2E6] pb-1 flex justify-between">
                       <span>دفعات ديون العملاء المحصلة</span>
-                      <span className="text-[10px] text-emerald-600 font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_debt_payments || 0)}</span>
+                      <span className="text-[10px] text-[#2B8A3E] font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_debt_payments || 0)}</span>
                     </h4>
                     {!viewIncomesData.debt_payments || viewIncomesData.debt_payments.length === 0 ? (
-                      <p className="text-[11px] text-gray-400 text-center py-2 bg-slate-50/30 rounded-lg">لا توجد تحصيلات ديون اليوم</p>
+                      <p className="text-[11px] text-[#6C757D] text-center py-2 bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px]">لا توجد تحصيلات ديون اليوم</p>
                     ) : (
                       <div className="space-y-1.5">
                         {viewIncomesData.debt_payments.map((dp, i) => (
-                          <div key={i} className="bg-emerald-50/30 rounded-xl p-2.5 border border-emerald-100/30 flex justify-between items-center text-xs">
+                          <div key={i} className="bg-[#F8F9FA] rounded-[12px] p-2.5 border border-[#DEE2E6] flex justify-between items-center text-xs">
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                              <span className="font-bold text-slate-700">{dp.customer_name}</span>
+                              <span className="w-2 h-2 rounded-full bg-[#2B8A3E]"></span>
+                              <span className="font-bold text-[#212529]">{dp.customer_name}</span>
                             </div>
-                            <span className="font-extrabold text-emerald-700 font-mono">{formatCurrency(dp.amount)} ج.س</span>
+                            <span className="font-extrabold text-[#2B8A3E] font-mono">{formatCurrency(dp.amount)} ج.س</span>
                           </div>
                         ))}
                       </div>
@@ -806,23 +808,23 @@ export default function EODPage() {
 
                   {/* Other/Additional Incomes */}
                   <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-500 border-b border-slate-100 pb-1 flex justify-between">
+                    <h4 className="text-xs font-bold text-[#6C757D] border-b border-[#DEE2E6] pb-1 flex justify-between">
                       <span>العمولات والإيرادات الإضافية</span>
-                      <span className="text-[10px] text-green-600 font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_other_income || 0)}</span>
+                      <span className="text-[10px] text-[#2B8A3E] font-extrabold font-mono">+{formatCurrency(viewIncomesData.total_other_income || 0)}</span>
                     </h4>
                     {!viewIncomesData.other_incomes || viewIncomesData.other_incomes.length === 0 ? (
-                      <p className="text-[11px] text-gray-400 text-center py-2 bg-slate-50/30 rounded-lg">لا توجد عمولات أو إيرادات إضافية اليوم</p>
+                      <p className="text-[11px] text-[#6C757D] text-center py-2 bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px]">لا توجد عمولات أو إيرادات إضافية اليوم</p>
                     ) : (
                       <div className="space-y-1.5">
                         {viewIncomesData.other_incomes.map((inc, i) => (
-                          <div key={i} className="bg-slate-50 p-2.5 rounded-xl border border-slate-100/70 flex justify-between items-center text-xs">
+                          <div key={i} className="bg-[#F8F9FA] rounded-[12px] p-2.5 border border-[#DEE2E6] flex justify-between items-center text-xs">
                             <div>
-                              <span className="font-bold text-gray-700 block text-xs">
+                              <span className="font-bold text-[#212529] block text-xs">
                                 {inc.category === 'bankak_commission' ? 'عمولة بنكك' : inc.category === 'balance_commission' ? 'عمولة رصيد' : 'أخرى'}
                               </span>
-                              {inc.description && <span className="text-[10px] text-gray-400 block mt-0.5">{inc.description}</span>}
+                              {inc.description && <span className="text-[10px] text-[#6C757D] block mt-0.5">{inc.description}</span>}
                             </div>
-                            <span className="font-extrabold text-green-600 font-mono">{formatCurrency(inc.amount)} ج.س</span>
+                            <span className="font-extrabold text-[#2B8A3E] font-mono">{formatCurrency(inc.amount)} ج.س</span>
                           </div>
                         ))}
                       </div>
@@ -830,7 +832,7 @@ export default function EODPage() {
                   </div>
 
                   {/* Total Inflows Banner */}
-                  <div className="bg-emerald-600 rounded-xl p-3.5 text-white flex justify-between items-center mt-6 shadow-md">
+                  <div className="bg-[#2B8A3E] rounded-[12px] p-3.5 text-white flex justify-between items-center mt-6 shadow-md">
                     <span className="text-xs font-black">إجمالي المقبوضات لليوم:</span>
                     <span className="font-black text-lg font-mono">
                       {formatCurrency(
@@ -850,4 +852,3 @@ export default function EODPage() {
 
     </div>
   );
-}

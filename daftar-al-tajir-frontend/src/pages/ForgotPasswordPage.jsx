@@ -60,13 +60,13 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-accent-500 to-accent-700 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-sm card-shadow-lg animate-fade-in">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">استعادة كلمة المرور</h2>
+    <div className="min-h-screen bg-gradient-to-b from-[#2B8A3E] to-[#1a6b2d] flex flex-col items-center justify-center p-4">
+      <div className="bg-white rounded-[12px] p-6 w-full max-w-sm card-shadow-lg animate-fade-in">
+        <h2 className="text-lg font-bold text-[#212529] mb-4">استعادة كلمة المرور</h2>
 
         {step === 1 && (
           <form onSubmit={handleRequest} className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#6C757D]">
               أدخل رقم الواتساب المسجل. سيتم إرسال رمز تحقق عبر الواتساب.
             </p>
             <input
@@ -77,15 +77,15 @@ export default function ForgotPasswordPage() {
                 if (val.length <= 10) setPhone(val);
               }}
               placeholder="0XXXXXXXXX"
-              className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none text-left"
+              className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none text-left"
               dir="ltr"
               required
             />
-            <p className="text-xs text-gray-400 mt-1">10 أرقام تبدأ بصفر</p>
+            <p className="text-xs text-[#6C757D] mt-1">10 أرقام تبدأ بصفر</p>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-accent-600 text-white rounded-xl font-bold hover:bg-accent-700 disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 bg-[#2B8A3E] text-white rounded-[12px] font-bold hover:bg-[#237032] disabled:opacity-50 transition-colors"
             >
               {loading ? 'جاري الإرسال...' : 'إرسال رمز التحقق'}
             </button>
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
 
         {step === 2 && (
           <form onSubmit={handleVerify} className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#6C757D]">
               أدخل الرمز الذي وصلك عبر الواتساب
             </p>
             <input
@@ -102,14 +102,14 @@ export default function ForgotPasswordPage() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="رمز التحقق"
-              className="w-full px-3 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none text-center text-2xl font-bold tracking-[1em]"
+              className="w-full px-3 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none text-center text-2xl font-bold tracking-[1em]"
               dir="ltr"
               required
             />
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-accent-600 text-white rounded-xl font-bold hover:bg-accent-700 disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 bg-[#2B8A3E] text-white rounded-[12px] font-bold hover:bg-[#237032] disabled:opacity-50 transition-colors"
             >
               {loading ? 'جاري التحقق...' : 'تأكيد'}
             </button>
@@ -118,27 +118,28 @@ export default function ForgotPasswordPage() {
 
         {step === 3 && (
           <form onSubmit={handleReset} className="space-y-4">
-            <p className="text-sm text-gray-500">أدخل كلمة المرور الجديدة</p>
-              <div className="relative">
+            <p className="text-sm text-[#6C757D]">أدخل كلمة المرور الجديدة</p>
+            <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="كلمة المرور الجديدة"
-                className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent-500 focus:border-accent-500 outline-none"
+                className="w-full pl-10 pr-3 py-2.5 border border-[#DEE2E6] rounded-[12px] focus:ring-2 focus:ring-[#2B8A3E] focus:border-[#2B8A3E] outline-none"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C757D] hover:text-[#212529]"
               >
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
-            </div>          <button
+            </div>
+            <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-accent-600 text-white rounded-xl font-bold hover:bg-accent-700 disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 bg-[#2B8A3E] text-white rounded-[12px] font-bold hover:bg-[#237032] disabled:opacity-50 transition-colors"
             >
               {loading ? 'جاري التغيير...' : 'تغيير كلمة المرور'}
             </button>
@@ -147,7 +148,7 @@ export default function ForgotPasswordPage() {
 
         <button
           onClick={() => navigate('/login')}
-          className="mt-4 text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+          className="mt-4 text-sm text-[#6C757D] hover:text-[#212529] flex items-center gap-1"
         >
           <FiArrowLeft size={14} />
           رجوع لتسجيل الدخول

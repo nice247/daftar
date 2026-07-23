@@ -123,14 +123,14 @@ export default function SubscriptionPage() {
 
   return (
     <div className="space-y-6 p-4 animate-fade-in pb-8">
-      <div className="bg-white rounded-xl p-5 card-shadow">
-        <h2 className="text-lg font-bold text-gray-800 mb-2">حالة الاشتراك</h2>
+      <div className="bg-white rounded-[12px] p-5 border border-[#DEE2E6] card-shadow">
+        <h2 className="text-lg font-bold text-[#212529] mb-2">حالة الاشتراك</h2>
         {isSubscriptionActive ? (
-          <div className="flex items-center gap-3 text-green-600">
+          <div className="flex items-center gap-3 text-[#2B8A3E]">
             <CheckCircle size={24} />
             <div>
               <p className="font-bold">الاشتراك مفعل</p>
-              <p className="text-sm text-gray-500">ينتهي {daysRemaining} ({formatDate(user.subscription_end_date)})</p>
+              <p className="text-sm text-[#6C757D]">ينتهي {daysRemaining} ({formatDate(user.subscription_end_date)})</p>
             </div>
           </div>
         ) : (
@@ -138,7 +138,7 @@ export default function SubscriptionPage() {
             <AlertTriangle size={24} />
             <div>
               <p className="font-bold">الاشتراك غير مفعل</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#6C757D]">
                 {user?.subscription_end_date ? `انتهى ${daysRemaining} (${formatDate(user.subscription_end_date)})` : 'لا يوجد اشتراك حالي'}
               </p>
             </div>
@@ -147,51 +147,51 @@ export default function SubscriptionPage() {
       </div>
 
       {subscription && subscription.status === 'PENDING' && (
-        <div className="bg-yellow-50 border-r-4 border-yellow-400 p-4 rounded-lg">
-          <div className="flex">
-            <div className="py-1"><AlertTriangle className="h-6 w-6 text-yellow-500 mr-3" /></div>
+        <div className="bg-[#F8F9FA] border border-amber-500/30 p-4 rounded-[12px]">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
             <div>
-              <p className="font-bold">لديك طلب تجديد قيد المراجعة.</p>
-              <p className="text-sm">سيتم إشعارك عند تفعيله من قبل الإدارة.</p>
+              <p className="font-bold text-[#212529] text-sm">لديك طلب تجديد قيد المراجعة.</p>
+              <p className="text-xs text-[#6C757D]">سيتم إشعارك عند تفعيله من قبل الإدارة.</p>
             </div>
           </div>
         </div>
       )}
 
       {(!subscription || subscription.status !== 'PENDING') && (
-        <div className="bg-white rounded-xl p-5 card-shadow space-y-4">
-          <h2 className="text-lg font-bold text-gray-800">تجديد الاشتراك</h2>
+        <div className="bg-white rounded-[12px] p-5 border border-[#DEE2E6] card-shadow space-y-4">
+          <h2 className="text-lg font-bold text-[#212529]">تجديد الاشتراك</h2>
           
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 text-center">
-            <p className="text-sm text-primary-800 mb-2 font-bold">الرسوم الأساسية: {Number(monthlyPrice).toLocaleString()} ج.س للشهر الواحد</p>
-            <p className="text-xs text-primary-600 mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: {(Number(monthlyPrice) * 10).toLocaleString()} تعني 10 أشهر)</p>
-            <p className="text-sm text-primary-800">قم بالتحويل إلى حساب بنكك التالي:</p>
+          <div className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px] p-4 text-center">
+            <p className="text-sm text-[#212529] mb-2 font-bold">الرسوم الأساسية: {Number(monthlyPrice).toLocaleString()} ج.س للشهر الواحد</p>
+            <p className="text-xs text-[#6C757D] mb-3">يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: {(Number(monthlyPrice) * 10).toLocaleString()} تعني 10 أشهر)</p>
+            <p className="text-sm text-[#6C757D]">قم بالتحويل إلى حساب بنكك التالي:</p>
             <div className="flex items-center justify-center gap-2 my-2">
-              <p className="text-2xl font-mono font-bold text-primary-900">{ADMIN_ACCOUNT_NUMBER}</p>
-              <button onClick={() => copyToClipboard(ADMIN_ACCOUNT_NUMBER)} className="text-primary-600 hover:text-primary-800">
+              <p className="text-2xl font-mono font-bold text-[#2B8A3E]">{ADMIN_ACCOUNT_NUMBER}</p>
+              <button onClick={() => copyToClipboard(ADMIN_ACCOUNT_NUMBER)} className="text-[#6C757D] hover:text-[#212529]">
                 <Copy size={20} />
               </button>
             </div>
-            <p className="text-sm font-bold text-primary-700 mt-2">بإسم {ADMIN_ACCOUNT_NAME}</p>
+            <p className="text-sm font-bold text-[#212529] mt-2">بإسم {ADMIN_ACCOUNT_NAME}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">إرفاق إشعار الدفع</label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <label className="block text-sm font-medium text-[#6C757D] mb-2">إرفاق إشعار الدفع</label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-[#DEE2E6] border-dashed rounded-[12px] bg-[#F8F9FA]">
               <div className="space-y-1 text-center">
                 {preview ? (
-                  <img src={preview} alt="Preview" className="mx-auto h-40 rounded-md" />
+                  <img src={preview} alt="Preview" className="mx-auto h-40 rounded-[12px] border border-[#DEE2E6]" />
                 ) : (
                   <>
-                    <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
-                      <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none">
+                    <UploadCloud className="mx-auto h-12 w-12 text-[#6C757D]" />
+                    <div className="flex text-sm text-[#6C757D] justify-center items-center gap-1">
+                      <label htmlFor="file-upload" className="relative cursor-pointer font-bold text-[#2B8A3E] hover:text-[#237032] focus-within:outline-none">
                         <span>اختر ملف</span>
                         <input id="file-upload" name="file-upload" type="file" className="sr-only" accept="image/*" onChange={handleFileChange} />
                       </label>
-                      <p className="pl-1">أو قم بسحبه وإفلاته هنا</p>
+                      <p className="text-xs">أو قم بسحبه وإفلاته هنا</p>
                     </div>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                    <p className="text-[10px] text-[#6C757D]">PNG, JPG, GIF up to 10MB</p>
                   </>
                 )}
               </div>
@@ -199,17 +199,17 @@ export default function SubscriptionPage() {
           </div>
 
           {ocrLoading && (
-            <div className="flex items-center justify-center gap-2 text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-[#6C757D]">
               <Loader className="animate-spin" size={20} />
               <span>جاري قراءة بيانات الإشعار...</span>
             </div>
           )}
 
           {ocrData && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+            <div className="bg-[#F8F9FA] border border-[#DEE2E6] rounded-[12px] p-3 space-y-2 text-sm text-[#212529]">
               <h4 className="font-bold">البيانات المستخرجة (للتأكيد):</h4>
               <p><strong>المبلغ:</strong> {ocrData.amount ? `${ocrData.amount.toLocaleString()} ج.س` : 'لم يتم التعرف عليه'}</p>
-              <p><strong>رقم العملية:</strong>{ocrData.reference_number || 'لم يتم التعرف عليه'}</p>
+              <p><strong>رقم العملية:</strong> {ocrData.reference_number || 'لم يتم التعرف عليه'}</p>
               <p><strong>التاريخ:</strong> {ocrData.date || 'لم يتم التعرف عليه'}</p>
             </div>
           )}
@@ -217,7 +217,7 @@ export default function SubscriptionPage() {
           <button
             onClick={handleUpload}
             disabled={uploading || !selectedFile}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50"
+            className="w-full py-3.5 bg-[#2B8A3E] hover:bg-[#237032] text-white rounded-[12px] font-bold text-sm disabled:opacity-50 transition-colors"
           >
             {uploading ? 'جاري الرفع...' : 'تأكيد الدفع'}
           </button>
