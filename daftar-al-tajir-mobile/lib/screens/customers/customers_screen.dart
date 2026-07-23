@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 import '../../models/customer_model.dart';
+import '../../models/merchant_debt_model.dart';
 import '../../database/local_db_helper.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -12,43 +14,52 @@ class CustomersScreen extends StatefulWidget {
   State<CustomersScreen> createState() => _CustomersScreenState();
 }
 
-class _CustomersScreenState extends State<CustomersScreen> {
-  List<CustomerModel> _customers = [];
-  bool _isLoading = true;
+class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   final ApiService _api = ApiService();
+
+  List<CustomerModel> _customers = [];
+  List<MerchantDebtModel> _merchantDebts = [];
+  bool _loading = true;
+  String _customerSearch = '';
+  String _supplierSearch = '';
+
+  final currencyFormat = NumberFormat('#,##0.##', 'ar');
+
+  String formatCurrency(dynamic val) {
+    if (val == null) return '0.00';
+    final numVal = double.tryParse(val.toString()) ?? 0.0;
+    return currencyFormat.format(numVal);
+  }
 
   @override
   void initState() {
     super.initState();
-    _fetchCustomers();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadData();
   }
 
-  void _fetchCustomers() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
     try {
-      final res = await _api.get('/customers/');
-      if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body);
-        final list = data.map((c) => CustomerModel.fromJson(c)).toList();
-        if (mounted) {
-          setState(() {
-            _customers = list;
-            _isLoading = false;
-          });
-        }
-        LocalDbHelper.instance.cacheCustomers(list);
-        return;
+      final resList = await Future.wait([
+        _api.get('/customers/'),
+        _api.get('/merchant-debts/'),
+      ]);
+
+      if (resList[0].statusCode == 200) {
+        final List cData = jsonDecode(resList[0].body);
+        _customers = cData.map((c) => CustomerModel.fromJson(c)).toList();
+        LocalDbHelper.instance.cacheCustomers(_customers);
+      }
+      if (resList[1].statusCode == 200) {
+        final List dData = jsonDecode(resList[1].body);
+        _merchantDebts = dData.map((d) => MerchantDebtModel.fromJson(d)).toList();
       }
     } catch (e) {
-      debugPrint("Fetching online customers failed, falling back to offline cache");
-    }
-
-    final offlineList = await LocalDbHelper.instance.getCachedCustomers();
-    if (mounted) {
-      setState(() {
-        _customers = offlineList;
-        _isLoading = false;
-      });
+      _customers = await LocalDbHelper.instance.getCachedCustomers();
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -59,7 +70,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("إضافة عميل جديد"),
+        title: const Text("إضافة عميل جديد", style: TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -71,35 +82,25 @@ class _CustomersScreenState extends State<CustomersScreen> {
             TextField(
               controller: phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: "رقم الهاتف"),
+              decoration: const InputDecoration(labelText: "رقم الهاتف (0XXXXXXXXX)"),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("إلغاء"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
-
               try {
                 await _api.post('/customers/', {
                   'name': nameCtrl.text.trim(),
                   'phone': phoneCtrl.text.trim(),
                 });
-                _fetchCustomers();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("تعذر إضافة العميل")),
-                  );
-                }
-              }
+                _loadData();
+              } catch (_) {}
             },
-            child: const Text("إضافة"),
+            child: const Text("حفظ العميل"),
           ),
         ],
       ),
@@ -113,7 +114,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("تسجيل دين على: ${customer.name}"),
+        title: Text("تسجيل دين على: ${customer.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -125,35 +126,25 @@ class _CustomersScreenState extends State<CustomersScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: noteCtrl,
-              decoration: const InputDecoration(labelText: "ملاحظات / البضاعة"),
+              decoration: const InputDecoration(labelText: "ملاحظات / وصف البضاعة"),
             ),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("إلغاء"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
             onPressed: () async {
               final amount = double.tryParse(amountCtrl.text) ?? 0;
               if (amount <= 0) return;
               Navigator.pop(ctx);
-
               try {
                 await _api.post('/customers/debt', {
                   'customer_id': customer.id,
                   'amount': amount,
                   'note': noteCtrl.text.trim(),
                 });
-                _fetchCustomers();
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("تم حفظ الدين في السجل")),
-                  );
-                }
-              }
+                _loadData();
+              } catch (_) {}
             },
             child: const Text("تسجيل الدين"),
           ),
@@ -163,7 +154,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 
   void _sendWhatsAppReminder(CustomerModel customer) async {
-    final messenger = ScaffoldMessenger.of(context);
     String phone = customer.phone.replaceAll(RegExp(r'\D'), '');
     if (phone.startsWith('0')) {
       phone = '249${phone.substring(1)}';
@@ -171,106 +161,240 @@ class _CustomersScreenState extends State<CustomersScreen> {
       phone = '249$phone';
     }
 
-    final message = "تذكير لطيف من متجرنا: المتبقي في حساب الدين الخاص بك هو ${customer.totalDebt} جنيه. شكراً لتواصلك معنا!";
+    final message = "تذكير لطيف من متجرنا: المتبقي في حساب الدين الخاص بك هو ${formatCurrency(customer.totalDebt)} جنيه. شكراً لتواصلك معنا!";
     final url = Uri.parse("https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      messenger.showSnackBar(
-        const SnackBar(content: Text("تعذر فتح تطبيق الواتساب")),
-      );
     }
+  }
+
+  void _showAddSupplierDebtDialog() {
+    final supplierNameCtrl = TextEditingController();
+    final supplierPhoneCtrl = TextEditingController();
+    final totalAmountCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("إضافة مستحق مورد جديد", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: supplierNameCtrl,
+              decoration: const InputDecoration(labelText: "اسم المورد / الشركة"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: supplierPhoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: "رقم هاتف المورد"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: totalAmountCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: "المبلغ المستحق (جنيه)"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = double.tryParse(totalAmountCtrl.text) ?? 0;
+              if (supplierNameCtrl.text.trim().isEmpty || amount <= 0) return;
+              Navigator.pop(ctx);
+              try {
+                await _api.post('/merchant-debts/', {
+                  'supplier_name': supplierNameCtrl.text.trim(),
+                  'supplier_phone': supplierPhoneCtrl.text.trim(),
+                  'total_amount': amount,
+                });
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("حفظ المستحق"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddCustomerDialog,
-        backgroundColor: const Color(0xFF059669),
-        icon: const Icon(Icons.person_add),
-        label: const Text("إضافة عميل"),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _customers.isEmpty
-              ? const Center(child: Text("لا يوجد عملاء مضافين حالياً"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _customers.length,
-                  itemBuilder: (ctx, index) {
-                    final customer = _customers[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: customer.totalDebt > 0
-                              ? Colors.red.withOpacity(0.15)
-                              : const Color(0xFF059669).withOpacity(0.15),
-                          child: Icon(
-                            customer.totalDebt > 0 ? Icons.money_off : Icons.check_circle,
-                            color: customer.totalDebt > 0 ? Colors.red : const Color(0xFF10B981),
-                          ),
-                        ),
-                        title: Text(
-                          customer.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text("الهاتف: ${customer.phone}"),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              "${customer.totalDebt} ج.س",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: customer.totalDebt > 0 ? Colors.red : Colors.green,
-                              ),
-                            ),
-                            const Text("إجمالي الدين", style: TextStyle(fontSize: 10, color: Colors.grey)),
-                          ],
-                        ),
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (bCtx) => Container(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    customer.name,
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ListTile(
-                                    leading: const Icon(Icons.add_card, color: Colors.red),
-                                    title: const Text("تسجيل دين جديد"),
-                                    onTap: () {
-                                      Navigator.pop(bCtx);
-                                      _showAddDebtDialog(customer);
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(Icons.chat, color: Colors.green),
-                                    title: const Text("إرسال تذكير بالواتساب"),
-                                    onTap: () {
-                                      Navigator.pop(bCtx);
-                                      _sendWhatsAppReminder(customer);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+    final filteredCustomers = _customers.where((c) {
+      return c.name.contains(_customerSearch) || c.phone.contains(_customerSearch);
+    }).toList();
+
+    final filteredSuppliers = _merchantDebts.where((s) {
+      return s.supplierName.contains(_supplierSearch);
+    }).toList();
+
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFF2B8A3E),
+            unselectedLabelColor: const Color(0xFF6C757D),
+            indicatorColor: const Color(0xFF2B8A3E),
+            tabs: const [
+              Tab(text: "ديون العملاء"),
+              Tab(text: "ديون الموردين"),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF2B8A3E)))
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Tab 1: Customers
+                    Scaffold(
+                      floatingActionButton: FloatingActionButton.extended(
+                        onPressed: _showAddCustomerDialog,
+                        backgroundColor: const Color(0xFF2B8A3E),
+                        icon: const Icon(Icons.person_add),
+                        label: const Text("عميل جديد"),
                       ),
-                    );
-                  },
+                      body: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: "بحث عن عميل بالاسم أو الهاتف...",
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                              onChanged: (val) => setState(() => _customerSearch = val),
+                            ),
+                          ),
+                          Expanded(
+                            child: filteredCustomers.isEmpty
+                                ? const Center(child: Text("لا يوجد عملاء مطابقون"))
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    itemCount: filteredCustomers.length,
+                                    itemBuilder: (ctx, i) {
+                                      final customer = filteredCustomers[i];
+                                      return Card(
+                                        color: const Color(0xFFF8F9FA),
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          subtitle: Text("الهاتف: ${customer.phone}", style: const TextStyle(color: Color(0xFF6C757D))),
+                                          trailing: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                "${formatCurrency(customer.totalDebt)} ج.س",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: customer.totalDebt > 0 ? Colors.red : const Color(0xFF2B8A3E),
+                                                ),
+                                              ),
+                                              const Text("إجمالي الدين", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                                            ],
+                                          ),
+                                          onTap: () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              builder: (bCtx) => Container(
+                                                padding: const EdgeInsets.all(20),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(customer.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                                    const SizedBox(height: 16),
+                                                    ListTile(
+                                                      leading: const Icon(Icons.add_card, color: Colors.red),
+                                                      title: const Text("تسجيل دين جديد"),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _showAddDebtDialog(customer);
+                                                      },
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(Icons.chat, color: Color(0xFF2B8A3E)),
+                                                      title: const Text("إرسال تذكير بالواتساب"),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _sendWhatsAppReminder(customer);
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Tab 2: Suppliers
+                    Scaffold(
+                      floatingActionButton: FloatingActionButton.extended(
+                        onPressed: _showAddSupplierDebtDialog,
+                        backgroundColor: const Color(0xFF2B8A3E),
+                        icon: const Icon(Icons.add_business),
+                        label: const Text("مستحق مورد جديد"),
+                      ),
+                      body: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: "بحث عن مورد...",
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                              onChanged: (val) => setState(() => _supplierSearch = val),
+                            ),
+                          ),
+                          Expanded(
+                            child: filteredSuppliers.isEmpty
+                                ? const Center(child: Text("لا توجد ديون موردين مسجلة"))
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    itemCount: filteredSuppliers.length,
+                                    itemBuilder: (ctx, i) {
+                                      final item = filteredSuppliers[i];
+                                      return Card(
+                                        color: const Color(0xFFF8F9FA),
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        child: ListTile(
+                                          leading: const CircleAvatar(
+                                            backgroundColor: Colors.blueAccent,
+                                            child: Icon(Icons.local_shipping, color: Colors.white),
+                                          ),
+                                          title: Text(item.supplierName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          subtitle: Text("الهاتف: ${item.supplierPhone ?? 'غير مدخل'}"),
+                                          trailing: Text(
+                                            "${formatCurrency(item.remainingAmount)} ج.س",
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
+        ),
+      ],
     );
   }
 }

@@ -2,30 +2,30 @@ class UserModel {
   final dynamic id;
   final String phone;
   final String? fullName;
-  final String? businessName;
+  final String? storeName;
   final String role; // 'admin' or 'merchant'
-  final String? subscriptionStatus;
-  final String? subscriptionExpiresAt;
+  final String status; // 'ACTIVE', 'FROZEN', 'PENDING'
+  final String? subscriptionEndDate;
 
   UserModel({
     required this.id,
     required this.phone,
     this.fullName,
-    this.businessName,
+    this.storeName,
     required this.role,
-    this.subscriptionStatus,
-    this.subscriptionExpiresAt,
+    required this.status,
+    this.subscriptionEndDate,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] ?? '',
       phone: json['phone'] ?? '',
-      fullName: json['full_name'] ?? json['fullName'] ?? json['store_name'],
-      businessName: json['store_name'] ?? json['business_name'] ?? json['businessName'],
+      fullName: json['full_name'] ?? json['fullName'] ?? json['store_name'] ?? '',
+      storeName: json['store_name'] ?? json['business_name'] ?? json['businessName'] ?? 'متجر التاجر',
       role: json['role'] ?? 'merchant',
-      subscriptionStatus: json['status'] ?? json['subscription_status'] ?? json['subscriptionStatus'],
-      subscriptionExpiresAt: json['subscription_end_date'] ?? json['subscription_expires_at'] ?? json['subscriptionExpiresAt'],
+      status: json['status'] ?? 'ACTIVE',
+      subscriptionEndDate: json['subscription_end_date'] ?? json['subscription_expires_at'] ?? json['subscriptionExpiresAt'],
     );
   }
 
@@ -34,13 +34,14 @@ class UserModel {
       'id': id,
       'phone': phone,
       'full_name': fullName,
-      'business_name': businessName,
-      'store_name': businessName,
+      'store_name': storeName,
+      'business_name': storeName,
       'role': role,
-      'subscription_status': subscriptionStatus,
-      'subscription_expires_at': subscriptionExpiresAt,
+      'status': status,
+      'subscription_end_date': subscriptionEndDate,
     };
   }
 
   bool get isAdmin => role.toLowerCase() == 'admin';
+  bool get isFrozen => status.toUpperCase() == 'FROZEN';
 }

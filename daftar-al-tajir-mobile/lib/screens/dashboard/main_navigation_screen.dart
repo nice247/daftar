@@ -5,7 +5,6 @@ import '../auth/login_screen.dart';
 import 'eod_screen.dart';
 import '../customers/customers_screen.dart';
 import '../expenses/expenses_screen.dart';
-import '../merchant_debts/merchant_debts_screen.dart';
 import '../reports/reports_screen.dart';
 import '../subscription/subscription_screen.dart';
 import '../admin/admin_screen.dart';
@@ -33,7 +32,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     EodScreen(),
     CustomersScreen(),
     ExpensesScreen(),
-    MerchantDebtsScreen(),
     ReportsScreen(),
   ];
 
@@ -41,7 +39,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     "التقفيل اليومي",
     "سجل الديون والعملاء",
     "المصروفات اليومية",
-    "ديون الموردين",
     "التقارير المالية",
   ];
 
@@ -55,7 +52,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         title: Text(_titles[_currentIndex]),
         actions: [
           IconButton(
-            icon: const Icon(Icons.verified_user_outlined),
+            icon: const Icon(Icons.stars, color: Color(0xFF2B8A3E)),
             onPressed: () {
               Navigator.push(
                 context,
@@ -66,7 +63,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           if (user?.isAdmin == true)
             IconButton(
-              icon: const Icon(Icons.admin_panel_settings),
+              icon: const Icon(Icons.admin_panel_settings, color: Color(0xFF2B8A3E)),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -82,16 +79,49 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF059669)),
-              accountName: Text(user?.businessName ?? "دفتر التاجر"),
+              decoration: const BoxDecoration(color: Color(0xFF2B8A3E)),
+              accountName: Text(user?.storeName ?? "دفتر التاجر", style: const TextStyle(fontWeight: FontWeight.bold)),
               accountEmail: Text("هاتف: ${user?.phone ?? ''}"),
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.store, color: Color(0xFF059669), size: 36),
+                child: Icon(Icons.store, color: Color(0xFF2B8A3E), size: 36),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.subscriptions),
+              leading: const Icon(Icons.space_dashboard_rounded, color: Color(0xFF2B8A3E)),
+              title: const Text("التقفيل اليومي"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 0);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people_alt_rounded, color: Color(0xFF2B8A3E)),
+              title: const Text("الديون والعملاء"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 1);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_rounded, color: Color(0xFF2B8A3E)),
+              title: const Text("المصروفات اليومية"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 2);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.analytics_rounded, color: Color(0xFF2B8A3E)),
+              title: const Text("التقارير المالية"),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _currentIndex = 3);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.verified_user_outlined),
               title: const Text("الاشتراك وإيصال بنكك"),
               onTap: () {
                 Navigator.pop(context);
@@ -103,8 +133,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
             if (user?.isAdmin == true)
               ListTile(
-                leading: const Icon(Icons.admin_panel_settings),
-                title: const Text("لوحة المدير (Admin)"),
+                leading: const Icon(Icons.admin_panel_settings, color: Colors.blue),
+                title: const Text("لوحة المدير (Admin Panel)"),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -128,13 +158,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ],
         ),
       ),
-      body: _screens[_currentIndex],
+      body: Column(
+        children: [
+          if (user?.isFrozen == true)
+            Container(
+              width: double.infinity,
+              color: Colors.red.shade700,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      "اشتراكك منتهي ومجمّد. يرجى سداد الاشتراك ورفع إيصال بنكك لتفعيل الحساب.",
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+                      );
+                    },
+                    child: const Text("سداد الآن", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(child: _screens[_currentIndex]),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF10B981),
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: const Color(0xFF2B8A3E),
+        unselectedItemColor: const Color(0xFF6C757D),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.space_dashboard_rounded),
@@ -147,10 +208,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long_rounded),
             label: "المصروفات",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping_rounded),
-            label: "الموردين",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.analytics_rounded),
