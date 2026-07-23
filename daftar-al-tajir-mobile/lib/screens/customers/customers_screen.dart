@@ -63,6 +63,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
     }
   }
 
+  // --- Customer Dialogs ---
   void _showAddCustomerDialog() {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
@@ -74,16 +75,9 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: "اسم العميل"),
-            ),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "اسم العميل")),
             const SizedBox(height: 12),
-            TextField(
-              controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: "رقم الهاتف (0XXXXXXXXX)"),
-            ),
+            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم الهاتف")),
           ],
         ),
         actions: [
@@ -93,14 +87,45 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/', {
-                  'name': nameCtrl.text.trim(),
-                  'phone': phoneCtrl.text.trim(),
-                });
+                await _api.post('/customers/', {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
                 _loadData();
               } catch (_) {}
             },
             child: const Text("حفظ العميل"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCustomerDialog(CustomerModel customer) {
+    final nameCtrl = TextEditingController(text: customer.name);
+    final phoneCtrl = TextEditingController(text: customer.phone);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("تعديل بيانات العميل", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "اسم العميل")),
+            const SizedBox(height: 12),
+            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم الهاتف")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              Navigator.pop(ctx);
+              try {
+                await _api.put('/customers/${customer.id}', {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("حفظ التعديل"),
           ),
         ],
       ),
@@ -118,16 +143,9 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: "المبلغ (جنيه)"),
-            ),
+            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ (جنيه)")),
             const SizedBox(height: 12),
-            TextField(
-              controller: noteCtrl,
-              decoration: const InputDecoration(labelText: "ملاحظات / وصف البضاعة"),
-            ),
+            TextField(controller: noteCtrl, decoration: const InputDecoration(labelText: "ملاحظات / وصف البضاعة")),
           ],
         ),
         actions: [
@@ -138,11 +156,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (amount <= 0) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/debt', {
-                  'customer_id': customer.id,
-                  'amount': amount,
-                  'note': noteCtrl.text.trim(),
-                });
+                await _api.post('/customers/debt', {'customer_id': customer.id, 'amount': amount, 'description': noteCtrl.text.trim()});
                 _loadData();
               } catch (_) {}
             },
@@ -151,6 +165,97 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         ],
       ),
     );
+  }
+
+  void _showPayDebtDialog(CustomerModel customer) {
+    final amountCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("سداد دين من: ${customer.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("المتبقي عليه حالياً: ${formatCurrency(customer.totalDebt)} ج.س", style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+            const SizedBox(height: 10),
+            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المسدد (جنيه)")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = double.tryParse(amountCtrl.text) ?? 0;
+              if (amount <= 0) return;
+              Navigator.pop(ctx);
+              try {
+                await _api.post('/customers/pay-debt', {'customer_id': customer.id, 'amount': amount});
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("تأكيد السداد"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWaiveDebtDialog(CustomerModel customer) {
+    final amountCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("إعفاء دين عن: ${customer.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المعفى (جنيه)")),
+            const SizedBox(height: 12),
+            TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: "سبب الإعفاء (اختياري)")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade800),
+            onPressed: () async {
+              final amount = double.tryParse(amountCtrl.text) ?? 0;
+              if (amount <= 0) return;
+              Navigator.pop(ctx);
+              try {
+                await _api.post('/customers/waive-debt', {'customer_id': customer.id, 'amount': amount, 'reason': reasonCtrl.text.trim()});
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("تأكيد الإعفاء"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteCustomer(CustomerModel customer) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("حذف العميل"),
+        content: Text("هل أنت متأكد من حذف العميل '${customer.name}'؟"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("إلغاء")),
+          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(ctx, true), child: const Text("حذف")),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _api.delete('/customers/${customer.id}');
+        _loadData();
+      } catch (_) {}
+    }
   }
 
   void _sendWhatsAppReminder(CustomerModel customer) async {
@@ -169,10 +274,11 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
     }
   }
 
+  // --- Supplier Dialogs ---
   void _showAddSupplierDebtDialog() {
-    final supplierNameCtrl = TextEditingController();
-    final supplierPhoneCtrl = TextEditingController();
-    final totalAmountCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final amountCtrl = TextEditingController();
 
     showDialog(
       context: context,
@@ -181,35 +287,24 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: supplierNameCtrl,
-              decoration: const InputDecoration(labelText: "اسم المورد / الشركة"),
-            ),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "اسم المورد / الشركة")),
             const SizedBox(height: 12),
-            TextField(
-              controller: supplierPhoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: "رقم هاتف المورد"),
-            ),
+            TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم هاتف المورد")),
             const SizedBox(height: 12),
-            TextField(
-              controller: totalAmountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: "المبلغ المستحق (جنيه)"),
-            ),
+            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المستحق (جنيه)")),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
           ElevatedButton(
             onPressed: () async {
-              final amount = double.tryParse(totalAmountCtrl.text) ?? 0;
-              if (supplierNameCtrl.text.trim().isEmpty || amount <= 0) return;
+              final amount = double.tryParse(amountCtrl.text) ?? 0;
+              if (nameCtrl.text.trim().isEmpty || amount <= 0) return;
               Navigator.pop(ctx);
               try {
                 await _api.post('/merchant-debts/', {
-                  'supplier_name': supplierNameCtrl.text.trim(),
-                  'supplier_phone': supplierPhoneCtrl.text.trim(),
+                  'supplier_name': nameCtrl.text.trim(),
+                  'supplier_phone': phoneCtrl.text.trim(),
                   'total_amount': amount,
                 });
                 _loadData();
@@ -220,6 +315,65 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
         ],
       ),
     );
+  }
+
+  void _showPaySupplierDebtDialog(MerchantDebtModel debt) {
+    final amountCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("سداد مستحق للمورد: ${debt.supplierName}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("المتبقي له حالياً: ${formatCurrency(debt.remainingAmount)} ج.س", style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+            const SizedBox(height: 10),
+            TextField(controller: amountCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: "المبلغ المدفوع (جنيه)")),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = double.tryParse(amountCtrl.text) ?? 0;
+              if (amount <= 0) return;
+              Navigator.pop(ctx);
+              try {
+                await _api.post('/merchant-debts/pay', {
+                  'merchant_debt_id': debt.id,
+                  'amount': amount,
+                  'payment_method': 'cash',
+                });
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("تأكيد السداد"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteSupplierDebt(MerchantDebtModel debt) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("حذف مستحق المورد"),
+        content: Text("هل أنت متأكد من حذف مستحق '${debt.supplierName}'؟"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("إلغاء")),
+          ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(ctx, true), child: const Text("حذف")),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _api.delete('/merchant-debts/${debt.id}');
+        _loadData();
+      } catch (_) {}
+    }
   }
 
   @override
@@ -304,13 +458,9 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                                           onTap: () {
                                             showModalBottomSheet(
                                               context: context,
-                                              builder: (bCtx) => Container(
-                                                padding: const EdgeInsets.all(20),
-                                                child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
+                                              builder: (bCtx) => SafeArea(
+                                                child: Wrap(
                                                   children: [
-                                                    Text(customer.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                                    const SizedBox(height: 16),
                                                     ListTile(
                                                       leading: const Icon(Icons.add_card, color: Colors.red),
                                                       title: const Text("تسجيل دين جديد"),
@@ -320,11 +470,43 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                                                       },
                                                     ),
                                                     ListTile(
+                                                      leading: const Icon(Icons.payments_outlined, color: Color(0xFF2B8A3E)),
+                                                      title: const Text("سداد دين"),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _showPayDebtDialog(customer);
+                                                      },
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(Icons.card_giftcard, color: Colors.amber),
+                                                      title: const Text("إعفاء من دين"),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _showWaiveDebtDialog(customer);
+                                                      },
+                                                    ),
+                                                    ListTile(
                                                       leading: const Icon(Icons.chat, color: Color(0xFF2B8A3E)),
                                                       title: const Text("إرسال تذكير بالواتساب"),
                                                       onTap: () {
                                                         Navigator.pop(bCtx);
                                                         _sendWhatsAppReminder(customer);
+                                                      },
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(Icons.edit, color: Colors.blue),
+                                                      title: const Text("تعديل بيانات العميل"),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _showEditCustomerDialog(customer);
+                                                      },
+                                                    ),
+                                                    ListTile(
+                                                      leading: const Icon(Icons.delete, color: Colors.red),
+                                                      title: const Text("حذف العميل", style: TextStyle(color: Colors.red)),
+                                                      onTap: () {
+                                                        Navigator.pop(bCtx);
+                                                        _deleteCustomer(customer);
                                                       },
                                                     ),
                                                   ],
@@ -378,10 +560,21 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                                             child: Icon(Icons.local_shipping, color: Colors.white),
                                           ),
                                           title: Text(item.supplierName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          subtitle: Text("الهاتف: ${item.supplierPhone ?? 'غير مدخل'}"),
-                                          trailing: Text(
-                                            "${formatCurrency(item.remainingAmount)} ج.س",
-                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                          subtitle: Text("المتبقي: ${formatCurrency(item.remainingAmount)} ج.س"),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.payments_outlined, color: Color(0xFF2B8A3E)),
+                                                onPressed: () => _showPaySupplierDebtDialog(item),
+                                                tooltip: "سداد المستحق",
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                                onPressed: () => _deleteSupplierDebt(item),
+                                                tooltip: "حذف المستحق",
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       );

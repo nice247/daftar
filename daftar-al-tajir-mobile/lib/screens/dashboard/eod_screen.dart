@@ -1,9 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
-import '../../providers/auth_provider.dart';
 
 class EodScreen extends StatefulWidget {
   const EodScreen({super.key});
@@ -168,31 +166,110 @@ class _EodScreenState extends State<EodScreen> {
     }
   }
 
-  void _showViewModal(String title, List<Widget> children) {
-    showModalBottomSheet(
+  // --- Live View Modals ---
+  void _openExpensesModal() async {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      builder: (ctx) => AlertDialog(
+        title: const Text("سجل المصروفات"),
+        content: FutureBuilder(
+          future: _api.get('/expenses/'),
+          builder: (fCtx, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final res = snapshot.data as dynamic;
+            if (res.statusCode != 200) return const Text("فشل في التحميل");
+            final List list = jsonDecode(res.body);
+            if (list.isEmpty) return const Text("لا توجد مصروفات مسجلة");
+            return SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (lCtx, i) {
+                  final exp = list[i];
+                  return ListTile(
+                    title: Text("${formatCurrency(exp['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                    subtitle: Text("${exp['category']} - ${exp['description'] ?? ''}"),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        await _api.delete('/expenses/${exp['id']}');
+                        Navigator.pop(ctx);
+                        _openExpensesModal();
+                        _loadData();
+                      },
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-              ],
-            ),
-            const Divider(),
-            const SizedBox(height: 10),
-            ...children,
-          ],
+    );
+  }
+
+  void _openPurchasesModal() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("المشتريات السابقة (تجديد مخزون)"),
+        content: FutureBuilder(
+          future: _api.get('/expenses/', queryParams: {'category': 'RESTOCK'}),
+          builder: (fCtx, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final res = snapshot.data as dynamic;
+            if (res.statusCode != 200) return const Text("فشل في التحميل");
+            final List list = jsonDecode(res.body);
+            if (list.isEmpty) return const Text("لا توجد مشتريات مسجلة");
+            return SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (lCtx, i) {
+                  final p = list[i];
+                  return ListTile(
+                    title: Text("${formatCurrency(p['amount'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text("بتاريخ: ${p['created_at'] ?? ''}"),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openMerchantDebtsModal() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("ديون التاجر للموردين"),
+        content: FutureBuilder(
+          future: _api.get('/merchant-debts/'),
+          builder: (fCtx, snapshot) {
+            if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            final res = snapshot.data as dynamic;
+            if (res.statusCode != 200) return const Text("فشل في التحميل");
+            final List list = jsonDecode(res.body);
+            if (list.isEmpty) return const Text("لا توجد ديون مسجلة");
+            return SizedBox(
+              width: double.maxFinite,
+              height: 300,
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (lCtx, i) {
+                  final d = list[i];
+                  return ListTile(
+                    title: Text(d['supplier_name'] ?? 'مورد', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text("المتبقي: ${formatCurrency(d['remaining'] ?? d['total_amount'])} ج.س"),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );
@@ -312,7 +389,7 @@ class _EodScreenState extends State<EodScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showViewModal("سجل المصروفات", [const Text("لا توجد مصروفات مسجلة لليوم")]),
+                  onPressed: _openExpensesModal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFF0F0),
                     foregroundColor: const Color(0xFFC92A2A),
@@ -326,7 +403,7 @@ class _EodScreenState extends State<EodScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showViewModal("المشتريات السابقة", [const Text("المشتريات المسجلة بجدول المخزون")]),
+                  onPressed: _openPurchasesModal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFF9DB),
                     foregroundColor: const Color(0xFFD97706),
@@ -340,7 +417,7 @@ class _EodScreenState extends State<EodScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showViewModal("ديون التاجر", [const Text("قائمة ديون الشركات والموردين")]),
+                  onPressed: _openMerchantDebtsModal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE7F5FF),
                     foregroundColor: const Color(0xFF1C7ED6),

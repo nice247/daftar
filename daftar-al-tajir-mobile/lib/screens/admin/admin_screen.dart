@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/api_service.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -16,13 +17,15 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Map<String, dynamic>? _stats;
   List<dynamic> _users = [];
   List<dynamic> _pendingSubs = [];
+  Map<String, dynamic> _settings = {'monthly_price': 10000, 'quarterly_price': 30000, 'semi_annual_price': 60000};
   bool _loading = true;
+  bool _savingSettings = false;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -33,11 +36,13 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
         _api.get('/admin/stats'),
         _api.get('/admin/users'),
         _api.get('/subscriptions/pending'),
+        _api.get('/admin/settings'),
       ]);
 
       if (resList[0].statusCode == 200) _stats = jsonDecode(resList[0].body);
       if (resList[1].statusCode == 200) _users = jsonDecode(resList[1].body);
       if (resList[2].statusCode == 200) _pendingSubs = jsonDecode(resList[2].body);
+      if (resList[3].statusCode == 200) _settings = jsonDecode(resList[3].body);
     } catch (_) {}
     finally {
       if (mounted) setState(() => _loading = false);
@@ -48,6 +53,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
+    final daysCtrl = TextEditingController(text: "30");
     String role = 'merchant';
 
     showDialog(
@@ -55,46 +61,41 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDState) => AlertDialog(
           title: const Text("إضافة مستخدم جديد", style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text("تاجر"),
-                      selected: role == 'merchant',
-                      onSelected: (val) => setDState(() => role = 'merchant'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("تاجر"),
+                        selected: role == 'merchant',
+                        onSelected: (val) => setDState(() => role = 'merchant'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text("أدمن"),
-                      selected: role == 'admin',
-                      onSelected: (val) => setDState(() => role = 'admin'),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Text("أدمن"),
+                        selected: role == 'admin',
+                        onSelected: (val) => setDState(() => role = 'admin'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: "رقم الهاتف (0XXXXXXXXX)"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "الاسم / اسم المتجر"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "كلمة المرور المؤقتة"),
-              ),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "رقم الهاتف (0XXXXXXXXX)")),
+                const SizedBox(height: 12),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "الاسم / اسم المتجر")),
+                const SizedBox(height: 12),
+                TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(labelText: "كلمة المرور المؤقتة")),
+                if (role == 'merchant') ...[
+                  const SizedBox(height: 12),
+                  TextField(controller: daysCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: "صلاحية الاشتراك (أيام)")),
+                ]
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
@@ -108,7 +109,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     'store_name': nameCtrl.text.trim(),
                     'password': passwordCtrl.text.trim(),
                     'role': role,
-                    'subscription_days': 30,
+                    'subscription_days': int.tryParse(daysCtrl.text) ?? 30,
                   });
                   _loadData();
                 } catch (_) {}
@@ -132,14 +133,92 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     } catch (_) {}
   }
 
-  void _handleExtendSub(dynamic user) async {
+  void _handleExtendSub(dynamic user) {
+    final daysCtrl = TextEditingController(text: "30");
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("تمديد اشتراك: ${user['store_name']}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: daysCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: "عدد الأيام للتمديد"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            onPressed: () async {
+              final days = int.tryParse(daysCtrl.text) ?? 30;
+              Navigator.pop(ctx);
+              try {
+                await _api.post('/admin/subscriptions/extend', {
+                  'user_id': user['id'],
+                  'days': days,
+                });
+                _loadData();
+              } catch (_) {}
+            },
+            child: const Text("تأكيد التمديد"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendRenewalReminder(dynamic user) async {
+    String phone = (user['phone'] ?? '').replaceAll(RegExp(r'\D'), '');
+    if (phone.startsWith('0')) phone = '249${phone.substring(1)}';
+    final message = "مرحباً بك في دفتر التاجر يا ${user['store_name']}، نود تذكيرك بأن اشتراكك قارب على الانتهاء. يرجى التجديد لضمان استمرار الخدمة.";
+    final url = Uri.parse("https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _reviewSubscription(dynamic sub, String action) async {
+    String? reason;
+    if (action == 'reject') {
+      final reasonCtrl = TextEditingController();
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("سبب رفض الاشتراك"),
+          content: TextField(controller: reasonCtrl, decoration: const InputDecoration(labelText: "سبب الرفض (اختياري)")),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("إلغاء")),
+            ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(ctx, true), child: const Text("رفض")),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+      reason = reasonCtrl.text.trim();
+    }
+
     try {
-      await _api.post('/admin/subscriptions/extend', {
-        'user_id': user['id'],
-        'days': 30,
+      await _api.post('/subscriptions/review', {
+        'subscription_id': sub['id'],
+        'action': action,
+        'rejection_reason': reason,
       });
       _loadData();
     } catch (_) {}
+  }
+
+  Future<void> _saveSettings() async {
+    setState(() => _savingSettings = true);
+    try {
+      await _api.post('/admin/settings', {
+        'monthly_price': double.tryParse(_settings['monthly_price'].toString()) ?? 10000,
+        'quarterly_price': double.tryParse(_settings['quarterly_price'].toString()) ?? 30000,
+        'semi_annual_price': double.tryParse(_settings['semi_annual_price'].toString()) ?? 60000,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("تم حفظ إعدادات الأسعار بنجاح"), backgroundColor: Color(0xFF2B8A3E)),
+      );
+    } catch (_) {}
+    finally {
+      if (mounted) setState(() => _savingSettings = false);
+    }
   }
 
   @override
@@ -206,6 +285,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                   ],
                 ),
               ),
+              const Tab(text: "إعدادات الأسعار"),
             ],
           ),
         ),
@@ -288,9 +368,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
-                            decoration: const InputDecoration(
-                              hintText: "بحث برقم الهاتف أو الاسم",
-                            ),
+                            decoration: const InputDecoration(hintText: "بحث برقم الهاتف أو الاسم"),
                             onChanged: (val) => setState(() => _searchQuery = val),
                           ),
                         ),
@@ -366,6 +444,12 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                                         child: const Text("تمديد", style: TextStyle(color: Color(0xFF1C7ED6), fontSize: 12, fontWeight: FontWeight.bold)),
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                                      onPressed: () => _sendRenewalReminder(u),
+                                      tooltip: "تذكير بالواتساب",
+                                    ),
                                   ],
                                 ),
                               ],
@@ -404,19 +488,26 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                           ),
                           const SizedBox(height: 8),
                           if (sub['receipt_image'] != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(sub['receipt_image'], height: 120, width: double.infinity, fit: BoxFit.cover),
+                            InkWell(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (iCtx) => Dialog(
+                                    child: Image.network(sub['receipt_image'], fit: BoxFit.contain),
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(sub['receipt_image'], height: 120, width: double.infinity, fit: BoxFit.cover),
+                              ),
                             ),
                           const SizedBox(height: 10),
                           Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton(
-                                  onPressed: () async {
-                                    await _api.post('/subscriptions/review', {'subscription_id': sub['id'], 'action': 'approve'});
-                                    _loadData();
-                                  },
+                                  onPressed: () => _reviewSubscription(sub, 'approve'),
                                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
                                   child: const Text("قبول وتفعيل"),
                                 ),
@@ -424,10 +515,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                               const SizedBox(width: 8),
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () async {
-                                    await _api.post('/subscriptions/review', {'subscription_id': sub['id'], 'action': 'reject'});
-                                    _loadData();
-                                  },
+                                  onPressed: () => _reviewSubscription(sub, 'reject'),
                                   style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
                                   child: const Text("رفض", style: TextStyle(color: Colors.red)),
                                 ),
@@ -439,6 +527,51 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                     ),
                   );
                 },
+              ),
+
+              // Tab 3: Pricing Settings
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("إعدادات أسعار الاشتراكات", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 14),
+                        TextFormField(
+                          initialValue: _settings['monthly_price']?.toString() ?? '10000',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: "سعر الاشتراك الشهري (ج.س)"),
+                          onChanged: (v) => _settings['monthly_price'] = v,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          initialValue: _settings['quarterly_price']?.toString() ?? '30000',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: "سعر الاشتراك الربع سنوي - 3 أشهر (ج.س)"),
+                          onChanged: (v) => _settings['quarterly_price'] = v,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          initialValue: _settings['semi_annual_price']?.toString() ?? '60000',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(labelText: "سعر الاشتراك النصف سنوي - 6 أشهر (ج.س)"),
+                          onChanged: (v) => _settings['semi_annual_price'] = v,
+                        ),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _savingSettings ? null : _saveSettings,
+                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E), minimumSize: const Size.fromHeight(46)),
+                          child: _savingSettings
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text("✔ حفظ الأسعار الجديدة", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
