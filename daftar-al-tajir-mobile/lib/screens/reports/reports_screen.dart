@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../services/api_service.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -10,106 +11,268 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  Map<String, dynamic>? _reports;
-  bool _isLoading = true;
   final ApiService _api = ApiService();
+  Map<String, dynamic>? _reportData;
+  bool _loading = true;
+
+  final currencyFormat = NumberFormat('#,##0.##', 'ar');
+
+  String formatCurrency(dynamic val) {
+    if (val == null) return '0';
+    final numVal = double.tryParse(val.toString()) ?? 0.0;
+    return currencyFormat.format(numVal);
+  }
 
   @override
   void initState() {
     super.initState();
-    _fetchReports();
+    _loadReport();
   }
 
-  void _fetchReports() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadReport() async {
+    setState(() => _loading = true);
     try {
       final res = await _api.get('/reports/');
       if (res.statusCode == 200) {
-        setState(() {
-          _reports = jsonDecode(res.body);
-          _isLoading = false;
-        });
-        return;
+        _reportData = jsonDecode(res.body);
       }
-    } catch (e) {
-      debugPrint("Reports fetch error: $e");
+    } catch (_) {}
+    finally {
+      if (mounted) setState(() => _loading = false);
     }
-    setState(() => _isLoading = false);
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.15),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: () async => _fetchReports(),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF2B8A3E)));
+    }
+
+    final current = _reportData?['current_cycle'] ?? {};
+    final comparison = _reportData?['comparison'];
+    final prevCycle = comparison?['previous_cycle'];
+    final totalDebts = _reportData?['total_debts_outstanding'] ?? 0.0;
+
+    final double avgSales = double.tryParse(comparison?['average_sales']?.toString() ?? '0') ?? 0.0;
+    final double avgExpenses = double.tryParse(comparison?['average_expenses']?.toString() ?? '0') ?? 0.0;
+    final double avgNet = avgSales - avgExpenses;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text("التقارير المالية", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+          const SizedBox(height: 14),
+
+          // Card 1: 📈 أرباح الدورة الحالية (فترة الشراء)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "الملخص والتقارير المالية",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text("أرباح الدورة الحالية (فترة الشراء)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      SizedBox(width: 6),
+                      Icon(Icons.trending_up, color: Color(0xFF2B8A3E), size: 20),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildStatCard(
-                    "إجمالي المبيعات",
-                    "${_reports?['total_sales'] ?? 0} ج.س",
-                    Icons.trending_up,
-                    Colors.green,
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: const Color(0xFFFFF0F0), borderRadius: BorderRadius.circular(12)),
+                          child: Column(
+                            children: [
+                              const Text("المصروفات والمشتريات", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                              const SizedBox(height: 4),
+                              Text(formatCurrency(current['total_expenses']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: const Color(0xFFE6FCF5), borderRadius: BorderRadius.circular(12)),
+                          child: Column(
+                            children: [
+                              const Text("إجمالي المبيعات والايرادات", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                              const SizedBox(height: 4),
+                              Text(formatCurrency(current['total_sales']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF212529))),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildStatCard(
-                    "إجمالي المصروفات",
-                    "${_reports?['total_expenses'] ?? 0} ج.س",
-                    Icons.money_off,
-                    Colors.orange,
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F5FF),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFA5D8FF)),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text("الأرباح الصافية لهذه الفترة", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1C7ED6))),
+                        const Text("(الايرادات - المشتريات والمصروفات)", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                        const SizedBox(height: 6),
+                        Text(
+                          "${formatCurrency(current['net_cashflow'])} ج.س",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: (current['net_cashflow'] ?? 0) >= 0 ? const Color(0xFF2B8A3E) : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  _buildStatCard(
-                    "إجمالي ديون العملاء عليك",
-                    "${_reports?['total_customer_debts'] ?? 0} ج.س",
-                    Icons.account_balance_wallet,
-                    Colors.red,
+                  if (current['start_date'] != null) ...[
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        "تغطي الفترة من: ${current['start_date']} ${current['end_date'] != null ? 'إلى ${current['end_date']}' : 'إلى اليوم'}",
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D), fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Card 2: $ الديون القائمة (عند العملاء)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text("الديون القائمة (عند العملاء)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      SizedBox(width: 6),
+                      Icon(Icons.attach_money, color: Color(0xFFD97706), size: 20),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildStatCard(
-                    "صافي الأرباح المقدّرة",
-                    "${_reports?['net_profit'] ?? 0} ج.س",
-                    Icons.savings,
-                    const Color(0xFF059669),
+                  const SizedBox(height: 10),
+                  Text(
+                    "${formatCurrency(totalDebts)} ج.س",
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red),
                   ),
                 ],
               ),
             ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Card 3: 📉 مقارنة فترات الشراء
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text("مقارنة فترات الشراء", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      SizedBox(width: 6),
+                      Icon(Icons.trending_down, color: Color(0xFF1C7ED6), size: 20),
+                    ],
+                  ),
+                  if (prevCycle != null) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("${formatCurrency(prevCycle['net_cashflow'])} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                        const Text("أرباح الفترة السابقة", style: TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+
+                  // Dark Navy Box: الأداء العام للنظام
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF212529),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "الأداء العام للنظام (متوسط فترات الشراء)",
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(formatCurrency(avgSales), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              const Text("متوسط الايرادات للدورة", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(formatCurrency(avgExpenses), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              const Text("متوسط المصروفات للدورة", style: TextStyle(color: Colors.white70, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${formatCurrency(avgNet)} ج.س",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: avgNet >= 0 ? const Color(0xFF2B8A3E) : Colors.red,
+                              ),
+                            ),
+                            const Text("متوسط صافي الربح", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "هذا التقرير التراكمي يغني عن التقارير (الربع/نصف سنوية) لأنه يقيس كفاءة دورة رأس المال الخاص بك.",
+                          style: TextStyle(color: Colors.white60, fontSize: 9),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

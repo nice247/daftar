@@ -1,6 +1,8 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 
 class SubscriptionScreen extends StatefulWidget {
@@ -11,135 +13,142 @@ class SubscriptionScreen extends StatefulWidget {
 }
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
-  File? _imageFile;
-  bool _isUploading = false;
   final ApiService _api = ApiService();
+  bool _uploading = false;
 
-  void _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
-    if (picked != null) {
-      setState(() {
-        _imageFile = File(picked.path);
-      });
-    }
-  }
-
-  void _uploadReceipt() async {
-    if (_imageFile == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _isUploading = true);
-
-    try {
-      final res = await _api.uploadFile('/subscriptions/upload-receipt', _imageFile!);
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text("تم رفع الإيصال وقراءته بالـ OCR بنجاح! تم إرسال الطلب للمراجعة"),
-            backgroundColor: Color(0xFF059669),
-          ),
-        );
-        if (mounted) {
-          setState(() => _imageFile = null);
-        }
-      } else {
-        messenger.showSnackBar(
-          const SnackBar(content: Text("فشل قراءة الإيصال، تأكد من وضوح صورة إيصال بنكك")),
-        );
-      }
-    } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text("تعذر رفع الإيصال، يرجى التأكد من الاتصال")),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
+  void _copyAccountNumber() {
+    Clipboard.setData(const ClipboardData(text: "7712964"));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("تم نسخ رقم حساب بنكك (7712964)"), backgroundColor: Color(0xFF2B8A3E)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("الاشتراك وإيصال بنكك")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: const [
-                    Icon(Icons.stars, color: Colors.amber, size: 48),
-                    SizedBox(height: 12),
-                    Text(
-                      "اشتراك دفتر التاجر",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "قم بتحويل مبلغ الاشتراك عبر تطبيق بنكك، ثم ارفع صورة الإيصال ليتم التحقق والتحليل بالذكاء الاصطناعي (OCR) تلقائياً.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
+    final user = Provider.of<AuthProvider>(context).user;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Card 1: حالة الاشتراك
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  const Text("حالة الاشتراك", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                  const SizedBox(height: 10),
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, color: Color(0xFF2B8A3E), size: 24),
+                      SizedBox(width: 6),
+                      Text("الاشتراك مفعل", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    user?.subscriptionEndDate != null
+                        ? "ينتهي الاشتراك بتاريخ: ${user!.subscriptionEndDate}"
+                        : "اشتراكك نشط",
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            Container(
-              height: 220,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade900,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: _imageFile != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.file(_imageFile!, fit: BoxFit.cover),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.receipt_long_rounded, size: 64, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text("لم يتم تحديد صورة إيصال بعد", style: TextStyle(color: Colors.grey)),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Card 2: تجديد الاشتراك
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Center(
+                    child: Text("تجديد الاشتراك", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Light green box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE6FCF5),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF96F2D7)),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "الرسوم الأساسية: 10,000 ج.س للشهر الواحد",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E)),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          "(يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)",
+                          style: TextStyle(fontSize: 10, color: Color(0xFF2B8A3E)),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text("قم بالتحويل إلى حساب بنكك التالي:", style: TextStyle(fontSize: 12, color: Color(0xFF212529))),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _copyAccountNumber,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.copy_outlined, color: Color(0xFF2B8A3E), size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "7712964",
+                                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E), letterSpacing: 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "باسم بهاء الدين عثمان اسحق محمد",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
+                        ),
                       ],
                     ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text("الكاميرا"),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text("المعرض"),
+
+                  const SizedBox(height: 16),
+                  const Text("إرفاق إشعار الدفع", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF6C757D))),
+                  const SizedBox(height: 8),
+
+                  // Dashed box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFDEE2E6), width: 1.5),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_upload_outlined, color: Color(0xFF6C757D), size: 40),
+                        const SizedBox(height: 8),
+                        const Text("اختر ملف أو قم بسحبه وإفلاته هنا", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+                        const SizedBox(height: 4),
+                        const Text("PNG, JPG, GIF up to 10MB", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _imageFile == null || _isUploading ? null : _uploadReceipt,
-              icon: const Icon(Icons.cloud_upload),
-              label: _isUploading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("رفع الإيصال للتحقق فورا (OCR)"),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

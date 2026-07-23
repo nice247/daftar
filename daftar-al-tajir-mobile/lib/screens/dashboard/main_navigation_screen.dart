@@ -4,9 +4,9 @@ import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import 'eod_screen.dart';
 import '../customers/customers_screen.dart';
-import '../expenses/expenses_screen.dart';
 import '../reports/reports_screen.dart';
 import '../subscription/subscription_screen.dart';
+import '../settings/settings_screen.dart';
 import '../admin/admin_screen.dart';
 import '../../services/update_service.dart';
 
@@ -28,134 +28,81 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  final List<Widget> _screens = const [
+  final List<Widget> _merchantScreens = const [
     EodScreen(),
     CustomersScreen(),
-    ExpensesScreen(),
     ReportsScreen(),
+    SubscriptionScreen(),
+    SettingsScreen(),
   ];
 
-  final List<String> _titles = const [
-    "التقفيل اليومي",
-    "سجل الديون والعملاء",
-    "المصروفات اليومية",
-    "التقارير المالية",
+  final List<Widget> _adminScreens = const [
+    AdminScreen(),
+    SettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.user;
+    final isAdmin = user?.isAdmin == true;
+
+    final currentScreens = isAdmin ? _adminScreens : _merchantScreens;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.stars, color: Color(0xFF2B8A3E)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-              );
-            },
-            tooltip: "الاشتراك وإيصال بنكك",
-          ),
-          if (user?.isAdmin == true)
-            IconButton(
-              icon: const Icon(Icons.admin_panel_settings, color: Color(0xFF2B8A3E)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminScreen()),
-                );
-              },
-              tooltip: "لوحة الإدارة",
-            ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              decoration: const BoxDecoration(color: Color(0xFF2B8A3E)),
-              accountName: Text(user?.storeName ?? "دفتر التاجر", style: const TextStyle(fontWeight: FontWeight.bold)),
-              accountEmail: Text("هاتف: ${user?.phone ?? ''}"),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.store, color: Color(0xFF2B8A3E), size: 36),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.space_dashboard_rounded, color: Color(0xFF2B8A3E)),
-              title: const Text("التقفيل اليومي"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 0);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.people_alt_rounded, color: Color(0xFF2B8A3E)),
-              title: const Text("الديون والعملاء"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 1);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.receipt_long_rounded, color: Color(0xFF2B8A3E)),
-              title: const Text("المصروفات اليومية"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 2);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.analytics_rounded, color: Color(0xFF2B8A3E)),
-              title: const Text("التقارير المالية"),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() => _currentIndex = 3);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.verified_user_outlined),
-              title: const Text("الاشتراك وإيصال بنكك"),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-                );
-              },
-            ),
-            if (user?.isAdmin == true)
-              ListTile(
-                leading: const Icon(Icons.admin_panel_settings, color: Colors.blue),
-                title: const Text("لوحة المدير (Admin Panel)"),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminScreen()),
-                  );
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.only(top: 30, left: 16, right: 16, bottom: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  await auth.logout();
+                  if (context.mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  }
                 },
+                child: const Text("خروج", style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.bold)),
               ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("تسجيل الخروج", style: TextStyle(color: Colors.red)),
-              onTap: () async {
-                final navState = Navigator.of(context);
-                await auth.logout();
-                navState.pushReplacement(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-            ),
-          ],
+              Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "دفتر التاجر",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF212529)),
+                      ),
+                      Text(
+                        isAdmin ? "مدير النظام" : (user?.storeName ?? "على بركة الله"),
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF6C757D)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2B8A3E),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      "دفتر",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       body: Column(
@@ -176,44 +123,64 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
-                      );
-                    },
+                    onPressed: () => setState(() => _currentIndex = 3),
                     child: const Text("سداد الآن", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
             ),
-          Expanded(child: _screens[_currentIndex]),
+          Expanded(child: currentScreens[_currentIndex < currentScreens.length ? _currentIndex : 0]),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex < currentScreens.length ? _currentIndex : 0,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF2B8A3E),
         unselectedItemColor: const Color(0xFF6C757D),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.space_dashboard_rounded),
-            label: "التقفيل",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_alt_rounded),
-            label: "العملاء",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_rounded),
-            label: "المصروفات",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_rounded),
-            label: "التقارير",
-          ),
-        ],
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        items: isAdmin
+            ? const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.shield_outlined),
+                  activeIcon: Icon(Icons.shield),
+                  label: "لوحة التحكم",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined),
+                  activeIcon: Icon(Icons.settings),
+                  label: "الإعدادات",
+                ),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: "إغلاق اليوم",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.people_outline),
+                  activeIcon: Icon(Icons.people),
+                  label: "العملاء والموردين",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.bar_chart_outlined),
+                  activeIcon: Icon(Icons.bar_chart),
+                  label: "التقارير",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.credit_card_outlined),
+                  activeIcon: Icon(Icons.credit_card),
+                  label: "الاشتراك",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined),
+                  activeIcon: Icon(Icons.settings),
+                  label: "الإعدادات",
+                ),
+              ],
       ),
     );
   }

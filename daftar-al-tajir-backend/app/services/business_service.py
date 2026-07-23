@@ -399,6 +399,18 @@ class BusinessService:
         )
         return result.scalar_one_or_none()
 
+    @staticmethod
+    async def has_restock_since(db: AsyncSession, user_id: UUID, min_date: date) -> bool:
+        """Check if a RESTOCK expense exists on or after min_date."""
+        result = await db.execute(
+            select(Expense).where(
+                Expense.user_id == user_id,
+                Expense.category == "RESTOCK",
+                Expense.created_at >= min_date
+            ).limit(1)
+        )
+        return result.scalar_one_or_none() is not None
+
     # ============ Cycle Management ============
 
     @staticmethod
@@ -538,10 +550,10 @@ class BusinessService:
         # Current cycle
         current = await BusinessService.get_current_cycle(db, user_id)
 
+        user_result = await db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+
         if not current:
-            # Create default cycle if none exists
-            user_result = await db.execute(select(User).where(User.id == user_id))
-            user = user_result.scalar_one_or_none()
             start = user.created_at.date() if user else date.today()
             current = RestockCycle(
                 user_id=user_id,
@@ -555,13 +567,23 @@ class BusinessService:
             await db.flush()
             await BusinessService._calculate_cycle_totals(db, current)
 
+        user_cycle_days = user.restock_cycle_days if (user and user.restock_cycle_days) else 7
+        expected_end = current.start_date + timedelta(days=user_cycle_days)
+        two_days_before_end = expected_end - timedelta(days=2)
+        has_recent_restock = await BusinessService.has_restock_since(db, user_id, min_date=two_days_before_end)
+        is_expired_without_restock = (date.today() >= expected_end) and not has_recent_restock
+
+        c_sales = Decimal(0) if is_expired_without_restock else current.total_sales
+        c_expenses = Decimal(0) if is_expired_without_restock else current.total_expenses
+        c_net = Decimal(0) if is_expired_without_restock else current.net_cashflow
+
         current_summary = CycleSummary(
             cycle_id=current.id,
             start_date=current.start_date,
             end_date=current.end_date,
-            total_sales=current.total_sales,
-            total_expenses=current.total_expenses,
-            net_cashflow=current.net_cashflow,
+            total_sales=c_sales,
+            total_expenses=c_expenses,
+            net_cashflow=c_net,
             total_debts_outstanding=Decimal(0)
         )
 

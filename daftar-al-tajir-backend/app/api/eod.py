@@ -53,14 +53,37 @@ async def get_cycle_status(
     """Get the current restock cycle status and progress."""
     cycle = await business_service.get_current_cycle(db, current_user.id)
     if not cycle:
-        return {"message": "لا توجد دورة نشطة", "status": "none"}
+        return {
+            "message": "لا توجد دورة نشطة",
+            "status": "none",
+            "days_remaining": 0,
+            "total_sales": 0,
+            "total_expenses": 0,
+            "net_cashflow": 0
+        }
 
-    from datetime import timedelta
+    from datetime import date, timedelta
     today = date.today()
     days_elapsed = (today - cycle.start_date).days
-    remaining = None
-    if current_user.restock_cycle_days:
-        remaining = max(0, current_user.restock_cycle_days - days_elapsed)
+    cycle_days = current_user.restock_cycle_days or 7
+    remaining = max(0, cycle_days - days_elapsed)
+
+    expected_end = cycle.start_date + timedelta(days=cycle_days)
+    two_days_before_end = expected_end - timedelta(days=2)
+    has_recent_restock = await business_service.has_restock_since(db, current_user.id, min_date=two_days_before_end)
+
+    if (today >= expected_end or remaining == 0) and not has_recent_restock:
+        return {
+            "cycle_id": str(cycle.id),
+            "start_date": cycle.start_date,
+            "end_date": cycle.end_date or expected_end,
+            "days_elapsed": days_elapsed,
+            "days_remaining": 0,
+            "total_sales": 0,
+            "total_expenses": 0,
+            "net_cashflow": 0,
+            "status": "EXPIRED"
+        }
 
     return {
         "cycle_id": str(cycle.id),
