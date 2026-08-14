@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from app.models.models import User
+from app.models.models import User, RestockCycle
 from app.services.business_service import business_service
 from app.api.deps import get_current_user, get_active_user
 from app.schemas.schemas import EODRequest, EODResponse, ExpenseItem, MessageResponse

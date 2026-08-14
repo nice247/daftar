@@ -1,6 +1,7 @@
-"""Authentication Service."""
 import random
 import string
+import uuid
+from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -210,7 +211,14 @@ class AuthService:
         if not token_data or not token_data.get("sub"):
             raise ValueError("توكن المصادقة غير صالح أو منتهي الصلاحية")
 
-        result = await db.execute(select(User).where(User.id == token_data.get("sub")))
+        sub = token_data.get("sub")
+
+        try:
+            user_id = UUID(str(sub))
+        except (ValueError, TypeError):
+            user_id = sub
+
+        result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
 
         if not user:

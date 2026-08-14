@@ -5,6 +5,7 @@ from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import selectinload
 from app.models.models import (
     User, Customer, Invoice, Expense, DebtPayment,
     OtherIncome, RestockCycle, Product, StockTransaction,
@@ -733,7 +734,9 @@ class BusinessService:
     async def get_products(db: AsyncSession, user_id: UUID) -> List[Product]:
         """Get all products for a merchant."""
         result = await db.execute(
-            select(Product).where(Product.user_id == user_id)
+            select(Product)
+            .options(selectinload(Product.stock_transactions))
+            .where(Product.user_id == user_id)
         )
         return list(result.scalars().all())
 

@@ -1,6 +1,7 @@
 """Expenses API endpoints."""
 from datetime import date
 from typing import Optional, List
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -84,7 +85,7 @@ async def add_expense(
 
 @router.delete("/{expense_id}", response_model=MessageResponse, summary="حذف مصروف")
 async def delete_expense(
-    expense_id: str,
+    expense_id: UUID,
     current_user: User = Depends(get_active_user),
     db: AsyncSession = Depends(get_db)
 ):
