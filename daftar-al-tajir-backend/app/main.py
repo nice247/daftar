@@ -247,11 +247,11 @@ async def health_check():
 async def get_app_version():
     """Public version check endpoint for auto-update mechanism."""
     return {
-        "versionCode": 2,
-        "versionName": "1.0.1",
+        "versionCode": 3,
+        "versionName": "1.0.2",
         "downloadUrl": "https://daftar-str8.onrender.com/static/app-arm64-v8a-release.apk",
         "forceUpdate": False,
-        "releaseNotes": "تحديث جديد يتضمن تحسينات الأداء واستقرار التحديث التلقائي لدفتر التاجر"
+        "releaseNotes": "تحديث الإصدار 1.0.2: إدارة المخزون والدورات المحاسبية وتناسق الواجهة وإعادة تعيين كلمة المرور"
     }
 
 @app.get("/ping", tags=["الصحة"])
