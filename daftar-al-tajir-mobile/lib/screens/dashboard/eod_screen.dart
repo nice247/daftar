@@ -29,7 +29,7 @@ class _EodScreenState extends State<EodScreen> {
   Map<String, dynamic>? _lastRestock;
   bool _loading = false;
   bool _saving = false;
-  bool _todaySaved = false;
+  Map<String, dynamic>? _todayData;
 
   final currencyFormat = NumberFormat('#,##0.##', 'ar');
 
@@ -63,7 +63,7 @@ class _EodScreenState extends State<EodScreen> {
       }
       if (responses[2].statusCode == 200) {
         final d2 = jsonDecode(responses[2].body);
-        if (d2['has_data'] == true) _todaySaved = true;
+        _todayData = d2;
       }
     } catch (e) {
       debugPrint("EOD load error (offline mode): $e");
@@ -92,6 +92,103 @@ class _EodScreenState extends State<EodScreen> {
       _totalSales + _totalOtherIncome + _totalMerchantDebts + _totalCustomerPayments;
 
   double get _netDailyProfit => _totalIncomesAll - _totalExpenses;
+
+  // Cumulative Display values for Today (persists on screen after saving entries)
+  double get _displayDailySales =>
+      (double.tryParse(_todayData?['total_sales']?.toString() ?? '0') ?? 0.0) + _totalSales;
+
+  double get _displayDailyExpenses =>
+      (double.tryParse(_todayData?['total_expenses']?.toString() ?? '0') ?? 0.0) + _totalExpenses;
+
+  double get _displayDailyDebtPayments =>
+      (double.tryParse(_todayData?['total_debt_payments']?.toString() ?? '0') ?? 0.0) + _totalCustomerPayments;
+
+  double get _displayDailyOtherIncome =>
+      (double.tryParse(_todayData?['total_other_income']?.toString() ?? '0') ?? 0.0) + _totalOtherIncome + _totalMerchantDebts;
+
+  double get _displayDailyIncomesAll =>
+      _displayDailySales + _displayDailyDebtPayments + _displayDailyOtherIncome;
+
+  double get _displayNetDailyProfit =>
+      _displayDailyIncomesAll - _displayDailyExpenses;
+
+  void _openOpeningStockDialog() {
+    final ctrl = TextEditingController(text: (_cycleStatus?['opening_stock_value'] ?? '0').toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("رصيد أول المدة (بضاعة البداية)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "سجل هنا قيمة البضاعة المقدرة التي كانت موجودة على الرف عند بداية هذه الدورة.",
+              style: TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: "القيمة بالجنيه (ج.س)", border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
+            onPressed: () async {
+              final val = double.tryParse(ctrl.text.trim()) ?? 0;
+              Navigator.pop(ctx);
+              await _api.post(ApiConfig.eodOpeningStock, {'amount': val});
+              _loadData();
+            },
+            child: const Text("حفظ"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openClosingStockDialog() {
+    final ctrl = TextEditingController(text: (_cycleStatus?['closing_stock_value'] ?? '0').toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("رصيد آخر المدة (بضاعة النهاية)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "سجل هنا قيمة البضاعة المتبقية على الرف عند نهاية هذه الدورة لحساب تكلفة البضاعة المباعة بدقة.",
+              style: TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: "القيمة بالجنيه (ج.س)", border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("إلغاء")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2B8A3E)),
+            onPressed: () async {
+              final val = double.tryParse(ctrl.text.trim()) ?? 0;
+              Navigator.pop(ctx);
+              await _api.post(ApiConfig.eodClosingStock, {'amount': val});
+              _loadData();
+            },
+            child: const Text("حفظ"),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _handleSave() async {
     final messenger = ScaffoldMessenger.of(context);
@@ -160,7 +257,6 @@ class _EodScreenState extends State<EodScreen> {
           ),
         );
         setState(() {
-          _todaySaved = true;
           _cashSalesCtrl.clear();
           _bankakSalesCtrl.clear();
           _merchantDebtsReceived.clear();
@@ -181,7 +277,6 @@ class _EodScreenState extends State<EodScreen> {
         ),
       );
       setState(() {
-        _todaySaved = true;
         _cashSalesCtrl.clear();
         _bankakSalesCtrl.clear();
         _merchantDebtsReceived.clear();
@@ -421,21 +516,27 @@ class _EodScreenState extends State<EodScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                // 3 Equal Symmetrical Boxes: صافي الأرباح | المصروفات | المبيعات الكلية
                 Row(
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        height: 74,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("صافي الأرباح", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                            const Text("صافي الأرباح", style: TextStyle(color: Colors.white70, fontSize: 11)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displayNet), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(formatCurrency(displayNet), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
                           ],
                         ),
                       ),
@@ -443,17 +544,22 @@ class _EodScreenState extends State<EodScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        height: 74,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("المصروفات/مشتريات", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                            const Text("المصروفات/مشتريات", style: TextStyle(color: Colors.white70, fontSize: 11)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displayExpenses), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(formatCurrency(displayExpenses), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
                           ],
                         ),
                       ),
@@ -461,22 +567,85 @@ class _EodScreenState extends State<EodScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        height: 74,
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("المبيعات الكلية", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                            const Text("المبيعات الكلية", style: TextStyle(color: Colors.white70, fontSize: 11)),
                             const SizedBox(height: 4),
-                            Text(formatCurrency(displaySales), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(formatCurrency(displaySales), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
                           ],
                         ),
                       ),
                     ),
                   ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Inventory & Stock Row (رصيد أول المدة | مشتريات الدورة | رصيد آخر المدة)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: _openClosingStockDialog,
+                        child: Column(
+                          children: [
+                            const Row(
+                              children: [
+                                Text("آخر المدة", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                SizedBox(width: 2),
+                                Icon(Icons.edit, size: 10, color: Colors.white70),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(formatCurrency(_cycleStatus?['closing_stock_value'] ?? 0), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      Container(width: 1, height: 24, color: Colors.white24),
+                      Column(
+                        children: [
+                          const Text("مشتريات الدورة", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                          const SizedBox(height: 2),
+                          Text(formatCurrency(_cycleStatus?['cycle_purchases'] ?? _cycleStatus?['total_expenses'] ?? 0), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      Container(width: 1, height: 24, color: Colors.white24),
+                      InkWell(
+                        onTap: _openOpeningStockDialog,
+                        child: Column(
+                          children: [
+                            const Row(
+                              children: [
+                                Text("أول المدة", style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                SizedBox(width: 2),
+                                Icon(Icons.edit, size: 10, color: Colors.white70),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(formatCurrency(_cycleStatus?['opening_stock_value'] ?? 0), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -506,16 +675,16 @@ class _EodScreenState extends State<EodScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("${formatCurrency(_totalIncomesAll)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Text("الإيرادات الكلية (مبيعات + إيرادات أخرى + ديون مستلمة)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                    Text("${formatCurrency(_displayDailyIncomesAll)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const Text("الإيرادات الكلية لليوم (مبيعات + إيرادات أخرى + ديون مستلمة)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("(${formatCurrency(_totalExpenses)}) ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                    const Text("إجمالي المصروفات (والمشتريات)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                    Text("(${formatCurrency(_displayDailyExpenses)}) ج.س", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                    const Text("إجمالي المصروفات لليوم (والمشتريات)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
                   ],
                 ),
                 const Padding(
@@ -531,11 +700,11 @@ class _EodScreenState extends State<EodScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${formatCurrency(_netDailyProfit)} ج.س", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+                      Text("${formatCurrency(_displayNetDailyProfit)} ج.س", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
                       const Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text("صافي الأرباح (اليوم)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E))),
+                          Text("صافي أرباح اليوم الكلية", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF2B8A3E))),
                           Text("(الإيرادات الكلية - المصروفات)", style: TextStyle(fontSize: 9, color: Color(0xFF6C757D))),
                         ],
                       ),
@@ -941,32 +1110,7 @@ class _EodScreenState extends State<EodScreen> {
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text("تسجيل وحفظ العمليات", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-
-          if (_todaySaved) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE6FCF5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2B8A3E).withOpacity(0.3)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle, color: Color(0xFF2B8A3E), size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "تم حفظ العمليات بنجاح — يمكنك إضافة وحفظ أي معاملات إضافية في أي وقت اليوم.",
-                      style: TextStyle(color: Color(0xFF2B8A3E), fontWeight: FontWeight.bold, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ]
+          const SizedBox(height: 24),
         ],
       ),
     );

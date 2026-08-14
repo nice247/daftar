@@ -491,54 +491,81 @@ class BusinessService:
 
     @staticmethod
     async def _calculate_cycle_totals(db: AsyncSession, cycle: RestockCycle):
-        """Calculate and update cycle totals."""
-        # Base Sales (EOD Cash + Bankak)
-        sales_result = await db.execute(
-            select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(
-                Invoice.user_id == cycle.user_id,
-                Invoice.created_at >= cycle.start_date,
-                Invoice.created_at <= (cycle.end_date or date.max),
-                Invoice.is_cancelled == False,
-                Invoice.invoice_type.in_(["EOD_CASH", "EOD_BANKAK"])
-            )
-        )
+        """Calculate and update cycle totals according to standard inventory accounting:
+        COGS = opening_stock_value + cycle_purchases - closing_stock_value
+        Gross Profit = total_sales - COGS
+        Net Profit = Gross Profit - Operating Expenses
+        """
+        from datetime import datetime, time, timezone
+        start_dt = datetime.combine(cycle.start_date, time.min).replace(tzinfo=timezone.utc)
+        end_dt = datetime.combine(cycle.end_date, time.max).replace(tzinfo=timezone.utc) if cycle.end_date else None
+
+        # Base Sales (EOD Cash + Bankak + Direct Sales)
+        inv_conds = [
+            Invoice.user_id == cycle.user_id,
+            Invoice.is_cancelled == False,
+            Invoice.invoice_type.in_(["EOD_CASH", "EOD_BANKAK", "CASH"]),
+            Invoice.created_at >= cycle.start_date
+        ]
+        if cycle.end_date:
+            inv_conds.append(Invoice.created_at <= cycle.end_date)
+        sales_result = await db.execute(select(func.coalesce(func.sum(Invoice.total_amount), 0)).where(*inv_conds))
         base_sales = sales_result.scalar() or Decimal(0)
 
-        # Debt Payments (Revenue)
-        payments_result = await db.execute(
-            select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(
-                DebtPayment.user_id == cycle.user_id,
-                DebtPayment.payment_date >= cycle.start_date,
-                DebtPayment.payment_date <= (cycle.end_date or date.max)
-            )
-        )
+        # Debt Payments Received (Revenue)
+        pay_conds = [
+            DebtPayment.user_id == cycle.user_id,
+            DebtPayment.payment_date >= cycle.start_date
+        ]
+        if cycle.end_date:
+            pay_conds.append(DebtPayment.payment_date <= cycle.end_date)
+        payments_result = await db.execute(select(func.coalesce(func.sum(DebtPayment.amount), 0)).where(*pay_conds))
         debt_payments = payments_result.scalar() or Decimal(0)
 
         # Other Incomes (Revenue)
-        incomes_result = await db.execute(
-            select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(
-                OtherIncome.user_id == cycle.user_id,
-                OtherIncome.income_date >= cycle.start_date,
-                OtherIncome.income_date <= (cycle.end_date or date.max)
-            )
-        )
+        inc_conds = [
+            OtherIncome.user_id == cycle.user_id,
+            OtherIncome.income_date >= cycle.start_date
+        ]
+        if cycle.end_date:
+            inc_conds.append(OtherIncome.income_date <= cycle.end_date)
+        incomes_result = await db.execute(select(func.coalesce(func.sum(OtherIncome.amount), 0)).where(*inc_conds))
         other_incomes = incomes_result.scalar() or Decimal(0)
 
-        # Total Sales / Revenues
+        # Total Revenues / Sales
         cycle.total_sales = base_sales + debt_payments + other_incomes
 
-        # Expenses (includes DEBT_WAIVER automatically since it's an Expense)
-        expenses_result = await db.execute(
-            select(func.coalesce(func.sum(Expense.amount), 0)).where(
-                Expense.user_id == cycle.user_id,
-                Expense.created_at >= cycle.start_date,
-                Expense.created_at <= (cycle.end_date or date.max)
-            )
-        )
-        cycle.total_expenses = expenses_result.scalar() or Decimal(0)
+        # Purchases of the cycle (RESTOCK expenses)
+        restock_conds = [
+            Expense.user_id == cycle.user_id,
+            Expense.category == "RESTOCK",
+            Expense.created_at >= start_dt
+        ]
+        if end_dt:
+            restock_conds.append(Expense.created_at <= end_dt)
+        restock_res = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(*restock_conds))
+        cycle.cycle_purchases = restock_res.scalar() or Decimal(0)
 
-        # Net Profit
-        cycle.net_cashflow = cycle.total_sales - cycle.total_expenses
+        # Operating Expenses (BILL, OTHER, MERCHANT_DEBT_PAY, DEBT_WAIVER)
+        op_conds = [
+            Expense.user_id == cycle.user_id,
+            Expense.category.in_(["BILL", "OTHER", "MERCHANT_DEBT_PAY", "DEBT_WAIVER"]),
+            Expense.created_at >= start_dt
+        ]
+        if end_dt:
+            op_conds.append(Expense.created_at <= end_dt)
+        op_res = await db.execute(select(func.coalesce(func.sum(Expense.amount), 0)).where(*op_conds))
+        operating_expenses = op_res.scalar() or Decimal(0)
+
+        # Total expenses for overall cashflow
+        cycle.total_expenses = cycle.cycle_purchases + operating_expenses
+
+        # Calculate COGS, Gross Profit, and Net Profit
+        opening = cycle.opening_stock_value or Decimal(0)
+        closing = cycle.closing_stock_value or Decimal(0)
+        cycle.cogs = max(Decimal(0), opening + cycle.cycle_purchases - closing)
+        cycle.gross_profit = cycle.total_sales - cycle.cogs
+        cycle.net_cashflow = cycle.gross_profit - operating_expenses
 
     @staticmethod
     async def _update_cycle_totals(db: AsyncSession, user_id: UUID):
@@ -598,9 +625,9 @@ class BusinessService:
         has_recent_restock = await BusinessService.has_restock_since(db, user_id, min_date=two_days_before_end)
         is_expired_without_restock = (date.today() >= expected_end) and not has_recent_restock
 
-        c_sales = current.total_sales
-        c_expenses = current.total_expenses
-        c_net = current.net_cashflow
+        c_sales = current.total_sales or Decimal(0)
+        c_expenses = current.total_expenses or Decimal(0)
+        c_net = current.net_cashflow or Decimal(0)
 
         current_summary = CycleSummary(
             cycle_id=current.id,
@@ -609,7 +636,12 @@ class BusinessService:
             total_sales=c_sales,
             total_expenses=c_expenses,
             net_cashflow=c_net,
-            total_debts_outstanding=Decimal(0)
+            total_debts_outstanding=Decimal(0),
+            opening_stock_value=current.opening_stock_value or Decimal(0),
+            cycle_purchases=current.cycle_purchases or Decimal(0),
+            closing_stock_value=current.closing_stock_value or Decimal(0),
+            cogs=current.cogs or Decimal(0),
+            gross_profit=current.gross_profit or Decimal(0),
         )
 
         # Total debts outstanding
@@ -636,17 +668,22 @@ class BusinessService:
                 cycle_id=prev_cycle.id,
                 start_date=prev_cycle.start_date,
                 end_date=prev_cycle.end_date,
-                total_sales=prev_cycle.total_sales,
-                total_expenses=prev_cycle.total_expenses,
-                net_cashflow=prev_cycle.net_cashflow,
-                total_debts_outstanding=Decimal(0)
+                total_sales=prev_cycle.total_sales or Decimal(0),
+                total_expenses=prev_cycle.total_expenses or Decimal(0),
+                net_cashflow=prev_cycle.net_cashflow or Decimal(0),
+                total_debts_outstanding=Decimal(0),
+                opening_stock_value=prev_cycle.opening_stock_value or Decimal(0),
+                cycle_purchases=prev_cycle.cycle_purchases or Decimal(0),
+                closing_stock_value=prev_cycle.closing_stock_value or Decimal(0),
+                cogs=prev_cycle.cogs or Decimal(0),
+                gross_profit=prev_cycle.gross_profit or Decimal(0),
             )
 
         # Average calculations
         avg_result = await db.execute(
             select(
-                func.avg(RestockCycle.total_sales),
-                func.avg(RestockCycle.total_expenses)
+                func.coalesce(func.avg(RestockCycle.total_sales), 0),
+                func.coalesce(func.avg(RestockCycle.total_expenses), 0)
             ).where(
                 RestockCycle.user_id == user_id,
                 RestockCycle.status == "CLOSED"
@@ -763,11 +800,16 @@ class BusinessService:
         )
         bankak_sales = bankak_result.scalar() or Decimal(0)
 
+        from datetime import datetime, time, timezone
+        start_of_day = datetime.combine(target, time.min).replace(tzinfo=timezone.utc)
+        end_of_day = datetime.combine(target, time.max).replace(tzinfo=timezone.utc)
+
         # Today's expenses
         expenses_result = await db.execute(
             select(Expense).where(
                 Expense.user_id == user_id,
-                Expense.created_at == target
+                Expense.created_at >= start_of_day,
+                Expense.created_at <= end_of_day
             ).order_by(Expense.id)
         )
         expenses = [

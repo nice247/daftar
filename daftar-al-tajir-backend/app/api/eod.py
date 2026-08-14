@@ -85,15 +85,23 @@ async def get_cycle_status(
             "status": "EXPIRED"
         }
 
+    # Ensure fresh calculations
+    await business_service._calculate_cycle_totals(db, cycle)
+
     return {
         "cycle_id": str(cycle.id),
         "start_date": cycle.start_date,
         "end_date": cycle.end_date,
         "days_elapsed": days_elapsed,
         "days_remaining": remaining,
-        "total_sales": cycle.total_sales,
-        "total_expenses": cycle.total_expenses,
-        "net_cashflow": cycle.net_cashflow,
+        "total_sales": float(cycle.total_sales or 0),
+        "total_expenses": float(cycle.total_expenses or 0),
+        "net_cashflow": float(cycle.net_cashflow or 0),
+        "opening_stock_value": float(cycle.opening_stock_value or 0),
+        "cycle_purchases": float(cycle.cycle_purchases or 0),
+        "closing_stock_value": float(cycle.closing_stock_value or 0),
+        "cogs": float(cycle.cogs or 0),
+        "gross_profit": float(cycle.gross_profit or 0),
         "status": cycle.status
     }
 
@@ -124,3 +132,44 @@ async def get_yesterday_data(
     yesterday = local_today - timedelta(days=1)
     result = await business_service.get_today_summary(db, current_user.id, target_date=yesterday)
     return result
+
+
+@router.post("/opening-stock", summary="تسجيل أو تحديث رصيد أول المدة للدورة")
+async def set_opening_stock(
+    payload: dict,
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Set opening stock value (بضاعة على الرف بداية الدورة)."""
+    from decimal import Decimal
+    amount = Decimal(str(payload.get("amount", 0)))
+    cycle = await business_service.get_current_cycle(db, current_user.id)
+    if not cycle:
+        from datetime import date
+        cycle = RestockCycle(user_id=current_user.id, start_date=date.today(), status="ACTIVE")
+        db.add(cycle)
+        await db.flush()
+
+    cycle.opening_stock_value = amount
+    await business_service._calculate_cycle_totals(db, cycle)
+    await db.commit()
+    return {"message": "تم حفظ رصيد أول المدة بنجاح", "opening_stock_value": float(cycle.opening_stock_value)}
+
+
+@router.post("/closing-stock", summary="تسجيل رصيد آخر المدة للدورة")
+async def set_closing_stock(
+    payload: dict,
+    current_user: User = Depends(get_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Set closing stock value (بضاعة متبقية على الرف نهاية الدورة)."""
+    from decimal import Decimal
+    amount = Decimal(str(payload.get("amount", 0)))
+    cycle = await business_service.get_current_cycle(db, current_user.id)
+    if not cycle:
+        raise HTTPException(status_code=404, detail="لا توجد دورة نشطة")
+
+    cycle.closing_stock_value = amount
+    await business_service._calculate_cycle_totals(db, cycle)
+    await db.commit()
+    return {"message": "تم حفظ رصيد آخر المدة بنجاح", "closing_stock_value": float(cycle.closing_stock_value)}

@@ -144,6 +144,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  // Inventory Cycle Analysis Box
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F9FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE9ECEF)),
+                    ),
+                    child: Column(
+                      children: [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("تحليل حركة البضاعة والمخزون", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF495057))),
+                            Icon(Icons.inventory_2_outlined, size: 16, color: Color(0xFF6C757D)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("${formatCurrency(current['opening_stock_value'] ?? 0)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text("رصيد أول المدة (بضاعة البداية)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("${formatCurrency(current['cycle_purchases'] ?? current['total_expenses'] ?? 0)} ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text("+ مشتريات الدورة الجديدة", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text("(${formatCurrency(current['closing_stock_value'] ?? 0)}) ج.س", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
+                            const Text("- رصيد آخر المدة (بضاعة متبقية)", style: TextStyle(fontSize: 11, color: Color(0xFF6C757D))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -155,7 +201,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       children: [
                         const Text("الأرباح الصافية لهذه الفترة", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1C7ED6))),
-                        const Text("(الايرادات - المشتريات والمصروفات)", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
+                        const Text("(الإيرادات - المصروفات والمشتريات)", style: TextStyle(fontSize: 10, color: Color(0xFF6C757D))),
                         const SizedBox(height: 6),
                         Text(
                           "${formatCurrency(current['net_cashflow'])} ج.س",

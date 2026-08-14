@@ -19,6 +19,8 @@ class ApiConfig {
   static const String eodCycleStatus = '/eod/cycle-status';
   static const String eodToday = '/eod/today';
   static const String eodYesterday = '/eod/yesterday';
+  static const String eodOpeningStock = '/eod/opening-stock';
+  static const String eodClosingStock = '/eod/closing-stock';
 
   // Customers & Debts
   static const String customers = '/customers/';

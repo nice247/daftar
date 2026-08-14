@@ -306,13 +306,18 @@ class DebtWaiverRequest(BaseModel):
 # ============ Report Schemas ============
 
 class CycleSummary(BaseModel):
-    cycle_id: Optional[UUID]
-    start_date: Optional[date]
-    end_date: Optional[date]
-    total_sales: Decimal
-    total_expenses: Decimal
-    net_cashflow: Decimal
-    total_debts_outstanding: Decimal
+    cycle_id: Optional[UUID] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    total_sales: Decimal = Decimal(0)
+    total_expenses: Decimal = Decimal(0)
+    net_cashflow: Decimal = Decimal(0)
+    total_debts_outstanding: Decimal = Decimal(0)
+    opening_stock_value: Decimal = Decimal(0)
+    cycle_purchases: Decimal = Decimal(0)
+    closing_stock_value: Decimal = Decimal(0)
+    cogs: Decimal = Decimal(0)
+    gross_profit: Decimal = Decimal(0)
 
 
 class CycleComparison(BaseModel):
