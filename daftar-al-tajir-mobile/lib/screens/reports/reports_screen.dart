@@ -49,9 +49,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     // If still null, generate initial local structure from SQLite
     if (_reportData == null) {
-      final debts = await LocalDbHelper.instance.getCachedCustomerDebts();
+      final customers = await LocalDbHelper.instance.getCachedCustomers();
       final expenses = await LocalDbHelper.instance.getCachedExpenses();
-      double totalDebts = debts.fold(0.0, (sum, d) => sum + (d.remainingAmount));
+      double totalDebts = customers.fold(0.0, (sum, c) => sum + (c.totalDebt));
       double totalExpenses = expenses.fold(0.0, (sum, e) => sum + (e.amount));
 
       _reportData = {

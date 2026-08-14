@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/api_config.dart';
@@ -139,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _shareApp() async {
     const shareText = "تطبيق دفتر التاجر 📊\nالنظام المتكامل لإدارة المبيعات والمصروفات والديون للتجار في السودان.\nللتواصل وتحميل التطبيق: https://wa.me/201280920179";
-    await Clipboard.setData(const ClipboardData(text: shareText));
+    await Clipboard.setData(ClipboardData(text: shareText));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
