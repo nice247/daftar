@@ -42,10 +42,33 @@ async def lifespan(app: FastAPI):
     # ========== STARTUP ==========
     logger.info(f"Starting {APP_NAME} in {APP_ENV} mode...")
 
-    # Create database tables
+    # Create database tables and ensure schema migrations
+    from sqlalchemy import text
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables created/verified")
+        # Safe idempotent migrations for existing tables
+        migration_statements = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS restock_cycle_days INTEGER DEFAULT 7;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date DATE;",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING_VERIFICATION';",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(10) DEFAULT 'merchant';",
+            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS debt_type VARCHAR(20) DEFAULT 'goods';",
+            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
+            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'unpaid';",
+            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS description TEXT;",
+            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
+            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE;",
+            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS description TEXT;",
+            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS description TEXT;",
+            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS starts_new_cycle BOOLEAN DEFAULT FALSE;",
+        ]
+        for stmt in migration_statements:
+            try:
+                await conn.execute(text(stmt))
+            except Exception as e:
+                logger.warning(f"Schema migration note ({stmt}): {e}")
+    logger.info("Database tables and column migrations verified")
 
     # Seed admin account
     await seed_admin()
