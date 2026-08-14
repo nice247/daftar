@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../config/api_config.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import 'backup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -71,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         payload['cycle_start_date'] = _cycleStartDate!.toIso8601String().split('T')[0];
       }
 
-      final res = await _api.put('/users/profile', payload);
+      final res = await _api.put(ApiConfig.userProfile, payload);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         messenger.showSnackBar(
@@ -363,7 +365,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           if (!user.isAdmin) const SizedBox(height: 14),
 
-          // 4. About Section (حول التطبيق)
+          // 4. Backup & Restore Section (النسخ الاحتياطي)
+          Card(
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2B8A3E).withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.cloud_sync_rounded, color: Color(0xFF2B8A3E)),
+              ),
+              title: const Text(
+                "النسخ الاحتياطي واستعادة البيانات",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              subtitle: const Text(
+                "حفظ نسخة سحابية أو تصدير بيانات دفترك لمشاركتها وحمايتها",
+                style: TextStyle(fontSize: 11, color: Color(0xFF6C757D)),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF6C757D)),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BackupScreen()),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // 5. About Section (حول التطبيق)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),

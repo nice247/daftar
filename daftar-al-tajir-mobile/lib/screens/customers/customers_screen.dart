@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../../config/api_config.dart';
 import '../../services/api_service.dart';
 import '../../models/customer_model.dart';
 import '../../models/merchant_debt_model.dart';
@@ -43,8 +44,8 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
     setState(() => _loading = true);
     try {
       final resList = await Future.wait([
-        _api.get('/customers/'),
-        _api.get('/merchant-debts/'),
+        _api.get(ApiConfig.customers),
+        _api.get(ApiConfig.merchantDebts),
       ]);
 
       if (resList[0].statusCode == 200) {
@@ -55,9 +56,11 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
       if (resList[1].statusCode == 200) {
         final List dData = jsonDecode(resList[1].body);
         _merchantDebts = dData.map((d) => MerchantDebtModel.fromJson(d)).toList();
+        LocalDbHelper.instance.cacheMerchantDebts(_merchantDebts);
       }
     } catch (e) {
       _customers = await LocalDbHelper.instance.getCachedCustomers();
+      _merchantDebts = await LocalDbHelper.instance.getCachedMerchantDebts();
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -94,9 +97,27 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/', {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
-                _loadData();
+                final res = await _api.post(ApiConfig.customers, {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
+                if (res.statusCode == 200 || res.statusCode == 201) {
+                  _loadData();
+                  return;
+                }
               } catch (_) {}
+
+              final localCust = CustomerModel(
+                id: 'local_cust_${DateTime.now().millisecondsSinceEpoch}',
+                name: nameCtrl.text.trim(),
+                phone: phoneCtrl.text.trim(),
+                totalDebt: 0.0,
+                isSynced: false,
+              );
+              await LocalDbHelper.instance.insertOfflineCustomer(localCust);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("تم حفظ العميل محلياً أوفلاين"), backgroundColor: Colors.amber),
+                );
+              }
+              _loadData();
             },
             child: const Text("حفظ العميل"),
           ),
@@ -129,7 +150,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (nameCtrl.text.trim().isEmpty) return;
               Navigator.pop(ctx);
               try {
-                await _api.put('/customers/${customer.id}', {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
+                await _api.put('${ApiConfig.customers}${customer.id}', {'name': nameCtrl.text.trim(), 'phone': phoneCtrl.text.trim()});
                 _loadData();
               } catch (_) {}
             },
@@ -165,9 +186,20 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (amount <= 0) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/debt', {'customer_id': customer.id, 'amount': amount, 'description': noteCtrl.text.trim()});
-                _loadData();
+                final res = await _api.post(ApiConfig.customerDebt, {'customer_id': customer.id, 'amount': amount, 'debt_type': 'DEBT', 'description': noteCtrl.text.trim()});
+                if (res.statusCode == 200 || res.statusCode == 201) {
+                  _loadData();
+                  return;
+                }
               } catch (_) {}
+
+              await LocalDbHelper.instance.insertOfflineCustomerDebt(customer.id, amount, noteCtrl.text.trim());
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("تم تسجيل الدين محلياً أوفلاين"), backgroundColor: Colors.amber),
+                );
+              }
+              _loadData();
             },
             child: const Text("تسجيل الدين"),
           ),
@@ -200,9 +232,20 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (amount <= 0) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/pay-debt', {'customer_id': customer.id, 'amount': amount});
-                _loadData();
+                final res = await _api.post(ApiConfig.customerDebtPay, {'customer_id': customer.id, 'amount': amount});
+                if (res.statusCode == 200 || res.statusCode == 201) {
+                  _loadData();
+                  return;
+                }
               } catch (_) {}
+
+              await LocalDbHelper.instance.insertOfflineDebtPayment(customer.id, amount);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("تم تسجيل السداد محلياً أوفلاين"), backgroundColor: Colors.amber),
+                );
+              }
+              _loadData();
             },
             child: const Text("تأكيد السداد"),
           ),
@@ -236,9 +279,20 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
               if (amount <= 0) return;
               Navigator.pop(ctx);
               try {
-                await _api.post('/customers/waive-debt', {'customer_id': customer.id, 'amount': amount, 'reason': reasonCtrl.text.trim()});
-                _loadData();
+                final res = await _api.post(ApiConfig.customerDebtWaive, {'customer_id': customer.id, 'amount': amount, 'reason': reasonCtrl.text.trim()});
+                if (res.statusCode == 200 || res.statusCode == 201) {
+                  _loadData();
+                  return;
+                }
               } catch (_) {}
+
+              await LocalDbHelper.instance.insertOfflineDebtWaiver(customer.id, amount, reasonCtrl.text.trim());
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("تم تسجيل الإعفاء محلياً أوفلاين"), backgroundColor: Colors.amber),
+                );
+              }
+              _loadData();
             },
             child: const Text("تأكيد الإعفاء"),
           ),
@@ -356,15 +410,38 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                 if (nameCtrl.text.trim().isEmpty || amount <= 0) return;
                 Navigator.pop(ctx);
                 try {
-                  await _api.post('/merchant-debts/', {
+                  final res = await _api.post(ApiConfig.merchantDebts, {
                     'supplier_name': nameCtrl.text.trim(),
                     'supplier_phone': phoneCtrl.text.trim(),
                     'debt_type': debtType,
                     'total_amount': amount,
                     'description': descCtrl.text.trim(),
                   });
-                  _loadData();
+                  if (res.statusCode == 200 || res.statusCode == 201) {
+                    _loadData();
+                    return;
+                  }
                 } catch (_) {}
+
+                final offlineDebt = MerchantDebtModel(
+                  id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+                  supplierName: nameCtrl.text.trim(),
+                  supplierPhone: phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
+                  debtType: debtType,
+                  totalAmount: amount,
+                  paidAmount: 0,
+                  remainingAmount: amount,
+                  status: 'unpaid',
+                  description: descCtrl.text.trim(),
+                  isSynced: false,
+                );
+                await LocalDbHelper.instance.insertOfflineMerchantDebt(offlineDebt);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("تم حفظ مستحق المورد محلياً أوفلاين"), backgroundColor: Colors.amber),
+                  );
+                }
+                _loadData();
               },
               child: const Text("حفظ المستحق"),
             ),
@@ -420,7 +497,7 @@ class _CustomersScreenState extends State<CustomersScreen> with SingleTickerProv
                 if (amount <= 0) return;
                 Navigator.pop(ctx);
                 try {
-                  await _api.post('/merchant-debts/pay', {
+                  final res = await _api.post(ApiConfig.merchantDebtPay, {
                     'merchant_debt_id': debt.id,
                     'amount': amount,
                     'payment_method': paymentMethod,

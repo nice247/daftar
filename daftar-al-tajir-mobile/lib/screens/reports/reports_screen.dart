@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../config/api_config.dart';
+import '../../database/local_db_helper.dart';
 import '../../services/api_service.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -32,11 +34,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _loadReport() async {
     setState(() => _loading = true);
     try {
-      final res = await _api.get('/reports/');
+      final res = await _api.get(ApiConfig.reports);
       if (res.statusCode == 200) {
         _reportData = jsonDecode(res.body);
+        if (_reportData != null) {
+          LocalDbHelper.instance.cacheReports(_reportData!);
+        }
       }
-    } catch (_) {}
+    } catch (_) {
+      _reportData = await LocalDbHelper.instance.getCachedReports();
+    }
     finally {
       if (mounted) setState(() => _loading = false);
     }

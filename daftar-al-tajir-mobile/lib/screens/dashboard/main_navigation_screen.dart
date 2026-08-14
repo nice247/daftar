@@ -9,6 +9,7 @@ import '../subscription/subscription_screen.dart';
 import '../settings/settings_screen.dart';
 import '../admin/admin_screen.dart';
 import '../../services/update_service.dart';
+import '../../widgets/offline_banner.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -107,6 +108,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       body: Column(
         children: [
+          const OfflineBanner(),
           if (user?.isFrozen == true)
             Container(
               width: double.infinity,

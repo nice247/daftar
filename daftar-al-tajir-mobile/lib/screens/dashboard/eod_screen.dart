@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../config/api_config.dart';
+import '../../database/local_db_helper.dart';
 import '../../services/api_service.dart';
 
 class EodScreen extends StatefulWidget {
@@ -47,9 +49,9 @@ class _EodScreenState extends State<EodScreen> {
     setState(() => _loading = true);
     try {
       final responses = await Future.wait([
-        _api.get('/eod/last-restock'),
-        _api.get('/eod/cycle-status'),
-        _api.get('/eod/today'),
+        _api.get(ApiConfig.eodLastRestock),
+        _api.get(ApiConfig.eodCycleStatus),
+        _api.get(ApiConfig.eodToday),
       ]);
 
       if (responses[0].statusCode == 200) {
@@ -64,7 +66,7 @@ class _EodScreenState extends State<EodScreen> {
         if (d2['has_data'] == true) _todaySaved = true;
       }
     } catch (e) {
-      debugPrint("EOD load error: $e");
+      debugPrint("EOD load error (offline mode): $e");
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -95,61 +97,60 @@ class _EodScreenState extends State<EodScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
 
-    try {
-      final cashSales = double.tryParse(_cashSalesCtrl.text) ?? 0;
-      final bankakSales = double.tryParse(_bankakSalesCtrl.text) ?? 0;
+    final cashSales = double.tryParse(_cashSalesCtrl.text) ?? 0;
+    final bankakSales = double.tryParse(_bankakSalesCtrl.text) ?? 0;
 
-      final formattedExpenses = _expenses.where((e) {
-        final amt = double.tryParse(e['amount'].toString()) ?? 0;
-        return amt > 0;
-      }).map((e) {
-        return {
-          'category': e['category'] ?? 'RESTOCK',
-          'amount': double.parse(e['amount'].toString()),
-          'description': e['description']?.isNotEmpty == true ? e['description'] : null,
-        };
-      }).toList();
-
-      final formattedOtherIncomes = _otherIncomes.where((i) {
-        final amt = double.tryParse(i['amount'].toString()) ?? 0;
-        return amt > 0;
-      }).map((i) {
-        return {
-          'category': i['category'] ?? 'other',
-          'amount': double.parse(i['amount'].toString()),
-          'description': i['description']?.isNotEmpty == true ? i['description'] : null,
-        };
-      }).toList();
-
-      // Map unassigned customer/merchant debts to other_incomes to keep drawer balanced
-      final List<Map<String, dynamic>> allOtherIncomes = [...formattedOtherIncomes];
-      
-      for (var d in _customerDebtPayments) {
-        final amt = double.tryParse(d['amount'].toString()) ?? 0;
-        if (amt > 0) {
-          allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'سداد دين عميل'});
-        }
-      }
-      
-      for (var d in _merchantDebtsReceived) {
-        final amt = double.tryParse(d['amount'].toString()) ?? 0;
-        if (amt > 0) {
-          allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'دين مستلم (على التاجر)'});
-        }
-      }
-
-      final eodPayload = {
-        'eod_date': DateTime.now().toIso8601String().split('T')[0],
-        'sales': {
-          'cash_sales': cashSales,
-          'bankak_sales': bankakSales,
-        },
-        'expenses': formattedExpenses,
-        'debt_payments': [],
-        'other_incomes': allOtherIncomes,
+    final formattedExpenses = _expenses.where((e) {
+      final amt = double.tryParse(e['amount'].toString()) ?? 0;
+      return amt > 0;
+    }).map((e) {
+      return {
+        'category': e['category'] ?? 'RESTOCK',
+        'amount': double.parse(e['amount'].toString()),
+        'description': e['description']?.isNotEmpty == true ? e['description'] : null,
       };
+    }).toList();
 
-      final res = await _api.post('/eod/save', eodPayload);
+    final formattedOtherIncomes = _otherIncomes.where((i) {
+      final amt = double.tryParse(i['amount'].toString()) ?? 0;
+      return amt > 0;
+    }).map((i) {
+      return {
+        'category': i['category'] ?? 'other',
+        'amount': double.parse(i['amount'].toString()),
+        'description': i['description']?.isNotEmpty == true ? i['description'] : null,
+      };
+    }).toList();
+
+    final List<Map<String, dynamic>> allOtherIncomes = [...formattedOtherIncomes];
+    
+    for (var d in _customerDebtPayments) {
+      final amt = double.tryParse(d['amount'].toString()) ?? 0;
+      if (amt > 0) {
+        allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'سداد دين عميل'});
+      }
+    }
+    
+    for (var d in _merchantDebtsReceived) {
+      final amt = double.tryParse(d['amount'].toString()) ?? 0;
+      if (amt > 0) {
+        allOtherIncomes.add({'category': 'other', 'amount': amt, 'description': 'دين مستلم (على التاجر)'});
+      }
+    }
+
+    final eodPayload = {
+      'eod_date': DateTime.now().toIso8601String().split('T')[0],
+      'sales': {
+        'cash_sales': cashSales,
+        'bankak_sales': bankakSales,
+      },
+      'expenses': formattedExpenses,
+      'debt_payments': [],
+      'other_incomes': allOtherIncomes,
+    };
+
+    try {
+      final res = await _api.post(ApiConfig.eodSave, eodPayload);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         messenger.showSnackBar(
@@ -168,16 +169,26 @@ class _EodScreenState extends State<EodScreen> {
           _otherIncomes.clear();
         });
         _loadData();
-      } else {
-        final errData = jsonDecode(res.body);
-        messenger.showSnackBar(
-          SnackBar(content: Text(errData['detail'] ?? "حدث خطأ في الحفظ")),
-        );
+        return;
       }
+      throw Exception("Server responded with ${res.statusCode}");
     } catch (e) {
+      await LocalDbHelper.instance.insertOfflineEOD(eodPayload, _netDailyProfit);
       messenger.showSnackBar(
-        const SnackBar(content: Text("تم حفظ اليومية محلياً أوفلاين")),
+        const SnackBar(
+          content: Text("تم حفظ إغلاق اليوم محلياً (أوفلاين) وسيتم مزامنته عند عودة الإنترنت"),
+          backgroundColor: Colors.amber,
+        ),
       );
+      setState(() {
+        _todaySaved = true;
+        _cashSalesCtrl.clear();
+        _bankakSalesCtrl.clear();
+        _merchantDebtsReceived.clear();
+        _expenses.clear();
+        _customerDebtPayments.clear();
+        _otherIncomes.clear();
+      });
     } finally {
       if (mounted) setState(() => _saving = false);
     }

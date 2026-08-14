@@ -52,4 +52,10 @@ class ApiConfig {
   static const String adminAddUser = '/admin/add-user';
   static const String adminStats = '/admin/stats';
   static const String adminSettings = '/admin/settings';
+
+  // Backup & Restore
+  static const String backupExport = '/backup/export';
+  static const String backupRestore = '/backup/restore';
+  static const String backupRestoreFile = '/backup/restore-file';
+  static const String backupSummary = '/backup/summary';
 }

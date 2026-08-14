@@ -34,6 +34,7 @@ class User(Base):
     )
     subscription_end_date = Column(Date, nullable=True)
     restock_cycle_days = Column(Integer, default=7)
+    last_login = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

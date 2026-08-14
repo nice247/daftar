@@ -24,7 +24,7 @@ from app.api import (
     auth_router, users_router, subscriptions_router,
     eod_router, customers_router, expenses_router,
     reports_router, products_router, admin_router, ocr_router,
-    merchant_debts_router
+    merchant_debts_router, backup_router
 )
 from app.services.telegram_service import telegram_service
 
@@ -91,19 +91,12 @@ async def seed_admin():
             await session.commit()
             logger.info(f"Admin account created: {ADMIN_PHONE}")
         else:
-            if not verify_password(ADMIN_PASSWORD, admin.password_hash):
-                admin.password_hash = hash_password(ADMIN_PASSWORD)
-                admin.phone = ADMIN_PHONE
+            if admin.status != "ACTIVE":
                 admin.status = "ACTIVE"
                 await session.commit()
-                logger.info(f"Admin password updated for: {ADMIN_PHONE}")
+                logger.info(f"Admin account reactivated: {admin.phone}")
             else:
-                if admin.status != "ACTIVE":
-                    admin.status = "ACTIVE"
-                    await session.commit()
-                    logger.info(f"Admin account reactivated: {ADMIN_PHONE}")
-                else:
-                    logger.info(f"Admin account exists: {ADMIN_PHONE}")
+                logger.info(f"Admin account exists: {admin.phone}")
 
 
 async def check_subscriptions():
@@ -183,6 +176,7 @@ app.include_router(products_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(ocr_router, prefix="/api/v1")
 app.include_router(merchant_debts_router, prefix="/api/v1")
+app.include_router(backup_router, prefix="/api/v1")
 
 # ============ Root Route ============
 

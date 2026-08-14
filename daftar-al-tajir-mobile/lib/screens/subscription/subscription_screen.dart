@@ -41,17 +41,21 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Future<void> _checkPendingSubscription() async {
     try {
-      final res = await _api.get('/subscriptions/my-pending');
+      final res = await _api.get(ApiConfig.subscriptionMy);
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data != null && data['id'] != null) {
-          setState(() => _pendingSub = data);
+        final dynamic data = jsonDecode(res.body);
+        if (data is List && data.isNotEmpty) {
+          final pending = data.firstWhere(
+            (s) => s['status'] == 'PENDING',
+            orElse: () => null,
+          );
+          if (mounted) setState(() => _pendingSub = pending);
         }
       }
       
-      final priceRes = await _api.get('/subscriptions/prices');
+      final priceRes = await _api.get(ApiConfig.subscriptionPrices);
       if (priceRes.statusCode == 200) {
-        setState(() => _prices = jsonDecode(priceRes.body));
+        if (mounted) setState(() => _prices = jsonDecode(priceRes.body));
       }
     } catch (_) {}
   }
@@ -75,7 +79,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         _uploading = true;
       });
 
-      final streamedRes = await _api.uploadFile('/subscriptions/upload-receipt', file, fieldName: 'receipt');
+      final streamedRes = await _api.uploadFile(
+        ApiConfig.subscriptionUploadReceipt,
+        file,
+        fieldName: 'receipt_image',
+      );
       final res = await http.Response.fromStream(streamedRes);
 
       if (res.statusCode == 200 || res.statusCode == 201) {

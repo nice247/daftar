@@ -73,10 +73,13 @@ async def supply_stock(
     db: AsyncSession = Depends(get_db)
 ):
     """Record a stock supply with purchase price."""
-    transaction = await business_service.supply_stock(
-        db, request.product_id, request.quantity, request.purchase_price
-    )
-    return {
-        "message": "تم تسجيل التوريد بنجاح",
-        "transaction_id": str(transaction.id)
-    }
+    try:
+        transaction = await business_service.supply_stock(
+            db, current_user.id, request.product_id, request.quantity, request.purchase_price
+        )
+        return {
+            "message": "تم تسجيل التوريد بنجاح",
+            "transaction_id": str(transaction.id)
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

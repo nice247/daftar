@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
+import '../../config/api_config.dart';
 import '../../services/api_service.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -42,10 +43,10 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     setState(() => _loading = true);
     try {
       final resList = await Future.wait([
-        _api.get('/admin/stats'),
-        _api.get('/admin/users'),
-        _api.get('/subscriptions/pending'),
-        _api.get('/admin/settings'),
+        _api.get(ApiConfig.adminStats),
+        _api.get(ApiConfig.adminUsers),
+        _api.get(ApiConfig.subscriptionPending),
+        _api.get(ApiConfig.adminSettings),
       ]);
 
       if (resList[0].statusCode == 200) _stats = jsonDecode(resList[0].body);
@@ -113,7 +114,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
                 if (phoneCtrl.text.isEmpty || nameCtrl.text.isEmpty || passwordCtrl.text.isEmpty) return;
                 Navigator.pop(ctx);
                 try {
-                  await _api.post('/admin/users', {
+                  await _api.post(ApiConfig.adminAddUser, {
                     'phone': phoneCtrl.text.trim(),
                     'store_name': nameCtrl.text.trim(),
                     'password': passwordCtrl.text.trim(),
@@ -134,7 +135,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   void _handleToggleFreeze(dynamic user) async {
     final action = user['status'] == 'ACTIVE' ? 'freeze' : 'activate';
     try {
-      await _api.post('/admin/users/toggle', {
+      await _api.post(ApiConfig.adminToggleUser, {
         'user_id': user['id'],
         'action': action,
       });
@@ -160,7 +161,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
               final days = int.tryParse(daysCtrl.text) ?? 30;
               Navigator.pop(ctx);
               try {
-                await _api.post('/admin/subscriptions/extend', {
+                await _api.post(ApiConfig.adminExtendSub, {
                   'user_id': user['id'],
                   'days': days,
                 });
@@ -204,7 +205,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
     }
 
     try {
-      await _api.post('/subscriptions/review', {
+      await _api.post(ApiConfig.subscriptionReview, {
         'subscription_id': sub['id'],
         'action': action,
         'rejection_reason': reason,
@@ -216,7 +217,7 @@ class _AdminScreenState extends State<AdminScreen> with SingleTickerProviderStat
   Future<void> _saveSettings() async {
     setState(() => _savingSettings = true);
     try {
-      await _api.post('/admin/settings', {
+      await _api.put(ApiConfig.adminSettings, {
         'monthly_price': double.tryParse(_settings['monthly_price'].toString()) ?? 10000,
         'quarterly_price': double.tryParse(_settings['quarterly_price'].toString()) ?? 30000,
         'semi_annual_price': double.tryParse(_settings['semi_annual_price'].toString()) ?? 60000,

@@ -25,8 +25,22 @@ async def upload_receipt(
     Upload a bank transfer receipt for subscription renewal.
     OCR will extract: amount, reference_number, date.
     """
+    # Validate file type
+    if not receipt_image.content_type or not receipt_image.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="يجب رفع ملف صورة صالح"
+        )
+
     # Read image data
     image_data = await receipt_image.read()
+
+    # Validate file size (max 10MB)
+    if len(image_data) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="حجم الصورة يجب أن يكون أقل من 10 ميجابايت"
+        )
 
     # Run OCR on the receipt
     ocr_result = await ocr_service.extract_from_image(image_data)

@@ -85,11 +85,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final storeName = _businessNameController.text.trim().isNotEmpty
+          ? _businessNameController.text.trim()
+          : _fullNameController.text.trim();
+
       final res = await _api.post('/auth/register', {
         'phone': _phoneController.text.trim(),
-        'full_name': _fullNameController.text.trim(),
-        'business_name': _businessNameController.text.trim(),
+        'store_name': storeName.isNotEmpty ? storeName : 'متجر التاجر',
         'password': _passwordController.text.trim(),
+        'verification_code': _codeController.text.trim(),
       });
       final data = jsonDecode(res.body);
 

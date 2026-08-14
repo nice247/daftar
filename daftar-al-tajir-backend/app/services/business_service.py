@@ -174,8 +174,9 @@ class BusinessService:
         # 6. Update current cycle totals
         await BusinessService._update_cycle_totals(db, user_id)
 
-        # Calculate net cashflow
-        net_cashflow = total_sales - total_expenses - net_new_debts + total_other_income
+        # Calculate net cashflow (Sales + Debt Payments Collected + Other Income - Expenses)
+        total_debt_payments = sum(dp.amount for dp in eod.debt_payments)
+        net_cashflow = total_sales + total_debt_payments + total_other_income - total_expenses
 
         summary = EODSummary(
             total_sales=total_sales,
@@ -700,23 +701,29 @@ class BusinessService:
     @staticmethod
     async def supply_stock(
         db: AsyncSession,
+        user_id: UUID,
         product_id: UUID,
         quantity: Decimal,
         purchase_price: Optional[Decimal] = None
     ) -> StockTransaction:
-        """Record a stock supply (restock)."""
+        """Record a stock supply (restock) with ownership verification."""
+        result = await db.execute(
+            select(Product).where(
+                Product.id == product_id,
+                Product.user_id == user_id
+            )
+        )
+        product = result.scalar_one_or_none()
+        if not product:
+            raise ValueError("المنتج غير موجود")
+
         transaction = StockTransaction(
             product_id=product_id,
             quantity=quantity,
             purchase_price=purchase_price
         )
         db.add(transaction)
-
-        # Update product stock
-        result = await db.execute(select(Product).where(Product.id == product_id))
-        product = result.scalar_one_or_none()
-        if product:
-            product.current_stock += quantity
+        product.current_stock += quantity
 
         await db.flush()
         return transaction
