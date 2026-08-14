@@ -1,0 +1,22 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free-tier instance from sleeping
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend Keep-Alive Endpoint
+        run: |
+          echo "Pinging Render backend at $(date)..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://daftar-str8.onrender.com/ping)
+          echo "Response HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Server is alive and responsive!"
+          else
+            echo "⚠️ Unexpected response: $HTTP_STATUS"
+          fi
