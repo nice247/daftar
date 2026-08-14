@@ -194,18 +194,24 @@ async def get_subscription_prices(
     settings = result.scalar_one_or_none()
     
     if not settings:
-        # Default settings if none exist
         settings = SystemSettings(
-            monthly_price=3000,
-            quarterly_price=8000,
-            semi_annual_price=15000
+            monthly_price=10000,
+            quarterly_price=27000,
+            semi_annual_price=50000
         )
         db.add(settings)
         await db.commit()
         await db.refresh(settings)
         
+    m = float(settings.monthly_price or 10000)
+    q = float(settings.quarterly_price or 27000)
+    s = float(settings.semi_annual_price or 50000)
+
     return {
-        "monthly": float(settings.monthly_price),
-        "quarterly": float(settings.quarterly_price),
-        "semi_annual": float(settings.semi_annual_price)
+        "monthly": m,
+        "quarterly": q,
+        "semi_annual": s,
+        "monthly_price": m,
+        "quarterly_price": q,
+        "semi_annual_price": s
     }

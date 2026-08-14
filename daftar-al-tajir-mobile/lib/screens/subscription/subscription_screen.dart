@@ -236,13 +236,23 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       child: Column(
                         children: [
                           Text(
-                            "الرسوم الأساسية: ${formatCurrency(_prices?['monthly_price'] ?? 10000)} ج.س للشهر الواحد",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF212529)),
+                            "الرسوم الشهرية: ${formatCurrency(_prices?['monthly_price'] ?? _prices?['monthly'] ?? 10000)} ج.س / شهر",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF2B8A3E)),
                             textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
+                          // Price tiers preview
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildPlanBadge("شهر", "${formatCurrency(_prices?['monthly_price'] ?? _prices?['monthly'] ?? 10000)}"),
+                              _buildPlanBadge("3 أشهر", "${formatCurrency(_prices?['quarterly_price'] ?? _prices?['quarterly'] ?? 27000)}"),
+                              _buildPlanBadge("6 أشهر", "${formatCurrency(_prices?['semi_annual_price'] ?? _prices?['semi_annual'] ?? 50000)}"),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
                           const Text(
-                            "يمكنك تحويل مبلغ لعدة أشهر دفعة واحدة (مثال: 100,000 تعني 10 أشهر)",
+                            "يمكنك تحويل أي مبلغ وسيتم احتساب عدد الأشهر تلقائياً وفقاً للرسوم المحددة",
                             style: TextStyle(fontSize: 10, color: Color(0xFF6C757D)),
                             textAlign: TextAlign.center,
                           ),
@@ -340,6 +350,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanBadge(String title, String price) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B8A3E).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF2B8A3E).withOpacity(0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2B8A3E))),
+          const SizedBox(height: 2),
+          Text("$price ج.س", style: const TextStyle(fontSize: 10, color: Color(0xFF495057))),
         ],
       ),
     );

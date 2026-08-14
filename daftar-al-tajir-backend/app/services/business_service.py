@@ -588,7 +588,9 @@ class BusinessService:
             )
             db.add(current)
             await db.flush()
-            await BusinessService._calculate_cycle_totals(db, current)
+
+        # Always recalculate current cycle totals to reflect up-to-the-minute transactions
+        await BusinessService._calculate_cycle_totals(db, current)
 
         user_cycle_days = user.restock_cycle_days if (user and user.restock_cycle_days) else 7
         expected_end = current.start_date + timedelta(days=user_cycle_days)

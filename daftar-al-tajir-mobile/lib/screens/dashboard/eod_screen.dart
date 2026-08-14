@@ -548,48 +548,81 @@ class _EodScreenState extends State<EodScreen> {
 
           const SizedBox(height: 14),
 
-          // 3 Action Pills: المصروفات | المشتريات | ديون التاجر
+          // 3 Action Buttons in a single row without icons: المصروفات | المشتريات | ديون التاجر
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openExpensesModal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFF0F0),
-                    foregroundColor: const Color(0xFFC92A2A),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFD8D8))),
+                child: SizedBox(
+                  height: 38,
+                  child: ElevatedButton(
+                    onPressed: _openExpensesModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFF0F0),
+                      foregroundColor: const Color(0xFFC92A2A),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFFFD8D8)),
+                      ),
+                    ),
+                    child: const Text(
+                      "المصروفات",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  icon: const Icon(Icons.list_alt, size: 14),
-                  label: const Text("المصروفات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openPurchasesModal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFF9DB),
-                    foregroundColor: const Color(0xFFD97706),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFFFEC99))),
+                child: SizedBox(
+                  height: 38,
+                  child: ElevatedButton(
+                    onPressed: _openPurchasesModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFF9DB),
+                      foregroundColor: const Color(0xFFD97706),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFFFEC99)),
+                      ),
+                    ),
+                    child: const Text(
+                      "المشتريات",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  icon: const Icon(Icons.inventory_2, size: 14),
-                  label: const Text("المشتريات", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 6),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openMerchantDebtsModal,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE7F5FF),
-                    foregroundColor: const Color(0xFF1C7ED6),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: Color(0xFFA5D8FF))),
+                child: SizedBox(
+                  height: 38,
+                  child: ElevatedButton(
+                    onPressed: _openMerchantDebtsModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE7F5FF),
+                      foregroundColor: const Color(0xFF1C7ED6),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFA5D8FF)),
+                      ),
+                    ),
+                    child: const Text(
+                      "ديون التاجر",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  icon: const Icon(Icons.account_balance_wallet, size: 14),
-                  label: const Text("ديون التاجر", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -895,25 +928,43 @@ class _EodScreenState extends State<EodScreen> {
 
           const SizedBox(height: 20),
 
-          // Save Button
+          // Save Button: تسجيل وحفظ العمليات
           ElevatedButton.icon(
             onPressed: _saving ? null : _handleSave,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2B8A3E),
               padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            icon: const Icon(Icons.save, size: 22),
+            icon: const Icon(Icons.check_circle_outline, size: 22),
             label: _saving
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text("حفظ اليومية / التقفيل اليومي", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                : const Text("تسجيل وحفظ العمليات", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
 
           if (_todaySaved) ...[
-            const SizedBox(height: 10),
-            const Text(
-              "✔ تم حفظ المعاملات بنجاح — يمكنك إكمال إضافة معاملات أخرى لليوم.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF2B8A3E), fontWeight: FontWeight.bold, fontSize: 12),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE6FCF5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF2B8A3E).withOpacity(0.3)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, color: Color(0xFF2B8A3E), size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "تم حفظ العمليات بنجاح — يمكنك إضافة وحفظ أي معاملات إضافية في أي وقت اليوم.",
+                      style: TextStyle(color: Color(0xFF2B8A3E), fontWeight: FontWeight.bold, fontSize: 12),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ]
         ],

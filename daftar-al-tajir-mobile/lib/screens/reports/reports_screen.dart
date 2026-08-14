@@ -38,15 +38,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
       if (res.statusCode == 200) {
         _reportData = jsonDecode(res.body);
         if (_reportData != null) {
-          LocalDbHelper.instance.cacheReports(_reportData!);
+          await LocalDbHelper.instance.cacheReports(_reportData!);
         }
+      } else {
+        _reportData = await LocalDbHelper.instance.getCachedReports();
       }
     } catch (_) {
       _reportData = await LocalDbHelper.instance.getCachedReports();
     }
-    finally {
-      if (mounted) setState(() => _loading = false);
+
+    // If still null, generate initial local structure from SQLite
+    if (_reportData == null) {
+      final debts = await LocalDbHelper.instance.getCachedCustomerDebts();
+      final expenses = await LocalDbHelper.instance.getCachedExpenses();
+      double totalDebts = debts.fold(0.0, (sum, d) => sum + (d.remainingAmount));
+      double totalExpenses = expenses.fold(0.0, (sum, e) => sum + (e.amount));
+
+      _reportData = {
+        'current_cycle': {
+          'total_sales': 0.0,
+          'total_expenses': totalExpenses,
+          'net_cashflow': -totalExpenses,
+          'start_date': DateTime.now().toIso8601String().substring(0, 10),
+        },
+        'total_debts_outstanding': totalDebts,
+        'comparison': null,
+      };
     }
+
+    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -64,9 +84,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final double avgExpenses = double.tryParse(comparison?['average_expenses']?.toString() ?? '0') ?? 0.0;
     final double avgNet = avgSales - avgExpenses;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    return RefreshIndicator(
+      color: const Color(0xFF2B8A3E),
+      onRefresh: _loadReport,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text("التقارير المالية", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212529))),
@@ -342,6 +366,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

@@ -99,17 +99,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openFacebook() async {
-    final url = Uri.parse("https://fb.me/61590357776476");
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    final url = Uri.parse("https://www.facebook.com/profile.php?id=61590357776476");
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("تعذر فتح رابط فيسبوك")),
+          );
+        }
+      }
     }
   }
 
   void _openCustomerSupport() async {
-    final url = Uri.parse("https://wa.me/201280920179?text=${Uri.encodeComponent('مرحباً، أحتاج إلى دعم فني في دفتر التاجر')}");
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    final text = Uri.encodeComponent('مرحباً، أحتاج إلى استفسار ودعم فني بخصوص تطبيق دفتر التاجر');
+    final url = Uri.parse("https://wa.me/201280920179?text=$text");
+    try {
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("تعذر فتح تطبيق واتساب")),
+          );
+        }
+      }
     }
+  }
+
+  void _shareApp() async {
+    const shareText = "تطبيق دفتر التاجر 📊\nالنظام المتكامل لإدارة المبيعات والمصروفات والديون للتجار في السودان.\nللتواصل وتحميل التطبيق: https://wa.me/201280920179";
+    await Clipboard.setData(const ClipboardData(text: shareText));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("تم نسخ رابط ورسالة مشاركة التطبيق بنجاح!"),
+          backgroundColor: Color(0xFF2B8A3E),
+        ),
+      );
+    }
+    final url = Uri.parse("https://wa.me/?text=${Uri.encodeComponent(shareText)}");
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   @override
@@ -437,7 +479,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: _shareApp,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       side: const BorderSide(color: Color(0xFFDEE2E6)),
