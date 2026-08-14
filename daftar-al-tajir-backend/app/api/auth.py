@@ -110,6 +110,7 @@ async def forgot_password(request: OTPRequest, db: AsyncSession = Depends(get_db
     """
     try:
         await AuthService.generate_otp(db, request.phone)
+        await db.commit()
         return MessageResponse(
             message="تم تسجيل طلبكم، سيتم التواصل معكم على الواتساب"
         )
@@ -136,6 +137,7 @@ async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depen
         await AuthService.verify_otp(db, request.phone, request.code)
         # Reset password
         await AuthService.reset_password(db, request.phone, request.new_password)
+        await db.commit()
         return MessageResponse(message="تم تغيير كلمة المرور بنجاح")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
