@@ -18,9 +18,9 @@
    - **Frontend Static Site** (React)
 
 4. **أضف المتغيرات السرية** في إعدادات الـ Backend:
-   - `TELEGRAM_BOT_TOKEN` = `8803638425:AAFNC90dBtOzJ5Xie6cDwh3WwHDtBhm9gng`
-   - `TELEGRAM_ADMIN_CHAT_ID` = `7441336332`
-   - `ADMIN_PASSWORD` = كلمة مرور المدير
+   - `TELEGRAM_BOT_TOKEN` = `توكن_بوت_تليجرام_الخاص_بك`
+   - `TELEGRAM_ADMIN_CHAT_ID` = `معرف_شات_المدير`
+   - `ADMIN_PASSWORD` = `كلمة_مرور_المدير_القوية`
 
 5. **حدّث VITE_API_URL** في إعدادات الـ Frontend:
    - `VITE_API_URL` = `https://اسم-الخلفية.onrender.com/api/v1`
@@ -53,10 +53,10 @@
    APP_ENV=production
    DEBUG=False
    JWT_SECRET_KEY=مفتاح-سري-طويل-جدا
-   TELEGRAM_BOT_TOKEN=8803638425:AAFNC90dBtOzJ5Xie6cDwh3WwHDtBhm9gng
-   TELEGRAM_ADMIN_CHAT_ID=7441336332
-   ADMIN_PHONE=0902642768
-   ADMIN_PASSWORD=nice@247
+   TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
+   TELEGRAM_ADMIN_CHAT_ID=your_telegram_chat_id_here
+   ADMIN_PHONE=0900000000
+   ADMIN_PASSWORD=your_secure_admin_password
    CORS_ORIGINS=["https://اسم-الواجهة.onrender.com"]
    ```
 5. انقر **Create Web Service**

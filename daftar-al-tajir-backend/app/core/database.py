@@ -9,30 +9,37 @@ import ssl
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from urllib.parse import urlparse
 from app.core.config import DATABASE_URL, DATABASE_URL_SYNC
 
-# Detect if we're using an external database (Neon, etc.)
-# External databases need SSL and smaller pool sizes
-_is_external_db = "neon.tech" in DATABASE_URL or "render.com" in DATABASE_URL or "supabase" in DATABASE_URL
+# Detect if we're using an external/cloud database (Neon, Render, Supabase, RDS, etc.)
+_parsed_url = urlparse(DATABASE_URL)
+_hostname = _parsed_url.hostname or ""
+_is_external_db = (
+    (bool(_hostname) and not _hostname.startswith("localhost") and not _hostname.startswith("127."))
+    or "neon.tech" in DATABASE_URL 
+    or "render.com" in DATABASE_URL 
+    or "supabase" in DATABASE_URL
+    or "dpg-" in _hostname
+)
 
-# SSL context for asyncpg (Neon requires SSL)
+# SSL context for asyncpg (Neon/Render external requires SSL)
 _ssl_context = None
-if _is_external_db:
+if _is_external_db and "sqlite" not in DATABASE_URL:
     _ssl_context = ssl.create_default_context()
     _ssl_context.check_hostname = False
     _ssl_context.verify_mode = ssl.CERT_NONE
 
 # Async engine (for FastAPI endpoints)
-# Neon serverless has connection limits, use smaller pools
 _engine_kwargs = {
     "echo": False,
+    "pool_pre_ping": True,
+    "pool_recycle": 300,  # Recycle connections after 5 minutes to prevent stale dropped sockets
 }
 
 if _is_external_db:
     _engine_kwargs["pool_size"] = 5
     _engine_kwargs["max_overflow"] = 3
-    _engine_kwargs["pool_pre_ping"] = True
-    _engine_kwargs["pool_recycle"] = 300  # 5 minutes
     # Connect args for SSL
     if _ssl_context:
         _engine_kwargs["connect_args"] = {"ssl": _ssl_context}

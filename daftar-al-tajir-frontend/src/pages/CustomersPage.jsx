@@ -336,6 +336,24 @@ export default function CustomersPage() {
       toast.success('تم تسجيل سداد المورد كمصروف بنجاح');
       setShowPaySupplierModal(false);
       setSupplierPayAmount('');
+      setSupplierPayDesc('');
+      setSelectedSupplierName('');
+      setSelectedSupplierDebtId('');
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'فشل في تسجيل السداد');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openPaySupplierModalDirectly = (debt) => {
+    setSelectedSupplierName(debt.supplier_name);
+    setSelectedSupplierDebtId(debt.id);
+    setSupplierPayAmount(debt.remaining.toString());
+    setShowPaySupplierModal(true);
+  };
+
        return (
     <div className="space-y-6 animate-fade-in pb-12">
       
@@ -1166,58 +1184,6 @@ export default function CustomersPage() {
                   type="submit"
                   disabled={actionLoading || !selectedSupplierDebtId || !supplierPayAmount}
                   className="flex-1 py-3 bg-[#1C7ED6] hover:bg-[#1864AB] text-white rounded-[12px] text-sm font-bold disabled:opacity-50 transition-colors"
-                >
-                  {actionLoading ? 'جاري الحفظ...' : '✔ حفظ السداد'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );�ل بنكك
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">المبلغ المسدد (ج.س)</label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={supplierPayAmount}
-                  onChange={(e) => setSupplierPayAmount(normalizeArabicNumber(e.target.value))}
-                  placeholder="المبلغ"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-left text-lg font-bold"
-                  dir="ltr"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500">ملاحظة السداد (اختياري)</label>
-                <input
-                  type="text"
-                  value={supplierPayDesc}
-                  onChange={(e) => setSupplierPayDesc(e.target.value)}
-                  placeholder="ملاحظات حول عملية الدفع"
-                  className="w-full px-3 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-green-500 text-sm"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPaySupplierModal(false)}
-                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-bold transition-colors"
-                >
-                  ✖ إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading || !selectedSupplierDebtId || !supplierPayAmount}
-                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-bold disabled:opacity-50 transition-colors"
                 >
                   {actionLoading ? 'جاري الحفظ...' : '✔ حفظ السداد'}
                 </button>

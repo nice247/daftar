@@ -42,51 +42,68 @@ async def lifespan(app: FastAPI):
     # ========== STARTUP ==========
     logger.info(f"Starting {APP_NAME} in {APP_ENV} mode...")
 
-    # Create database tables and ensure schema migrations
+    # Safe idempotent migrations for existing tables
     from sqlalchemy import text
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        # Safe idempotent migrations for existing tables
-        migration_statements = [
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS restock_cycle_days INTEGER DEFAULT 7;",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date DATE;",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING_VERIFICATION';",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(10) DEFAULT 'merchant';",
-            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS debt_type VARCHAR(20) DEFAULT 'goods';",
-            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'unpaid';",
-            "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS description TEXT;",
-            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE;",
-            "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS description TEXT;",
-            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS description TEXT;",
-            "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS starts_new_cycle BOOLEAN DEFAULT FALSE;",
-            "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS opening_stock_value NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS cycle_purchases NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS closing_stock_value NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS cogs NUMERIC(15, 2) DEFAULT 0;",
-            "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS gross_profit NUMERIC(15, 2) DEFAULT 0;",
-            # High-performance indexes
-            "CREATE INDEX IF NOT EXISTS idx_invoices_user_type_created ON invoices (user_id, invoice_type, created_at);",
-            "CREATE INDEX IF NOT EXISTS idx_expenses_user_category_created ON expenses (user_id, category, created_at);",
-            "CREATE INDEX IF NOT EXISTS idx_debt_payments_user_date ON debt_payments (user_id, payment_date);",
-            "CREATE INDEX IF NOT EXISTS idx_other_income_user_date ON other_income (user_id, income_date);",
-            "CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers (user_id);",
-            "CREATE INDEX IF NOT EXISTS idx_merchant_debts_user_status ON merchant_debts (user_id, status);",
-            "CREATE INDEX IF NOT EXISTS idx_restock_cycles_user_status ON restock_cycles (user_id, status);",
-            "CREATE INDEX IF NOT EXISTS idx_users_phone ON users (phone);",
-        ]
-        for stmt in migration_statements:
-            try:
-                await conn.execute(text(stmt))
-            except Exception as e:
-                logger.warning(f"Schema migration note ({stmt}): {e}")
-    logger.info("Database tables and column migrations verified")
+    migration_statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS restock_cycle_days INTEGER DEFAULT 7;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end_date DATE;",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'PENDING_VERIFICATION';",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(10) DEFAULT 'merchant';",
+        "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS debt_type VARCHAR(20) DEFAULT 'goods';",
+        "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'unpaid';",
+        "ALTER TABLE merchant_debts ADD COLUMN IF NOT EXISTS description TEXT;",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE;",
+        "ALTER TABLE invoices ADD COLUMN IF NOT EXISTS description TEXT;",
+        "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS description TEXT;",
+        "ALTER TABLE expenses ADD COLUMN IF NOT EXISTS starts_new_cycle BOOLEAN DEFAULT FALSE;",
+        "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS opening_stock_value NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS cycle_purchases NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS closing_stock_value NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS cogs NUMERIC(15, 2) DEFAULT 0;",
+        "ALTER TABLE restock_cycles ADD COLUMN IF NOT EXISTS gross_profit NUMERIC(15, 2) DEFAULT 0;",
+        # High-performance indexes
+        "CREATE INDEX IF NOT EXISTS idx_invoices_user_type_created ON invoices (user_id, invoice_type, created_at);",
+        "CREATE INDEX IF NOT EXISTS idx_expenses_user_category_created ON expenses (user_id, category, created_at);",
+        "CREATE INDEX IF NOT EXISTS idx_debt_payments_user_date ON debt_payments (user_id, payment_date);",
+        "CREATE INDEX IF NOT EXISTS idx_other_income_user_date ON other_income (user_id, income_date);",
+        "CREATE INDEX IF NOT EXISTS idx_customers_user_id ON customers (user_id);",
+        "CREATE INDEX IF NOT EXISTS idx_merchant_debts_user_status ON merchant_debts (user_id, status);",
+        "CREATE INDEX IF NOT EXISTS idx_restock_cycles_user_status ON restock_cycles (user_id, status);",
+        "CREATE INDEX IF NOT EXISTS idx_users_phone ON users (phone);",
+    ]
+
+    # Retry connection up to 5 times (safeguard for cold starts on serverless Postgres like Neon)
+    max_retries = 5
+    db_connected = False
+    for attempt in range(1, max_retries + 1):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+                for stmt in migration_statements:
+                    try:
+                        await conn.execute(text(stmt))
+                    except Exception as e:
+                        logger.warning(f"Schema migration note ({stmt}): {e}")
+            db_connected = True
+            logger.info("Database tables and column migrations verified")
+            break
+        except Exception as e:
+            logger.warning(f"Database connection attempt {attempt}/{max_retries} failed: {e}")
+            if attempt < max_retries:
+                await asyncio.sleep(3)
+            else:
+                logger.error("Could not connect to database during startup. Application will start in degraded mode.")
 
     # Seed admin account
-    await seed_admin()
-    logger.info("Admin account seeded")
+    if db_connected:
+        try:
+            await seed_admin()
+            logger.info("Admin account seeded")
+        except Exception as e:
+            logger.error(f"Error seeding admin: {e}")
 
     # Initialize Telegram bot (send-only, no polling)
     telegram_service.initialize()
@@ -184,8 +201,14 @@ app = FastAPI(
 
 import json
 try:
-    origins = json.loads(CORS_ORIGINS) if isinstance(CORS_ORIGINS, str) else CORS_ORIGINS
-except:
+    if isinstance(CORS_ORIGINS, str):
+        if CORS_ORIGINS.strip().startswith("["):
+            origins = json.loads(CORS_ORIGINS)
+        else:
+            origins = [o.strip() for o in CORS_ORIGINS.split(",") if o.strip()]
+    else:
+        origins = CORS_ORIGINS
+except Exception:
     origins = ["*"]
 
 app.add_middleware(
@@ -215,7 +238,12 @@ app.include_router(ocr_router, prefix="/api/v1")
 app.include_router(merchant_debts_router, prefix="/api/v1")
 app.include_router(backup_router, prefix="/api/v1")
 
-# ============ Root Route ============
+# ============ Static Files Mount ============
+STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
+os.makedirs(STATIC_DIR, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ============ Root & Health Routes ============
 
 @app.api_route("/", methods=["GET", "HEAD"], tags=["الصحة"])
 async def root():
@@ -229,7 +257,11 @@ async def root():
 @app.get("/api/v1/ping", tags=["الصحة"])
 async def ping():
     """Ultra-fast, zero-DB ping endpoint for keep-alive cron jobs / uptime monitors."""
-    return {"pong": True, "status": "ok"}
+    return {
+        "status": "awake",
+        "pong": True,
+        "time": datetime.now(timezone.utc).isoformat()
+    }
 
 
 @app.get("/health", tags=["الصحة"])
@@ -249,15 +281,10 @@ async def get_app_version():
     return {
         "versionCode": 3,
         "versionName": "1.0.2",
-        "downloadUrl": "https://daftar-str8.onrender.com/static/app-arm64-v8a-release.apk",
+        "downloadUrl": "/static/app-arm64-v8a-release.apk",
         "forceUpdate": False,
         "releaseNotes": "تحديث الإصدار 1.0.2: إدارة المخزون والدورات المحاسبية وتناسق الواجهة وإعادة تعيين كلمة المرور"
     }
-
-@app.get("/ping", tags=["الصحة"])
-async def ping():
-    """Simple ping to wake up the Render server without touching the DB."""
-    return {"status": "awake", "time": datetime.now(timezone.utc).isoformat()}
 
 # ============ Serve React Frontend ============
 # This must be at the very bottom to act as a catch-all route.

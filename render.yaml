@@ -2,6 +2,7 @@ services:
   # ============ Backend API Service ============
   - type: web
     name: daftar-tajir-api
+    rootDir: daftar-al-tajir-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -25,7 +26,7 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: CORS_ORIGINS
-        value: '["https://daftar-tajir.onrender.com"]'
+        value: '["https://daftar-tajir.onrender.com","https://daftar-tajir-frontend.onrender.com","http://localhost:5173","http://localhost:3000"]'
       - key: SUPPORT_PHONE
         value: "201280920179"
       - key: PYTHON_VERSION
@@ -36,9 +37,10 @@ services:
   # ============ Frontend Static Site ============
   - type: web
     name: daftar-tajir-frontend
+    rootDir: daftar-al-tajir-frontend
     runtime: static
-    buildCommand: cd ../daftar-al-tajir-frontend && npm install && npm run build
-    staticPublishPath: ../daftar-al-tajir-frontend/dist
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
         value: "https://daftar-tajir-api.onrender.com/api/v1"
